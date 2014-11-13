@@ -1,0 +1,30 @@
+
+
+<div id="ports">
+
+  {% for port in accessor.ports %}
+  <div class="form-group">
+    <label for="input{{ port.name }}" class="col-sm-2 control-label">{{ port.name }}</label>
+
+    {% if port.type == "bool" %}
+    <input type="checkbox" name="{{ port.name }}" id="{{ port.name }}"></input>
+
+    {% elif port.type == "numeric" %}
+    <input type="text" name="{{ port.name }}" id="{{ port.name }}"></input>
+
+    {% elif port.type == "string" %}
+    <input type="text" name="{{ port.name }}" id="{{ port.name }}"></input>
+
+    {% elif port.type == "select" %}
+    <select name="{{ port.name }}" id="{{ port.name }}">
+      {% for opt in port.options %}
+      <option value="{{ loop.index }}">{{ opt }}</option>
+      {% endfor %}
+    </select>
+
+    {% endif %}
+
+  </div>
+  {% endfor %}
+
+</div>
