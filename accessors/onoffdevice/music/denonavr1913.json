@@ -1,28 +1,33 @@
 {
-  "accessor": {
-    "name":    "Denon AVR-1913",
-    "version": "0.1",
-    "author":  "Brad Campbell",
-    "parent":  "Music",
-    "description": "
+  "name":    "Denon AVR-1913",
+  "version": "0.1",
+  "author":  "Brad Campbell",
+  "description": "
 Denon AVR-1913 Accessor
 =======================
 
 The Denon AVR-1913 is a digital receiver.
 ",
 
-    "ports": [
-              {
-                "direction": "io",
-                "name":      "Input",
-                "type":      "select",
-                "options":   ["PC", "Apple TV", "Internet"]
-              }
-    ],
+  "ports": [
+            {
+              "direction": "io",
+              "name":      "Input",
+              "type":      "select",
+              "options":   ["PC", "Apple TV", "Internet"]
+            }
+  ],
 
-    "code": {
-              "language": "javascript",
-              "code": "
+  "parameters": [
+                  {
+                    "name": "device_url",
+                    "default": "http://localhost"
+                  }
+  ],
+
+  "code": {
+            "language": "javascript",
+            "code": "
 
 function init () {
 
@@ -33,7 +38,7 @@ function Power (power_setting) {
 }
 
 function Volume (volume) {
-  
+
 }
 
 function Input (input_setting_choice) {
@@ -45,8 +50,5 @@ function wrapup () {
 }
 
 "
-    }
-
-
   }
 }

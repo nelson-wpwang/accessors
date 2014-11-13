@@ -1,14 +1,11 @@
 {
-  "accessor": {
-    "name":  "Hue Light Bulb",
-    "version": "0.1",
-    "author":  "Brad Campbell",
-    "parent":  "Light",
-    "description": "
+  "name":  "Hue Light Bulb",
+  "version": "0.1",
+  "author":  "Brad Campbell",
+  "description": "
 Hue Accessor
 ============
 
 Control Hues.
 "
-  }
 }
