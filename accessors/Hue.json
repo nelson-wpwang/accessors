@@ -1,0 +1,14 @@
+{
+  "accessor": {
+    "name":  "Hue Light Bulb",
+    "version": "0.1",
+    "author":  "Brad Campbell",
+    "parent":  "Light",
+    "description": "
+Hue Accessor
+============
+
+Control Hues.
+"
+  }
+}

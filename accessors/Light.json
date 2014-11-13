@@ -1,0 +1,13 @@
+{
+  "interface": {
+    "name":        "Light",
+    "parent":      "OnOffDevice",
+    "description": "
+Light Accessor Interface
+========================
+
+Generic base interface for lighting. Doesn't add anything more than On/Off,
+but allows for grouping accessors that control lighting.
+"
+  }
+}

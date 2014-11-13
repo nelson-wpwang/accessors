@@ -1,0 +1,29 @@
+{
+  "interface": {
+    "name":   "Music",
+    "parent": "OnOffDevice",
+
+    "ports": [
+              {
+                "direction": "io",
+                "name":      "Volume",
+                "type":      "numeric"
+              },
+              {
+                "direction": "output",
+                "name":      "Artist"
+              },
+              {
+                "direction": "output",
+                "name":      "Song Title"
+              } 
+    ],
+
+    "description": "
+Music Device Accessor Interface
+===============================
+
+This is a base accessor for music playing devices.
+"
+  }
+}
