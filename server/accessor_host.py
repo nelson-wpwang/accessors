@@ -17,13 +17,16 @@ import tornado.web
 server_path_tuples = []
 
 
-class ServerAccessorList (tornado.web.RequestHandler):
-	def get (self, location):
-		print(location)
+class ServerAccessorList (tornado.web.StaticFileHandler):
+	def set_default_headers(self):
+		self.set_header("Access-Control-Allow-Origin", "*")
 
 
 # Base class for serving accessors.
 class ServeAccessor (tornado.web.RequestHandler):
+	def set_default_headers(self):
+		self.set_header("Access-Control-Allow-Origin", "*")
+
 	def get (self):
 		self.set_header('Content-Type', 'application/json')
 
@@ -32,7 +35,8 @@ class ServeAccessor (tornado.web.RequestHandler):
 			for p in self.accessor['parameters']:
 				p['value'] = self.get_argument(p['name'], p['default'], True)
 
-		accessor_json = json.dumps(self.accessor, indent=4).replace('\\n', '\n')
+		accessor_json = json.dumps(self.accessor, indent=4)
+		#accessor_json = json.dumps(self.accessor, indent=4).replace('\\n', '\n')
 		self.write(accessor_json)
 
 
@@ -42,7 +46,7 @@ def create_accessor (structure, ports, accessor):
 
 	# Create the URL based on the hierarchy
 	name = ''.join(structure)
-	path = '/{}'.format('/'.join(structure))
+	path = '/accessor/{}'.format('/'.join(structure))
 
 	# Create a class for the tornado webserver to use when the accessor
 	# is requested
@@ -121,7 +125,7 @@ print(server_path_tuples)
 
 accessor_server = tornado.web.Application(
 	server_path_tuples +
-	[(r'/accessors/(.*)', tornado.web.StaticFileHandler, {'path': args.location_path})])
+	[(r'/accessors/(.*)', ServerAccessorList, {'path': args.location_path})])
 accessor_server.listen(6565)
 
 
