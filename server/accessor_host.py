@@ -17,6 +17,11 @@ import tornado.web
 server_path_tuples = []
 
 
+class ServerAccessorList (tornado.web.RequestHandler):
+	def get (self, location):
+		print(location)
+
+
 # Base class for serving accessors.
 class ServeAccessor (tornado.web.RequestHandler):
 	def get (self):
@@ -102,6 +107,9 @@ parser = argparse.ArgumentParser(description=DESC)
 parser.add_argument('-p', '--path',
                     required=True,
                     help='The root of the tree that holds the accessors.')
+parser.add_argument('-l', '--location_path',
+                    required=True,
+                    help='The root of the location tree.')
 args = parser.parse_args()
 
 
@@ -111,9 +119,11 @@ print(server_path_tuples)
 
 
 
-t = tornado.web.Application(server_path_tuples)
+accessor_server = tornado.web.Application(
+	server_path_tuples +
+	[(r'/accessors/(.*)', tornado.web.StaticFileHandler, {'path': args.location_path})])
+accessor_server.listen(6565)
 
-t.listen(6565)
 
 # Run the loop!
 # This works for both tornado and pika/rabbitmq
