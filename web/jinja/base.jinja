@@ -1,0 +1,65 @@
+<html>
+<head>
+	{% block header %}
+
+	<link rel="shortcut icon" type="image/x-icon" href="/images/favicon.ico" />
+	<script src="/static/bower_components/jquery/dist/jquery.min.js"></script>
+	<link href="/static/css/bootstrap.css" media="all" rel="stylesheet" type="text/css" />
+	<link href="/static/css/main.css" media="all" rel="stylesheet" type="text/css" />
+
+	{% block includes %}
+	{% endblock %}
+
+	<title>{% block title %}{% endblock %}</title>
+
+	{% endblock %}
+</head>
+
+<body>
+
+	{# Include the top navbar #}
+	<div class="navbar navbar-default navbar-fixed-top navbar-inverse" role="navigation">
+		<div class="container">
+			<div class="navbar-header page-title">
+				<div class="hidden-xs">
+					<a class="navbar-brand" href="#">{% block page_title %}{% endblock %}</a>
+				</div>
+				<div class="visible-xs">
+					<div class="row">
+						<div class="col-xs-2">
+							<a href="http://www.eecs.umich.edu/cse/">
+								<img src="/static/images/michigan.png" height="35px" style="margin:4px 0 0 10px;"/>
+							</a>
+						</div>
+						<div class="col-xs-8">
+							<div class="text-center">
+								<a href="/index.html">Demos Home</a>
+							</div>
+						</div>
+						<div class="col-xs-2">
+							<a href="http://lab11.eecs.umich.edu">
+								<img src="/static/images/lab11_50px.jpg" height="35px" style="margin:4px 10px 0px 0;"/>
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="navbar-right hidden-xs" style="margin:5px 0 0 20px;">
+				<a href="http://www.eecs.umich.edu/cse/">
+					<img src="/static/images/michigan.png" height="35px" />
+				</a>
+			</div>
+			<div class="nav navbar-nav navbar-right hidden-xs" style="margin:5px 0 0 20px;">
+				<a href="http://lab11.eecs.umich.edu">
+					<img src="/static/images/lab11_50px.jpg" height="35px" />
+				</a>
+			</div>
+		</div>
+	</div>
+
+
+	{% block body %}{% endblock %}
+
+
+</body>
+</html>

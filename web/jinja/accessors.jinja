@@ -1,0 +1,123 @@
+{% extends "base.jinja" %}
+
+
+{% block title %}
+Accessors at the University of Michigan
+{% endblock %}
+{% block page_title %}
+Accessors at the University of Michigan
+{% endblock %}
+
+
+{% block body %}
+
+
+<div id="body">
+
+
+<div class="container">
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="jumbotron" style="background:white;">
+        <h1>Accessors</h1>
+        <p>Interact with the world.</p>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="list-group">
+        <div class="list-group-item" style="border:0;">
+          <h4 class="list-group-item-heading">The world is a complicated place.</h4>
+          <p class="list-group-item-text">
+             Accessors provide
+            a standardized interface for controlling, reading, and
+            interacting with the devices around you.
+          </p>
+        </div>
+        <div class="list-group-item" style="border-left:0;border-right:0;">
+          <h4 class="list-group-item-heading">Code comes standard, too.</h4>
+          <p class="list-group-item-text">
+            An interface is great, but code is what makes it work.
+            Accessors include the code needed to use the interface.
+          </p>
+        </div>
+        <div class="list-group-item" style="border-left:0;border-right:0;border-bottom:0;">
+          <h4 class="list-group-item-heading">Accessors are versatile.</h4>
+          <p class="list-group-item-text">
+            Accessors can run any where Javascript does.
+            Plus the configuration is easily parsable JSON.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="row">
+    <div class="col-md-12">
+
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <h3 class="panel-title">To get started, choose a location.</h3>
+        </div>
+        <div class="panel-body">
+          <select class="form-control" id="location-select">
+            <option>Select a location</option>
+            {% for location in locations %}
+            <option value="{{ location.path }}">{{ location.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+
+
+  <div class="row">
+    <div class="col-md-12">
+
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <h3 class="panel-title">What is actually happening here?</h3>
+        </div>
+        <div class="panel-body">
+          Panel content
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+
+
+</div>
+
+
+</div>
+
+
+
+<!-- <div id="body">
+  <div>
+    <div id="graph1" class="box_shadow graph graph_short graph1"></div>
+  </div>
+  <div id="key" class="box_shadow key">
+    <table id="key_table">
+      <thead><tr>
+          <th style="width:10%;">Index</th>
+          <th style="width:20%;">ID</th>
+          <th style="width:30%;">Description</th>
+          <th style="width:30%;">Location</th>
+          <th style="width:10%;">Last Frequency</th>
+      </tr></thead>
+      <tbody id="key_table_tbody"></tbody>
+    </table>
+  </div>
+</div> -->
+
+{% endblock %}
