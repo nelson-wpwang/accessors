@@ -2,10 +2,10 @@
 
 
 {% block title %}
-Accessors at the University of Michigan
+Accessors / University of Michigan
 {% endblock %}
 {% block page_title %}
-Accessors at the University of Michigan
+Accessors / University of Michigan
 {% endblock %}
 
 
@@ -18,6 +18,11 @@ Accessors at the University of Michigan
 <div class="container">
 
   <div class="row">
+
+    <div class="panel panel-info">
+
+
+    <div class="panel-body">
     <div class="col-md-8">
       <div class="jumbotron" style="background:white;">
         <h1>Accessors</h1>
@@ -53,9 +58,12 @@ Accessors at the University of Michigan
     </div>
   </div>
 
+  </div>
+  </div>
+
 
   <div class="row">
-    <div class="col-md-12">
+    <div class="col-md-6">
 
       <div class="panel panel-info">
         <div class="panel-heading">
@@ -71,7 +79,40 @@ Accessors at the University of Michigan
         </div>
       </div>
 
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <h3 class="panel-title">Choose a device (accessor) to use.</h3>
+        </div>
+        <div class="panel-body">
+          <!-- <select class="form-control" id="location-select">
+            <option>Select a location</option>
+            {% for location in locations %}
+            <option value="{{ location.path }}">{{ location.name }}</option>
+            {% endfor %}
+          </select> -->
+        </div>
+      </div>
+
     </div>
+
+    <div class="col-md-6">
+
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <h3 class="panel-title">Use the accessor.</h3>
+        </div>
+        <div class="panel-body">
+          <!-- <select class="form-control" id="location-select">
+            <option>Select a location</option>
+            {% for location in locations %}
+            <option value="{{ location.path }}">{{ location.name }}</option>
+            {% endfor %}
+          </select> -->
+        </div>
+      </div>
+
+    </div>
+
   </div>
 
 
