@@ -37,7 +37,7 @@ function httpRequest(url, method, properties, body, timeout) {
 	}
     var request = new XMLHttpRequest();
     // The third argument specifies a synchronous read.
-    request.open(method, "/proxy?url="+url, false);
+    request.open(method, "/proxy?method="+method+"&url="+url, false);
     // Null argument says there is no body.
     request.send(body);
     // readyState === 4 is the same as readyState === request.DONE.
@@ -64,7 +64,7 @@ function readURL(url) {
 	if (debug) console.log("readURL(" + url + ")");
     var request = new XMLHttpRequest();
     // The third argument specifies a synchronous read.
-    request.open("GET", "/proxy?url="+url, false);
+    request.open("GET", "/proxy?method=get&url="+url, false);
     // Null argument says there is no body.
     request.send(null);
     // readyState === 4 is the same as readyState === request.DONE.

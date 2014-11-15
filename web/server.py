@@ -75,12 +75,17 @@ def accessor():
 
 
 # This is some nonsense to bypass the cross-origin policy nonsense
-@app.route('/proxy')
+@app.route('/proxy', methods=['POST', 'GET'])
 def proxy():
-	print(flask.request.args.get('url'))
+	url = flask.request.args.get('url')
+	method = flask.request.args.get('method')
 
-	r = requests.get(flask.request.args.get('url'))
-	return r.text
+	if method.lower() == 'get':
+		r = requests.get(url)
+		return r.text
+	elif method.lower() == 'post':
+		requests.post(url, flask.request.data)
+		return ''
 
 
 

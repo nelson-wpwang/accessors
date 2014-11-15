@@ -13,36 +13,49 @@
         <div class="form-group">
           <label for="{{ fieldname }}" class="col-lg-2 control-label">{{ port.name }}</label>
 
+
+          {% if port.direction == "output" %}
           <div class="col-lg-10">
-
-            {% if port.direction == "output" %}
             <span id="{{ fieldname }}">unknown</span>
+          </div>
 
-            {% elif port.type == "bool" %}
+          {% elif port.type == "bool" %}
+          <div class="col-lg-10">
             <div class="checkbox"><label>
               <input type="checkbox" name="{{ fieldname }}" id="{{ fieldname }}">
               </label>
             </div>
+          </div>
 
-            {% elif port.type == "numeric" %}
+          {% elif port.type == "numeric" %}
+          <div class="col-lg-7">
             <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"></input>
+          </div>
+          <div class="col-lg-3">
+            <button type="button" class="form-control accessor-arbritrary-input-button" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
+          </div>
 
-            {% elif port.type == "string" %}
+          {% elif port.type == "string" %}
+          <div class="col-lg-10">
             <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"></input>
+          </div>
 
-            {% elif port.type == "select" %}
+          {% elif port.type == "select" %}
+          <div class="col-lg-10">
             <select class="form-control" name="{{ port.name }}" id="{{ fieldname }}">
               {% for opt in port.options %}
               <option value="{{ loop.index }}">{{ opt }}</option>
               {% endfor %}
             </select>
-
-            {% else %}
-            <span id="{{ fieldname }}">unknown</span>
-
-            {% endif %}
-
           </div>
+
+          {% else %}
+          <div class="col-lg-10">
+            <span id="{{ fieldname }}">unknown</span>
+          </div>
+
+          {% endif %}
+
 
         </div>
         {% endfor %}
