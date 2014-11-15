@@ -14,7 +14,6 @@ $("#location-select").change(function () {
 	            	$("#accessor-select").show();
 	            }});
 	}
-	console.log($(this).val());
 });
 
 var k;
@@ -28,6 +27,7 @@ $("#accessor-select").change(function () {
 		accessor_name = accessor.name.replace(' ', '');
 
 		// Load the parameters
+		parameters = [];
 		for (i=0; i<accessor.parameters.length; i++) {
 			parameters[accessor.parameters[i].name] = accessor.parameters[i].value;
 		}

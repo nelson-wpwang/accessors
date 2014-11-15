@@ -4,8 +4,6 @@ import flask
 import requests
 import argparse
 
-DEFAULT_ACCESSOR_SERVER = 'http://pfet-v2.eecs.umich.edu:6565'
-
 DESC = """
 A webserver that acts as an accessor runtime. It includes some extra templating
 and intelligence to style accessors and automatically generate nice web views
@@ -14,7 +12,7 @@ for them.
 
 parser = argparse.ArgumentParser(description=DESC)
 parser.add_argument('-s', '--accessor-server',
-		default=DEFAULT_ACCESSOR_SERVER,
+		required=True,
 		help='Server to load accessors from')
 args = parser.parse_args()
 

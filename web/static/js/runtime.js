@@ -16,7 +16,25 @@ function get (field) {
 }
 
 function set (field, value) {
-	$('#'+accessor_name+field).val(value);
+	var accessor_input = $('#'+accessor_name+field);
+
+	if (accessor_input.attr('type') == 'checkbox') {
+		if (value) {
+			accessor_input.prop('checked', true);
+		} else {
+			accessor_input.prop('checked', false);
+		}
+
+	} else if (accessor_input.attr('type') == 'text') {
+		accessor_input.val(value);
+
+	} else if (accessor_input.prop('tagName') == 'SELECT') {
+		$('#'+accessor_name+field+' option:eq('+value+')').prop('selected', true);
+
+	} else if (accessor_input.prop('tagName') == 'SPAN') {
+		accessor_input.text(value);
+
+	}
 }
 
 
