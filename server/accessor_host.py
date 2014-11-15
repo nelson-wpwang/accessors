@@ -43,9 +43,18 @@ class ServeAccessor (tornado.web.RequestHandler):
 		self.write(accessor_json)
 
 
-def create_accessor (structure, ports, accessor):
+def create_accessor (path, structure, ports, accessor):
 	# Combine all of the ports from the interfaces and the accessor itself
 	accessor['ports'] = ports + accessor['ports']
+
+	# Handle any code include directives
+	code = ''
+	if 'include' in accessor['code']:
+		for include in accessor['code']['include']:
+			code += open(os.path.join(path, include)).read()
+	if 'code' in accessor['code']:
+		code += accessor['code']['code']
+	accessor['code']['code'] = code
 
 	# Create the URL based on the hierarchy
 	name = ''.join(structure)
@@ -92,8 +101,9 @@ def find_accessors (path, structure, ports):
 			if ext == '.json' and filename != folder:
 				# This must be an accessor file
 				with open(item_path) as f:
+					print(item_path)
 					j = json.load(f, strict=False)
-					create_accessor(sub_structure+[filename], sub_ports, j)
+					create_accessor(path, sub_structure+[filename], sub_ports, j)
 
 
 	# Do the directories
