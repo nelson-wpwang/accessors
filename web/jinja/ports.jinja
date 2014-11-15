@@ -1,6 +1,6 @@
-
-
 <div id="ports">
+
+  {{ accessor.description|markdown|safe }}
 
   <div class="well bs-component">
     <form class="form-horizontal">
@@ -15,9 +15,12 @@
 
           <div class="col-lg-10">
 
-            {% if port.type == "bool" %}
+            {% if port.direction == "output" %}
+            <span id="{{ fieldname }}">unknown</span>
+
+            {% elif port.type == "bool" %}
             <div class="checkbox"><label>
-              <input type="checkbox" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}">Do it
+              <input type="checkbox" name="{{ fieldname }}" id="{{ fieldname }}">
               </label>
             </div>
 

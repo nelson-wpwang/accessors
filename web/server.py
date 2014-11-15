@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
-import flask
-import requests
 import argparse
+
+import flask
+import markdown
+import requests
 
 DESC = """
 A webserver that acts as an accessor runtime. It includes some extra templating
@@ -22,6 +24,10 @@ app = flask.Flask(__name__, template_folder='jinja')
 @app.template_filter('nospace')
 def nospace(s):
 	return s.replace(' ', '')
+
+@app.template_filter('markdown')
+def markd(s):
+	return markdown.markdown(s)
 
 
 @app.route('/location/<path:location>')

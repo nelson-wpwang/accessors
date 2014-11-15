@@ -1,22 +1,6 @@
 {
   "name":   "Music",
 
-  "ports": [
-            {
-              "direction": "io",
-              "name":      "Volume",
-              "type":      "numeric"
-            },
-            {
-              "direction": "output",
-              "name":      "Artist"
-            },
-            {
-              "direction": "output",
-              "name":      "Song Title"
-            }
-  ],
-
   "description": "
 Music Device Accessor Interface
 ===============================

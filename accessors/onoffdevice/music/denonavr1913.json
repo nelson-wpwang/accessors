@@ -11,10 +11,20 @@ The Denon AVR-1913 is a digital receiver.
 
   "ports": [
             {
+              "direction": "output",
+              "name":      "Name"
+            },
+            {
               "direction": "io",
               "name":      "Input",
               "type":      "select",
               "options":   ["PC", "Apple TV", "Internet"]
+            },
+            {
+              "direction": "io",
+              "name":      "Audio Mode",
+              "type":      "select",
+              "options":   ["Multi Channel Stereo, Stereo"]
             }
   ],
 
@@ -27,36 +37,6 @@ The Denon AVR-1913 is a digital receiver.
 
   "code": {
             "language": "javascript",
-            "code": "
-
-var receiver_url;
-
-function init () {
-  receiver_url = get_parameter('device_url') + '/goform/formMainZone_MainZoneXml.xml?_=1416011630214';
-
-  /* Get the XML from the receiver via the proxy running on the webserver */
-  receiver_xml = readURL(receiver_url);
-
-  volume = parseFloat(getXMLValue(receiver_xml, 'MasterVolume').substring(7, 12)) + 80;
-  set('Volume', volume);
-}
-
-function Power (power_setting) {
-
-}
-
-function Volume (volume) {
-
-}
-
-function Input (input_setting_choice) {
-
-}
-
-function wrapup () {
-
-}
-
-"
-  }
+            "include": ["denonavr1913.js"]
+          }
 }

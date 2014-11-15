@@ -6,12 +6,19 @@ $("#location-select").change(function () {
 	if ($(this).val() != 0) {
 		$.ajax({url: '/location' + $(this).val(),
 			success: function (data) {
-				accessors = data['accessors'];
+				if ('status' in data && data['status'] == 'error') {
+					alert_error('Unable to load accessors for that location.');
 
-				for (i=0; i<accessors.length; i++) {
-					$("#accessor-select").append('<option value="'+i+'">'+accessors[i].name+'</option>')
+				} else {
+
+					accessors = data['accessors'];
+
+					for (i=0; i<accessors.length; i++) {
+						$("#accessor-select").append('<option value="'+i+'">'+accessors[i].name+'</option>')
+					}
+					$("#accessor-select").show();
+
 				}
-				$("#accessor-select").show();
 			}});
 	}
 }).trigger('change');
