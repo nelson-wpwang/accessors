@@ -29,8 +29,18 @@ The Denon AVR-1913 is a digital receiver.
             "language": "javascript",
             "code": "
 
+var receiver_url;
+
 function init () {
 
+  receiver_url = get_parameter('device_url') + '/goform/formMainZone_MainZoneXml.xml?_=1416011630214';
+
+  // Get the XML status from the receiver
+  receiver_xml = httpRequest(receiver_url, 'GET', null, '', 3000);
+
+  volume = parseFloat(receiver_xml.substring(7, 12));
+
+  set('Volume', volume);
 }
 
 function Power (power_setting) {

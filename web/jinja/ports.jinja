@@ -2,29 +2,50 @@
 
 <div id="ports">
 
-  {% for port in accessor.ports %}
-  <div class="form-group">
-    <label for="input{{ port.name }}" class="col-sm-2 control-label">{{ port.name }}</label>
+  <div class="well bs-component">
+    <form class="form-horizontal">
+      <fieldset>
 
-    {% if port.type == "bool" %}
-    <input type="checkbox" name="{{ port.name }}" id="{{ port.name }}"></input>
+        <legend>Controls</legend>
 
-    {% elif port.type == "numeric" %}
-    <input type="text" name="{{ port.name }}" id="{{ port.name }}"></input>
+        {% for port in accessor.ports %}
+        {% set fieldname = accessor.name|nospace ~ port.name|nospace %}
+        <div class="form-group">
+          <label for="{{ fieldname }}" class="col-lg-2 control-label">{{ port.name }}</label>
 
-    {% elif port.type == "string" %}
-    <input type="text" name="{{ port.name }}" id="{{ port.name }}"></input>
+          <div class="col-lg-10">
 
-    {% elif port.type == "select" %}
-    <select name="{{ port.name }}" id="{{ port.name }}">
-      {% for opt in port.options %}
-      <option value="{{ loop.index }}">{{ opt }}</option>
-      {% endfor %}
-    </select>
+            {% if port.type == "bool" %}
+            <div class="checkbox"><label>
+              <input type="checkbox" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}">Do it
+              </label>
+            </div>
 
-    {% endif %}
+            {% elif port.type == "numeric" %}
+            <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"></input>
 
+            {% elif port.type == "string" %}
+            <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"></input>
+
+            {% elif port.type == "select" %}
+            <select class="form-control" name="{{ port.name }}" id="{{ fieldname }}">
+              {% for opt in port.options %}
+              <option value="{{ loop.index }}">{{ opt }}</option>
+              {% endfor %}
+            </select>
+
+            {% else %}
+            <span id="{{ fieldname }}">unknown</span>
+
+            {% endif %}
+
+          </div>
+
+        </div>
+        {% endfor %}
+
+      </fieldset>
+    </form>
   </div>
-  {% endfor %}
 
 </div>

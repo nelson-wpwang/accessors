@@ -8,6 +8,10 @@ ACCESSOR_SERVER = 'http://memristor-v1.eecs.umich.edu:6565'
 
 app = flask.Flask(__name__, template_folder='jinja')
 
+@app.template_filter('nospace')
+def nospace(s):
+	return s.replace(' ', '')
+
 
 @app.route('/location/<path:location>')
 def location(location):
