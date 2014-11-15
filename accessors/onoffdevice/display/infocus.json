@@ -35,8 +35,8 @@ POWER_STATES = {
   'off' : 0,
   'on' : 1,
   'turning_off' : 2,
-  'turning_on' 3
-}
+  'turning_on' : 3
+};
 
 SOURCES = {
   'VGA' : 1,
@@ -44,31 +44,20 @@ SOURCES = {
   'HDMI 2' : 3,
   'S-Video' : 4,
   'Composite' : 5
-}
+};
 
 function init () {
 
   var url = get_parameter('device_url') + '/PJState.xml';
 
   /* Get the XML status from the receiver */
-  var xml = httpRequest(receiver_url, 'GET', null, '', 3000);
-  for (var line in xml.split('\n')) {
-    if (line.search('<pj') == -1) continue;
+  var xml = httpRequest(url, 'GET', null, '', 3000);
 
-    var regex = /<(.*)>(.*)<\/.*>/;
-    var match = regex.exec(line);
-    var key = match[1];
-    var val = match[2];
-
-    if (key == 'pjPowermd') {
-      if ((val == POWER_STATES['off']) || (val == POWER_STATES['turning_off'])) {
-        set('Power', false);
-      } else {
-        set('Power', true);
-      }
-    } else if (key == 'pjSourcemd') {
-      /* val => source index */
-    }
+  val = getXMLValue(xml, 'pjPowermd');
+  if ((val == POWER_STATES['off']) || (val == POWER_STATES['turning_off'])) {
+    set('Power', false);
+  } else {
+    set('Power', true);
   }
 }
 
@@ -76,9 +65,9 @@ function Power (power_setting) {
   var url;
 
   if (power_setting) {
-    url = get_parameter('device_url') + '/dpjset.cgi?PJ_PowerMode=1');
+    url = get_parameter('device_url') + '/dpjset.cgi?PJ_PowerMode=1';
   } else {
-    url = get_parameter('device_url') + '/dpjset.cgi?PJ_PowerMode=0');
+    url = get_parameter('device_url') + '/dpjset.cgi?PJ_PowerMode=0';
   }
   httpRequest(url, 'GET', null, '', 3000);
 }
