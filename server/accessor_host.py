@@ -33,7 +33,10 @@ class ServeAccessor (tornado.web.RequestHandler):
 		# See if any of the parameters should be configured
 		if 'parameters' in self.accessor:
 			for p in self.accessor['parameters']:
-				p['value'] = self.get_argument(p['name'], p['default'], True)
+				if 'required' in p and p['required']:
+					p['value'] = self.get_argument(p['name'])
+				else:
+					p['value'] = self.get_argument(p['name'], p['default'])
 
 		accessor_json = json.dumps(self.accessor, indent=4)
 		#accessor_json = json.dumps(self.accessor, indent=4).replace('\\n', '\n')
