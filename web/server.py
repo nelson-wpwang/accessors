@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 
+import sys
+import os
 import argparse
 
 import flask
 import markdown
 import requests
+
+# Do a quick check to make sure bower has been run at least once
+if not os.path.exists(os.path.join(os.getcwd(), 'static', 'bower_components')):
+	print("ERR: No static/bower_components directory found.")
+	print("     Is this a new checkout? Did you forget to run `bower install`?")
+	sys.exit(1)
 
 DESC = """
 A webserver that acts as an accessor runtime. It includes some extra templating
