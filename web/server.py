@@ -26,6 +26,8 @@ parser.add_argument('-s', '--accessor-server',
 		help='Server to load accessors from')
 args = parser.parse_args()
 
+if args.accessor_server[0:4] != 'http':
+	args.accessor_server = "http://" + args.accessor_server
 
 app = flask.Flask(__name__, template_folder='jinja')
 
