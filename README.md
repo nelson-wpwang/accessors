@@ -69,7 +69,7 @@ Turn a light bulb on and off.
 
     "ports": [
               {
-                "direction": "io",
+                "direction": "inout",
                 "name":      "Power",
                 "type":      "bool"
               }

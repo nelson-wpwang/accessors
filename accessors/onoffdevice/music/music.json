@@ -3,7 +3,7 @@
 
   "ports": [
             {
-              "direction": "io",
+              "direction": "inout",
               "name":      "Volume",
               "type":      "numeric"
             }
