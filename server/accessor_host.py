@@ -9,14 +9,17 @@ import os
 import tornado.ioloop
 import tornado.web
 
+import watchdog.events
+import watchdog.observers
 
-
-
+ACCESSOR_SERVER_PORT = 6565
 
 
 server_path_tuples = []
+accessors_by_path = {}
 
 
+# Avoid this Cross-Origin nonsense
 class ServerAccessorList (tornado.web.StaticFileHandler):
 	def set_default_headers(self):
 		self.set_header("Access-Control-Allow-Origin", "*")
@@ -66,8 +69,16 @@ def create_accessor (path, structure, ports, accessor):
 		'accessor': accessor
 	})
 
-	# Add the accessor to the list of valid accessors to request
-	server_path_tuples.append((path, serve_class))
+	if path in accessors_by_path:
+		accessors_by_path[path].accessor = accessor
+		print('Updating accessor {}'.format(path))
+
+	else:
+
+		# Add the accessor to the list of valid accessors to request
+		server_path_tuples.append((path, serve_class))
+		accessors_by_path[path] = serve_class
+		print('Adding accessor {}'.format(path))
 
 
 
@@ -88,7 +99,6 @@ def find_accessors (path, structure, ports):
 			sub_structure += [folder]
 			if 'ports' in j:
 				sub_ports += j['ports']
-				print(sub_ports)
 
 
 	# Look for any other .json files. These are accessors
@@ -101,7 +111,6 @@ def find_accessors (path, structure, ports):
 			if ext == '.json' and filename != folder:
 				# This must be an accessor file
 				with open(item_path) as f:
-					print(item_path)
 					j = json.load(f, strict=False)
 					create_accessor(path, sub_structure+[filename], sub_ports, j)
 
@@ -132,18 +141,25 @@ args = parser.parse_args()
 
 find_accessors(args.path, [], [])
 
-print(server_path_tuples)
+# Start a monitor to watch for any changes to accessors
+class AccessorChangeHandler (watchdog.events.FileSystemEventHandler):
+	def on_any_event (self, event):
+		print('GREAT')
+		find_accessors(args.path, [], [])
 
+observer = watchdog.observers.Observer()
+observer.schedule(AccessorChangeHandler(), path=args.path, recursive=True)
+observer.start()
 
-
+# Start the webserver for accessors
 accessor_server = tornado.web.Application(
 	server_path_tuples +
 	[(r'/accessors/(.*)', ServerAccessorList, {'path': args.location_path})])
-accessor_server.listen(6565)
+accessor_server.listen(ACCESSOR_SERVER_PORT)
 
+print('Starting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
 
 # Run the loop!
-# This works for both tornado and pika/rabbitmq
 tornado.ioloop.IOLoop.instance().start()
 
 
