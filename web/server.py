@@ -44,6 +44,8 @@ def location(location):
 		if r2.status_code == 200:
 			accessor = r2.json()
 			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
+			# accessor['code']['code'] = accessor['code']['code'].replace('\n', '\\n')
+			accessor['code']['code'] = accessor['code']['code'].replace('\n', ' ')
 			accessors['accessors'].append(accessor)
 
 
@@ -58,6 +60,16 @@ def accessor():
 	                  'path': '/usa/michigan/annarbor/universityofmichigan/bbb/4908'})
 
 	return flask.render_template('accessors.jinja', locations=locations)
+
+
+# This is some nonsense to bypass the cross-origin policy nonsense
+@app.route('/proxy')
+def proxy():
+	print(flask.request.args.get('url'))
+
+	r = requests.get(flask.request.args.get('url'))
+	return r.text
+
 
 
 app.run(host='0.0.0.0', debug=True)

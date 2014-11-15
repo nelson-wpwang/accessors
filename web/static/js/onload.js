@@ -17,9 +17,27 @@ $("#location-select").change(function () {
 	console.log($(this).val());
 });
 
+var k;
 
 $("#accessor-select").change(function () {
 	if ($(this).val() != "default") {
-		$("#accessor-interface").html(accessors[$(this).val()].html);
+		accessor = accessors[$(this).val()];
+		$("#accessor-interface").html(accessor.html);
+
+		// Set the name
+		accessor_name = accessor.name.replace(' ', '');
+
+		// Load the parameters
+		for (i=0; i<accessor.parameters.length; i++) {
+			parameters[accessor.parameters[i].name] = accessor.parameters[i].value;
+		}
+
+		// Oh yeah, call eval on code we downloaded.
+		// As a wise undergrad once said: "Safety Off"
+		var code = accessor.code.code;
+		$.globalEval(code);
+
+		// Call init now.
+		init();
 	}
 });

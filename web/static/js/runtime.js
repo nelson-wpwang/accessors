@@ -1,4 +1,29 @@
 
+
+/* get() and set()
+ */
+
+// Populated when accessor is loaded
+var accessor_name;
+var parameters = {};
+
+function get_parameter (parameter_name) {
+	return parameters[parameter_name];
+}
+
+function get (field) {
+	return $('#'+accessor_name+field).val();
+}
+
+function set (field, value) {
+	$('#'+accessor_name+field).val(value);
+}
+
+
+
+
+
+
 /*
 Functions that accessors can use. Based on a very basic version of
 javascript.
