@@ -1,0 +1,33 @@
+{
+  "name":    "Raspberry Pi Door",
+  "version": "0.1",
+  "author":  "Pat Pannuto",
+  "description": "
+Accessor for a Door Controller by a Raspberry Pi
+================================================
+
+We should post the TinyOS app we use for door control to github, so that this
+description can point to it. File that on the todo list.
+",
+
+  "parameters": [
+                  {
+                    "name": "host",
+                    "default": "::1"
+                  },
+                  {
+                    "name": "port",
+                    "default": "4999"
+                  },
+                  {
+                    "name": "password",
+                    "default": "password"
+                  }
+  ],
+
+  "code": {
+            "language": "javascript",
+            "include": ["rpidoor.js"]
+          }
+}
+

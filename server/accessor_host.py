@@ -48,7 +48,10 @@ class ServeAccessor (tornado.web.RequestHandler):
 
 def create_accessor (path, structure, ports, accessor):
 	# Combine all of the ports from the interfaces and the accessor itself
-	accessor['ports'] = ports + accessor['ports']
+	if 'ports' in accessor:
+		accessor['ports'] = ports + accessor['ports']
+	else:
+		accessor['ports'] = ports
 
 	# Handle any code include directives
 	code = ''

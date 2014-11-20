@@ -50,12 +50,26 @@ $("#accessor-select").change(function () {
 });
 
 
-$('#accessor-interface').on('click', '.accessor-arbritrary-input-button', function () {
+$('#accessor-interface').on('click', '.accessor-arbitrary-input-button', function () {
 	var accessor_port = $(this).attr('data-port');
 	var accessor_func = $(this).attr('data-function');
 	if (accessor_func in window) {
 		// If this function was defined in the accessor then use it.
 		window[accessor_func]($('#'+accessor_port).val());
+	} else {
+		// The element specific function doesn't exist, just use fire()
+		fire();
+	}
+});
+
+$('#accessor-interface').on('click', '.accessor-checkbox', function () {
+	var accessor_port = $(this).attr('data-port');
+	var accessor_func = $(this).attr('data-function');
+	if (accessor_func in window) {
+		// If this function was defined in the accessor then use it.
+		Q.spawn(function* () {
+			yield* window[accessor_func]($('#'+accessor_port).is(':checked'));
+		});
 	} else {
 		// The element specific function doesn't exist, just use fire()
 		fire();

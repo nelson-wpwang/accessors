@@ -88,3 +88,59 @@ function getXMLValue (xml, element) {
 	var second = xml.indexOf(element, first+1);
 	return xml.substring(first+element.length+1, second-2);
 }
+
+
+/* A basic "socket" class. Provides a socket abstraction so that accessors
+   can run in any environment, including those where native sockets aren't
+   available (e.g. browsers).
+   */
+
+socket = Object();
+
+socket.socket = function* (family, sock_type) {
+	var s = new Object();
+
+	// Make a connection back to the socket tunneling server (ws_server)
+	// TODO: This should probably be a configurable parameter
+	var ws = new WebSocket("ws://patbook.eecs.umich.edu:8765");
+	var ws_defer = Q.defer();
+
+	ws.onopen = function (evt) {
+		console.log("ws connected");
+		ws_defer.resolve(ws);
+	}
+	ws.onclose = function (evt) {
+		console.log("ws onclose");
+		console.log("TODO: Do something about this");
+	}
+	ws.onmessage = function (evt) {
+		console.log("ws message");
+	}
+	ws.onerror = function (evt) {
+		console.log("ws onerror");
+		console.log("TODO: Do something about this");
+	}
+
+	console.log('before yield');
+	s.ws = yield ws_defer.promise;
+	console.log('s.ws:');
+	console.log(s.ws);
+
+	var msg = {
+		type: 'handshake',
+		version: 0.1,
+		family: family,
+		sock_type: sock_type
+	};
+	s.ws.send(JSON.stringify(msg));
+
+	s.sendto = function (bytes, dest) {
+		var msg = {
+			type: 'udp',
+			bytes: bytes,
+			dest: dest
+		};
+		s.ws.send(JSON.stringify(msg));
+	};
+	return s;
+}
