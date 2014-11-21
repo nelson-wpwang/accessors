@@ -39,7 +39,7 @@ function Volume (volume) {
 	var set_volume = parseFloat(volume) - 80;
 	var cmd_url = get_parameter('device_url') + '/MainZone/index.put.asp';
 	httpRequest(cmd_url, 'POST', null, 'cmd0=PutMasterVolumeSet/'+set_volume, 3000);
-	print(volume);
+	log.debug(volume);
 }
 
 function Input (input_setting_choice) {

@@ -5,8 +5,8 @@ function* Lock (lock) {
 	if (!lock) return;
 
 	var s = yield* socket.socket('AF_INET6', 'SOCK_DGRAM');
-	console.log("socket value:");
-	console.log(s);
+	log.debug("socket value:");
+	log.debug(s);
 	var host = get_parameter('host');
 	var port = get_parameter('port');
 	var pass = get_parameter('password');
