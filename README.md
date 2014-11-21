@@ -48,6 +48,13 @@ accessor may also specify functions for each of the input and i/o interface
 elements. These functions are responsible for performing an action when its
 corresponding interface element has changed.
 
+Accessor Runtime
+----------------
+
+Accessors are run inside of a common accessor runtime, as described in
+`runtimes/README.md`. The runtime is responsible for presenting the accessor
+and calling accessor functions. The runtime also provides abstractions about
+the execution environment, such as logging and socket access.
 
 Accessor Example
 ----------------
