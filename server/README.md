@@ -36,3 +36,29 @@ ECMAscript 6 features. To request that the javascript code in the accessor
 be transpiled to version 5, include `_ecmascript_version=5` in the URL:
 
         http://accessors.com/accessor/onoffdevice/MyLight?_ecmascript_version=5
+
+
+
+
+Locations
+---------
+
+Essential to the accessor architecture is a mechanism to retrieve valid
+accessors given a certain location. To accomplish this, the accessor host
+server can provide accessor lists based on location.
+
+Location files look like:
+
+
+    {
+    	"accessors": [
+    		"/webquery/StockTick"
+    	]
+    }
+
+Again, their URLs are based on the hierarchy of their location. For example:
+
+    http://accessors.com/accessors/usa/michigan/annarbor/universityofmichigan/bbb/4908/accessors.json
+
+Once an application has the accessor list it can iterate through the list of
+accessors and retrieve the ones that it needs using the above URLs.
