@@ -4,5 +4,5 @@ function fire() {
   var record = readURL(url);
   var json = JSON.parse(record);
   var tick = parseFloat(json.query.results.quote.AskRealtime);
-  set('Price', tick);
+  set('Price', '$' + tick);
 }
