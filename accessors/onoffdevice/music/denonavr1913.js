@@ -22,7 +22,7 @@ function init () {
 
   input = receiver_get_key(receiver_xml, 'InputFuncSelect');
   if (input == 'THERMAL') {
-  	set('Input', 0)
+  	set('Input', 0);
   }
 
   audio = receiver_get_key(receiver_xml, 'selectSurround');

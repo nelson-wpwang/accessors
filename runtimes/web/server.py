@@ -43,6 +43,13 @@ def nospace(s):
 def markd(s):
 	return markdown.markdown(s)
 
+def nsp(s):
+	return s.replace(' ', '')
+
+def clean(s):
+	# TODO: make this better
+	return s.replace(' ', '').replace('-', '')
+
 # This function adds a bunch of javascript to the code section of the accessor
 # to make the browser runtime work.
 def get_accessors (url):
@@ -51,7 +58,7 @@ def get_accessors (url):
 
 		function get (field) {
 			return $$('#${accessorname}'+field).val();
-		}
+		};
 
 		function set (field, value) {
 			var accessor_input = $$('#${accessorname}'+field);
@@ -73,12 +80,12 @@ def get_accessors (url):
 				accessor_input.text(value);
 
 			}
-		}
+		};
 
 		function get_parameter (parameter_name) {
 			var parameters = {${parameterlist}};
 			return parameters[parameter_name];
-		}
+		};
 
 		${accessorjs}
 
@@ -104,13 +111,14 @@ def get_accessors (url):
 		r2 = requests.get('{}/accessor{}'.format(args.accessor_server, accessor_url))
 		if r2.status_code == 200:
 			accessor = r2.json()
+			accessor['clean_name'] = clean(accessor['name'])
 			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
 
 			# Do the code
 			function_list = ''
 			for port in accessor['ports']:
 				function_list += \
-"'{portname}': function () {{ if (typeof {portname} == 'function') {{ {portname}.apply(this, arguments); }} else {{ fire(); }} }},\n".format(portname=port['name'])
+"'{portname}': function () {{ if (typeof {portname} == 'function') {{ {portname}.apply(this, arguments); }} else {{ fire(); }} }},\n".format(portname=nsp(port['name']))
 
 			parameter_list = ''
 			if 'parameters' in accessor:
@@ -118,11 +126,13 @@ def get_accessors (url):
 					parameter_list += "'{parametername}':'{parametervalue}',"\
 						.format(parametername=parameter['name'], parametervalue=parameter['value'])
 
-			accessor['code'] = rjsmin.jsmin(
-				js_module_wrapping.substitute(accessorname=accessor['name'].replace(' ', ''),
-			                              accessorjs=accessor['code'],
-			                              functionlist=function_list,
-			                              parameterlist=parameter_list))
+			js = js_module_wrapping.substitute(accessorname=accessor['clean_name'],
+			                                   accessorjs=accessor['code'],
+			                                   functionlist=function_list,
+			                                   parameterlist=parameter_list)
+			print(js)
+			accessor['code'] = rjsmin.jsmin(js)
+
 			accessors['accessors'].append(accessor)
 
 	return flask.jsonify(**accessors)

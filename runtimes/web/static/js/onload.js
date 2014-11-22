@@ -34,7 +34,7 @@ $("#accessor-select").change(function () {
 		$.globalEval(code);
 
 		// Call init now.
-		window[accessor.name.replace(' ', '')].init()
+		window[accessor.clean_name].init()
 	}
 });
 
