@@ -85,6 +85,55 @@ class ServerAccessorList (tornado.web.StaticFileHandler):
 	def set_default_headers(self):
 		self.set_header("Access-Control-Allow-Origin", "*")
 
+	def validate_absolute_path(self, root, absolute_path):
+		if absolute_path[-3:] == 'xml':
+			super().validate_absolute_path(root, absolute_path[:-3]+'json')
+			return absolute_path
+		return super().validate_absolute_path(root, absolute_path)
+
+	def get_modified_time(self):
+		if self.absolute_path[-3:] == 'xml':
+			t = self.absolute_path
+			self.absolute_path = self.absolute_path[:-3]+'json'
+			ret = super().get_modified_time()
+			self.absolute_path = t
+			return ret
+		return super().get_modified_time()
+
+	def get_content_size(self):
+		if self.absolute_path[-3:] == 'xml':
+			return len(self.json_to_xml(self.absolute_path))
+		return super().get_content_size()
+
+	# http://tornado.readthedocs.org/en/latest/_modules/tornado/web.html#StaticFileHandler.get_content
+	@classmethod
+	def get_content(cls, abspath, start=None, end=None):
+		name, ext = os.path.splitext(abspath)
+		if ext == '.json':
+			return super().get_content(abspath, start, end)
+
+		if (start is not None) or (end is not None):
+			raise NotImplementedError("Seek for Accessor List XML")
+
+		return cls.json_to_xml(abspath)
+
+	@classmethod
+	def json_to_xml(cls, jsonpath):
+		with open(jsonpath[:-3] + 'json') as f:
+			j = json.loads(f.read())
+
+			# some basic checks on the format
+			assert 'accessors' in j
+			assert len(j.keys()) == 1
+
+			root = ET.Element('accessors')
+			for accessor in j['accessors']:
+				child = ET.Element("accessor")
+				child.text = accessor
+				root.append(child)
+
+			return ET.tostring(root)
+
 
 # Base class for serving accessors.
 class ServeAccessor (tornado.web.RequestHandler):
@@ -334,7 +383,7 @@ accessor_server = tornado.web.Application(
 	)
 accessor_server.listen(ACCESSOR_SERVER_PORT)
 
-print('Starting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
+print('\nStarting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
 
 # Run the loop!
 tornado.ioloop.IOLoop.instance().start()
