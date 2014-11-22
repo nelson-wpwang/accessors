@@ -12,9 +12,10 @@ $("#location-select").change(function () {
 				} else {
 
 					accessors = data['accessors'];
+					$("#accessor-select option[data-temp='true']").remove();
 
 					for (i=0; i<accessors.length; i++) {
-						$("#accessor-select").append('<option value="'+i+'">'+accessors[i].name+'</option>')
+						$("#accessor-select").append('<option value="'+i+'" data-temp="true">'+accessors[i].name+'</option>')
 					}
 					$("#accessor-select").show();
 
