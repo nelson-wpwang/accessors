@@ -120,7 +120,7 @@ def get_accessors (url):
 
 			accessor['code'] = rjsmin.jsmin(
 				js_module_wrapping.substitute(accessorname=accessor['name'].replace(' ', ''),
-			                              accessorjs=accessor['code']['javascript'],
+			                              accessorjs=accessor['code'],
 			                              functionlist=function_list,
 			                              parameterlist=parameter_list))
 			accessors['accessors'].append(accessor)

@@ -108,11 +108,14 @@ class ServeAccessor (tornado.web.RequestHandler):
 		language = self.get_argument('_language', 'es6')
 		if language == 'traceur_es5':
 			print('traceur_es5')
-			accessor['code']['javascript'] = accessor['code_alternates']['traceur_es5']
-		elif language == 'es6':
-			pass
+			accessor['code'] = accessor['code_alternates']['traceur_es5']
+		elif language == 'es6' or language == 'javascript':
+			accessor['code'] = accessor['code_alternates']['javascript']
 		else:
-			raise NotImplementedError("Unknown language: {}".format(language))
+			if language in accessor['code_alternates']:
+				accessor['code'] = accessor['code_alternates'][language]
+			else:
+				raise NotImplementedError("Unknown language: {}".format(language))
 
 		if 'code_alternates' in accessor:
 			del accessor['code_alternates']
@@ -164,6 +167,7 @@ class ServeAccessor (tornado.web.RequestHandler):
 def create_accessor (structure, accessor, path):
 	# Handle any code include directives
 	if 'code' in accessor:
+		accessor['code_alternates'] = {}
 		for language,v in accessor['code'].items():
 			code = ''
 			if 'include' in v:
@@ -171,7 +175,7 @@ def create_accessor (structure, accessor, path):
 					code += open(os.path.join(path, include)).read()
 			if 'code' in v:
 				code += v['code']
-			accessor['code'][language] = code
+			accessor['code_alternates'][language] = code
 
 			if language == 'javascript':
 				assert not os.path.exists('_temp1.js')
@@ -180,13 +184,12 @@ def create_accessor (structure, accessor, path):
 					open('_temp1.js', 'w').write(code)
 					traceur('--out', '_temp2.js', '--script', '_temp1.js')
 					try:
-						if 'code_alternates' not in accessor:
-							accessor['code_alternates'] = {}
 						accessor['code_alternates']['traceur_es5'] = open('_temp2.js').read()
 					finally:
 						rm("_temp2.js")
 				finally:
 					rm('_temp1.js')
+		del accessor['code']
 
 	# Create the URL based on the hierarchy
 	name = ''.join(structure)
