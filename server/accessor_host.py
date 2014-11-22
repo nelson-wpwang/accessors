@@ -153,7 +153,7 @@ class ServeAccessor (tornado.web.RequestHandler):
 		ET.SubElement(doc, '![CDATA[', attrib={'type': 'text/html'})\
 			.text = accessor['description']
 		ET.SubElement(top, '![CDATA[', attrib={'type': 'text/javascript'})\
-			.text = '\n{}\n'.format(accessor['code']['javascript'])
+			.text = '\n{}\n'.format(accessor['code'])
 
 		s = '\n'.join(ET.tostringlist(top, encoding='unicode'))
 		s = '''<?xml version="1.0" encoding="utf-8"?>
