@@ -130,7 +130,6 @@ def get_accessors (url):
 			                                   accessorjs=accessor['code'],
 			                                   functionlist=function_list,
 			                                   parameterlist=parameter_list)
-			print(js)
 			accessor['code'] = rjsmin.jsmin(js)
 
 			accessors['accessors'].append(accessor)
@@ -164,7 +163,7 @@ def accessor():
 
 
 # This is some nonsense to bypass the cross-origin policy nonsense
-@app.route('/proxy', methods=['POST', 'GET'])
+@app.route('/proxy', methods=['POST', 'GET', 'PUT'])
 def proxy():
 	url = base64.b64decode(flask.request.args.get('url')).decode('ascii')
 	method = flask.request.args.get('method')
@@ -173,7 +172,14 @@ def proxy():
 		r = requests.get(url)
 		return r.text
 	elif method.lower() == 'post':
-		requests.post(url, flask.request.data)
+		print('POST: {}, {}'.format(url, flask.request.data))
+		r = requests.post(url, flask.request.data)
+		print(r.text)
+		return ''
+	elif method.lower() == 'put':
+		print('PUT: {}, {}'.format(url, flask.request.data))
+		r = requests.put(url, flask.request.data)
+		print(r.text)
 		return ''
 
 

@@ -1,0 +1,42 @@
+{
+	"name": "Hue Single",
+	"version": "0.1",
+	"author": "Brad Campbell",
+	"description": "
+Hue Light Bulb
+==============
+
+This controls a single Hue bulb.
+",
+	"parameters": [
+		{
+			"name": "username",
+			"required": true
+		},
+		{
+			"name": "bridge_url",
+			"required": true
+		}
+	],
+	"ports": [
+		{
+			"direction": "input",
+			"type": "string",
+			"name": "Bulb Name"
+		},
+		{
+			"direction": "inout",
+			"type": "numeric",
+			"name": "Color"
+		},
+		{
+			"direction": "output",
+			"name": "Bulbs"
+		}
+	],
+	"code": {
+		"javascript": {
+			"include": ["huesingle.js"]
+		}
+	}
+}

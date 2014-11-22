@@ -31,8 +31,10 @@ function init () {
   }
 }
 
-function Power (power_setting) {
-
+function Power (on) {
+  var cmd_url = get_parameter('device_url') + '/MainZone/index.put.asp';
+  httpRequest(cmd_url, 'POST', null, 'cmd0=PutZone_OnOff/'+(on?'ON':'OFF'), 3000);
+  log.debug(on);
 }
 
 function Volume (volume) {
