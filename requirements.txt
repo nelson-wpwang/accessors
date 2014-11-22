@@ -3,4 +3,4 @@ flask
 requests
 watchdog
 markdown
-slimit
+rjsmin
