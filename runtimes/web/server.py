@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+import base64
 import sys
 import os
 import argparse
+import urllib.parse
 
 import flask
 import markdown
@@ -40,12 +42,8 @@ def markd(s):
 	return markdown.markdown(s)
 
 
-@app.route('/location/<path:location>')
-def location(location):
-	print(location)
-
-	# Get the list of valid accessors for the given location
-	r = requests.get('{}/accessors/{}/accessors.json'.format(args.accessor_server, location))
+def get_accessors (url):
+	r = requests.get(url)
 	if r.status_code != 200:
 		return flask.jsonify(**{'status': 'error'})
 
@@ -59,11 +57,24 @@ def location(location):
 			accessor = r2.json()
 			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
 			# accessor['code']['code'] = accessor['code']['code'].replace('\n', '\\n')
-			accessor['code']['code'] = accessor['code']['code'].replace('\n', ' ')
+			accessor['code']['javascript'] = accessor['code']['javascript'].replace('\n', ' ')
 			accessors['accessors'].append(accessor)
 
 
 	return flask.jsonify(**accessors)
+
+
+@app.route('/location/')
+def location_anywhere():
+	return get_accessors('{}/accessors/accessors.json'.format(args.accessor_server))
+
+
+@app.route('/location/<path:location>')
+def location(location):
+	print(location)
+
+	# Get the list of valid accessors for the given location
+	return get_accessors('{}/accessors/{}/accessors.json'.format(args.accessor_server, location))
 
 
 @app.route('/accessor')
@@ -72,6 +83,8 @@ def accessor():
 	locations = []
 	locations.append({'name': 'University of Michigan - 4908 BBB',
 	                  'path': '/usa/michigan/annarbor/universityofmichigan/bbb/4908'})
+	locations.append({'name': 'Anywhere',
+	                  'path': '/'})
 
 	return flask.render_template('accessors.jinja', locations=locations)
 
@@ -79,7 +92,7 @@ def accessor():
 # This is some nonsense to bypass the cross-origin policy nonsense
 @app.route('/proxy', methods=['POST', 'GET'])
 def proxy():
-	url = flask.request.args.get('url')
+	url = base64.b64decode(flask.request.args.get('url')).decode('ascii')
 	method = flask.request.args.get('method')
 
 	if method.lower() == 'get':

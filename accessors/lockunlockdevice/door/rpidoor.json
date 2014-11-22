@@ -26,8 +26,9 @@ description can point to it. File that on the todo list.
   ],
 
   "code": {
-            "language": "javascript",
-            "include": ["rpidoor.js"]
+            "javascript": {
+                            "include": ["rpidoor.js"]
+                          }
           }
 }
 

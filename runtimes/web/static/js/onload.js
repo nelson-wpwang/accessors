@@ -34,18 +34,22 @@ $("#accessor-select").change(function () {
 		accessor_name = accessor.name.replace(' ', '');
 
 		// Load the parameters
-		parameters = [];
-		for (i=0; i<accessor.parameters.length; i++) {
-			parameters[accessor.parameters[i].name] = accessor.parameters[i].value;
+		if (accessor.parameters) {
+			parameters = [];
+			for (i=0; i<accessor.parameters.length; i++) {
+				parameters[accessor.parameters[i].name] = accessor.parameters[i].value;
+			}
 		}
 
 		// Oh yeah, call eval on code we downloaded.
 		// As a wise undergrad once said: "Safety Off"
-		var code = accessor.code.code;
+		var code = accessor.code.javascript;
 		$.globalEval(code);
 
 		// Call init now.
-		init();
+		if (typeof init === "function") {
+			init();
+		}
 	}
 });
 

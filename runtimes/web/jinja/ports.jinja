@@ -36,8 +36,11 @@
           </div>
 
           {% elif port.type == "string" %}
-          <div class="col-lg-10">
+          <div class="col-lg-7">
             <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"></input>
+          </div>
+          <div class="col-lg-3">
+            <button type="button" class="form-control accessor-arbitrary-input-button" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
           </div>
 
           {% elif port.type == "select" %}
