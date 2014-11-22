@@ -157,7 +157,7 @@ class ServeAccessor (tornado.web.RequestHandler):
 
 		s = '\n'.join(ET.tostringlist(top, encoding='unicode'))
 		s = '''<?xml version="1.0" encoding="utf-8"?>
-<?xml-stylesheet type="text/xsl" href="renderHTML.xsl"?>
+<?xml-stylesheet type="text/xsl" href="/static/v0/renderHTML.xsl"?>
 <!DOCTYPE class PUBLIC "-//TerraSwarm//DTD Accessor 1//EN"
     "http://www.terraswarm.org/accessors/Accessor_1.dtd">
 ''' + s
@@ -329,7 +329,9 @@ observer.start()
 # Start the webserver for accessors
 accessor_server = tornado.web.Application(
 	server_path_tuples +
-	[(r'/accessors/(.*)', ServerAccessorList, {'path': args.location_path})])
+	[(r'/accessors/(.*)', ServerAccessorList, {'path': args.location_path})],
+	static_path="static/"
+	)
 accessor_server.listen(ACCESSOR_SERVER_PORT)
 
 print('Starting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
