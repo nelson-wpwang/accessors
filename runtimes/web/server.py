@@ -156,6 +156,8 @@ def accessor():
 	locations = []
 	locations.append({'name': 'University of Michigan - 4908 BBB',
 	                  'path': '/usa/michigan/annarbor/universityofmichigan/bbb/4908'})
+	locations.append({'name': 'University of Michigan - 2909 BBB',
+	                  'path': '/usa/michigan/annarbor/universityofmichigan/bbb/2909'})
 	locations.append({'name': 'Anywhere',
 	                  'path': '/'})
 
