@@ -5,6 +5,7 @@ import argparse
 import copy
 import xml.etree.ElementTree as ET
 import json
+import sys
 import os
 
 import tornado.ioloop
@@ -12,6 +13,25 @@ import tornado.web
 
 import watchdog.events
 import watchdog.observers
+
+import sh
+from sh import rm
+try:
+	from sh import npm
+except ImportError:
+	print("You need to install npm: https://www.npmjs.org/")
+	print("(this isn't a python package)")
+	sys.exit(1)
+
+traceur = os.path.join(
+	os.getcwd(),
+	'node_modules',
+	'traceur',
+	'traceur')
+if not os.path.exists(traceur):
+	print("Running npm...")
+	npm('install', 'traceur')
+traceur = sh.Command(traceur)
 
 ACCESSOR_SERVER_PORT = 6565
 
@@ -72,32 +92,43 @@ class ServeAccessor (tornado.web.RequestHandler):
 		self.set_header("Access-Control-Allow-Origin", "*")
 
 	def get (self):
+		print("get accessor {}".format(self))
+		# Create a local copy of the accessor to serve so we can configure it
+		accessor = copy.deepcopy(self.accessor)
 
 		# See if any of the parameters should be configured
-		if 'parameters' in self.accessor:
-			for p in self.accessor['parameters']:
+		if 'parameters' in accessor:
+			for p in accessor['parameters']:
 				if 'required' in p and p['required']:
 					p['value'] = self.get_argument(p['name'])
 				else:
 					p['value'] = self.get_argument(p['name'], p['default'])
 
 		# Look for any other parameters that change how we will respond
-		want_js_version = self.get_argument('_ecmascript_version', '6')
-		if want_js_version == '5':
-			print('5')
+		language = self.get_argument('_language', 'es6')
+		if language == 'traceur_es5':
+			print('traceur_es5')
+			accessor['code']['javascript'] = accessor['code_alternates']['traceur_es5']
+		elif language == 'es6':
+			pass
+		else:
+			raise NotImplementedError("Unknown language: {}".format(language))
+
+		if 'code_alternates' in accessor:
+			del accessor['code_alternates']
 
 		format = self.get_argument('_format', 'json')
 		if format == 'xml':
 			print('xml')
 			self.set_header('Content-Type', 'application/xml')
-			accessor_xml = self.convert_accessor_to_xml(self.accessor)
+			accessor_xml = self.convert_accessor_to_xml(accessor)
 			self.write(accessor_xml)
 			return
 
 
 		self.set_header('Content-Type', 'application/json')
-		accessor_json = json.dumps(self.accessor, indent=4)
-		#accessor_json = json.dumps(self.accessor, indent=4).replace('\\n', '\n')
+		accessor_json = json.dumps(accessor, indent=4)
+		#accessor_json = json.dumps(accessor, indent=4).replace('\\n', '\n')
 		self.write(accessor_json)
 
 	def convert_accessor_to_xml (self, accessor):
@@ -141,6 +172,21 @@ def create_accessor (structure, accessor, path):
 			if 'code' in v:
 				code += v['code']
 			accessor['code'][language] = code
+
+			if language == 'javascript':
+				assert not os.path.exists('_temp1.js')
+				assert not os.path.exists('_temp2.js')
+				try:
+					open('_temp1.js', 'w').write(code)
+					traceur('--out', '_temp2.js', '--script', '_temp1.js')
+					try:
+						if 'code_alternates' not in accessor:
+							accessor['code_alternates'] = {}
+						accessor['code_alternates']['traceur_es5'] = open('_temp2.js').read()
+					finally:
+						rm("_temp2.js")
+				finally:
+					rm('_temp1.js')
 
 	# Create the URL based on the hierarchy
 	name = ''.join(structure)
