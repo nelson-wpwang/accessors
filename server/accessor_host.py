@@ -121,11 +121,12 @@ class ServeAccessor (tornado.web.RequestHandler):
 		ET.SubElement(top, '![CDATA[', attrib={'type': 'text/javascript'})\
 			.text = '\n{}\n'.format(accessor['code']['javascript'])
 
-		s = ET.tostringlist(top, encoding='unicode')
+		s = '\n'.join(ET.tostringlist(top, encoding='unicode'))
 		s = '''<?xml version="1.0" encoding="utf-8"?>
 <?xml-stylesheet type="text/xsl" href="renderHTML.xsl"?>
 <!DOCTYPE class PUBLIC "-//TerraSwarm//DTD Accessor 1//EN"
-    "http://www.terraswarm.org/accessors/Accessor_1.dtd">''' + s
+    "http://www.terraswarm.org/accessors/Accessor_1.dtd">
+''' + s
 		return s
 
 
