@@ -38,6 +38,19 @@ function Brightness (brightness) {
 	on_each({'bri': parseInt(brightness)});
 }
 
+function SetAll () {
+	var power = get('Power');
+	var brightness = get('Brightness');
+	var color = get('Color');
+	var output = {};
+
+	if (color.length) output.hue = parseInt(color);
+	if (brightness.length) output.bri = parseInt(brightness);
+	output.on = power;
+
+	on_each(output);
+}
+
 function fire () {
 
 }

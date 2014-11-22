@@ -61,3 +61,8 @@ $('#accessor-interface').on('click', '.accessor-checkbox', function () {
 	var accessor_port = $(this).attr('data-port');
 	call_accessor($(this), $('#'+accessor_port).is(':checked'));
 });
+
+$('#accessor-interface').on('click', '.accessor-button', function () {
+	var accessor_port = $(this).attr('data-port');
+	call_accessor($(this), null);
+});

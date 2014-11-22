@@ -52,6 +52,11 @@
             </select>
           </div>
 
+          {% elif port.type == "button" %}
+          <div class="col-lg-3">
+            <button type="button" class="form-control accessor-button" data-accessorname="{{ accessor.clean_name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name|nospace }}">Execute</button>
+          </div>
+
           {% else %}
           <div class="col-lg-10">
             <span id="{{ fieldname }}">unknown</span>

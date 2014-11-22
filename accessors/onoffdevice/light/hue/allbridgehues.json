@@ -32,6 +32,11 @@ This controls all of the hues behind a bridge.
 		{
 			"direction": "output",
 			"name": "Bridge"
+		},
+		{
+			"direction": "input",
+			"name": "Set All",
+			"type": "button"
 		}
 	],
 	"code": {
