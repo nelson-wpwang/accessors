@@ -33,41 +33,8 @@ log.critical = function _log_critical (message) {
 
 
 /*** ACCESSOR INTERFACE AND PROPERTIES ***/
-
-// Populated when accessor is loaded
-var accessor_name;
-var parameters = {};
-
-function get_parameter (parameter_name) {
-	return parameters[parameter_name];
-}
-
-function get (field) {
-	return $('#'+accessor_name+field).val();
-}
-
-function set (field, value) {
-	var accessor_input = $('#'+accessor_name+field);
-
-	if (accessor_input.attr('type') == 'checkbox') {
-		if (value) {
-			accessor_input.prop('checked', true);
-		} else {
-			accessor_input.prop('checked', false);
-		}
-
-	} else if (accessor_input.attr('type') == 'text') {
-		accessor_input.val(value);
-
-	} else if (accessor_input.prop('tagName') == 'SELECT') {
-		$('#'+accessor_name+field+' option:eq('+value+')').prop('selected', true);
-
-	} else if (accessor_input.prop('tagName') == 'SPAN') {
-		accessor_input.text(value);
-
-	}
-}
-
+// get(), set(), and get_parameter() are in the accessor and created
+// by the webserver.
 
 
 /*** SOCKETS ***/

@@ -23,59 +23,40 @@ $("#location-select").change(function () {
 	}
 }).trigger('change');
 
-var k;
-
 $("#accessor-select").change(function () {
 	if ($(this).val() != "default") {
 		accessor = accessors[$(this).val()];
 		$("#accessor-interface").html(accessor.html);
 
-		// Set the name
-		accessor_name = accessor.name.replace(' ', '');
-
-		// Load the parameters
-		if (accessor.parameters) {
-			parameters = [];
-			for (i=0; i<accessor.parameters.length; i++) {
-				parameters[accessor.parameters[i].name] = accessor.parameters[i].value;
-			}
-		}
-
 		// Oh yeah, call eval on code we downloaded.
 		// As a wise undergrad once said: "Safety Off"
-		var code = accessor.code.javascript;
+		var code = accessor.code;
 		$.globalEval(code);
 
 		// Call init now.
-		if (typeof init === "function") {
-			init();
-		}
+		window[accessor_name].init()
 	}
 });
 
+function call_accessor (element, arg) {
+	var accessor_name = element.attr('data-accessorname');
+	var accessor_func = element.attr('data-function');
 
+	var function_result = window[accessor_name][accessor_func](arg);
+	if (function_result != undefined) {
+		Q.spawn(function* () {
+			yield* function_result;
+		});
+	}
+}
+
+// Call the correct method in the object loaded for the accessor
 $('#accessor-interface').on('click', '.accessor-arbitrary-input-button', function () {
 	var accessor_port = $(this).attr('data-port');
-	var accessor_func = $(this).attr('data-function');
-	if (accessor_func in window) {
-		// If this function was defined in the accessor then use it.
-		window[accessor_func]($('#'+accessor_port).val());
-	} else {
-		// The element specific function doesn't exist, just use fire()
-		fire();
-	}
+	call_accessor($(this), $('#'+accessor_port).val());
 });
 
 $('#accessor-interface').on('click', '.accessor-checkbox', function () {
 	var accessor_port = $(this).attr('data-port');
-	var accessor_func = $(this).attr('data-function');
-	if (accessor_func in window) {
-		// If this function was defined in the accessor then use it.
-		Q.spawn(function* () {
-			yield* window[accessor_func]($('#'+accessor_port).is(':checked'));
-		});
-	} else {
-		// The element specific function doesn't exist, just use fire()
-		fire();
-	}
+	call_accessor($(this), $('#'+accessor_port).is(':checked'));
 });

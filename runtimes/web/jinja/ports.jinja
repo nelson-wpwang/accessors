@@ -22,7 +22,7 @@
           {% elif port.type == "bool" %}
           <div class="col-lg-10">
             <div class="checkbox"><label>
-              <input type="checkbox" name="{{ fieldname }}" id="{{ fieldname }}" class="form-control accessor-checkbox" data-port="{{ fieldname }}" data-function="{{ port.name }}">
+              <input type="checkbox" name="{{ fieldname }}" id="{{ fieldname }}" class="form-control accessor-checkbox" data-accessorname="{{ accessor.name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name }}">
               </label>
             </div>
           </div>
@@ -32,7 +32,7 @@
             <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %}></input>
           </div>
           <div class="col-lg-3">
-            <button type="button" class="form-control accessor-arbitrary-input-button" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
+            <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
           </div>
 
           {% elif port.type == "string" %}
@@ -40,7 +40,7 @@
             <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %}></input>
           </div>
           <div class="col-lg-3">
-            <button type="button" class="form-control accessor-arbitrary-input-button" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
+            <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
           </div>
 
           {% elif port.type == "select" %}

@@ -4,6 +4,7 @@ import base64
 import sys
 import os
 import argparse
+import string
 import urllib.parse
 
 import flask
@@ -42,8 +43,54 @@ def nospace(s):
 def markd(s):
 	return markdown.markdown(s)
 
-
+# This function adds a bunch of javascript to the code section of the accessor
+# to make the browser runtime work.
 def get_accessors (url):
+	js_module_wrapping = string.Template('''
+	var ${accessorname} = (function () {
+
+		function get (field) {
+			return $$('#${accessorname}'+field).val();
+		}
+
+		function set (field, value) {
+			var accessor_input = $$('#${accessorname}'+field);
+
+			if (accessor_input.attr('type') == 'checkbox') {
+				if (value) {
+					accessor_input.prop('checked', true);
+				} else {
+					accessor_input.prop('checked', false);
+				}
+
+			} else if (accessor_input.attr('type') == 'text') {
+				accessor_input.val(value);
+
+			} else if (accessor_input.prop('tagName') == 'SELECT') {
+				$$('#${accessorname}'+field+' option:eq('+value+')').prop('selected', true);
+
+			} else if (accessor_input.prop('tagName') == 'SPAN') {
+				accessor_input.text(value);
+
+			}
+		}
+
+		function get_parameter (parameter_name) {
+			var parameters = {${parameterlist}};
+			return parameters[parameter_name];
+		}
+
+		${accessorjs}
+
+		return {
+			'init':   function () { if (typeof init == 'function') { init(); } },
+			'fire':   function () { if (typeof fire == 'function') { fire(); } },
+			'wrapup': function () { if (typeof wrapup == 'function') { wrapup(); } },
+			${functionlist}
+		}
+	})();
+	''')
+
 	r = requests.get(url)
 	if r.status_code != 200:
 		return flask.jsonify(**{'status': 'error'})
@@ -58,10 +105,25 @@ def get_accessors (url):
 		if r2.status_code == 200:
 			accessor = r2.json()
 			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
-			# accessor['code']['code'] = accessor['code']['code'].replace('\n', '\\n')
-			accessor['code']['javascript'] = rjsmin.jsmin(accessor['code']['javascript'])
-			accessors['accessors'].append(accessor)
 
+			# Do the code
+			function_list = ''
+			for port in accessor['ports']:
+				function_list += \
+"'{portname}': function () {{ if (typeof {portname} == 'function') {{ {portname}.apply(this, arguments); }} else {{ fire(); }} }},\n".format(portname=port['name'])
+
+			parameter_list = ''
+			if 'parameters' in accessor:
+				for parameter in accessor['parameters']:
+					parameter_list += "'{parametername}':'{parametervalue}',"\
+						.format(parametername=parameter['name'], parametervalue=parameter['value'])
+
+			accessor['code'] = rjsmin.jsmin(
+				js_module_wrapping.substitute(accessorname=accessor['name'].replace(' ', ''),
+			                              accessorjs=accessor['code']['javascript'],
+			                              functionlist=function_list,
+			                              parameterlist=parameter_list))
+			accessors['accessors'].append(accessor)
 
 	return flask.jsonify(**accessors)
 
