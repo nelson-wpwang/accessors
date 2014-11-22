@@ -3,6 +3,7 @@
 		"/onoffdevice/music/denonavr1913?device_url=http://4908audio.eecs.umich.edu",
 		"/onoffdevice/display/infocus?device_url=http://4908video.eecs.umich.edu",
 		"/lockunlockdevice/door/rpidoor",
-		"/onoffdevice/light/hue/huesingle?bridge_url=http://4908hue.eecs.umich.edu&username=lab11in4908"
+		"/onoffdevice/light/hue/huesingle?bridge_url=http://4908hue.eecs.umich.edu&username=lab11in4908",
+		"/onoffdevice/light/hue/allbridgehues?bridge_url=http://4908hue.eecs.umich.edu&username=lab11in4908"
 	]
 }

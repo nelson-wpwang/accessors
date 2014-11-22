@@ -1,0 +1,42 @@
+{
+	"name": "All Hues on a Bridge",
+	"version": "0.1",
+	"author": "Brad Campbell",
+	"description": "
+Hue Light Bulbs
+===============
+
+This controls all of the hues behind a bridge.
+",
+	"parameters": [
+		{
+			"name": "username",
+			"required": true
+		},
+		{
+			"name": "bridge_url",
+			"required": true
+		}
+	],
+	"ports": [
+		{
+			"direction": "inout",
+			"type": "numeric",
+			"name": "Color"
+		},
+		{
+			"direction": "inout",
+			"type": "numeric",
+			"name": "Brightness"
+		},
+		{
+			"direction": "output",
+			"name": "Bridge"
+		}
+	],
+	"code": {
+		"javascript": {
+			"include": ["allbridgehues.js"]
+		}
+	}
+}
