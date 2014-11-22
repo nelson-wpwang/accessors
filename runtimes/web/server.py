@@ -9,6 +9,7 @@ import urllib.parse
 import flask
 import markdown
 import requests
+import slimit
 
 # Do a quick check to make sure bower has been run at least once
 if not os.path.exists(os.path.join(os.getcwd(), 'static', 'bower_components')):
@@ -57,7 +58,7 @@ def get_accessors (url):
 			accessor = r2.json()
 			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
 			# accessor['code']['code'] = accessor['code']['code'].replace('\n', '\\n')
-			accessor['code']['javascript'] = accessor['code']['javascript'].replace('\n', ' ')
+			accessor['code']['javascript'] = slimit.minify(accessor['code']['javascript'])
 			accessors['accessors'].append(accessor)
 
 
