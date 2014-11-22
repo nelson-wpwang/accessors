@@ -3,6 +3,7 @@
 
 import argparse
 import copy
+import xml.etree.ElementTree as ET
 import json
 import os
 
@@ -17,6 +18,14 @@ ACCESSOR_SERVER_PORT = 6565
 
 server_path_tuples = []
 accessors_by_path = {}
+
+ET._original_serialize_xml = ET._serialize_xml
+def _serialize_xml(write, elem, *args, **kwargs):
+	if elem.tag == '![CDATA[':
+		write("\n<%s%s]]>\n" % (elem.tag, elem.text))
+		return
+	return ET._original_serialize_xml(write, elem, *args, **kwargs)
+ET._serialize_xml = ET._serialize['xml'] = _serialize_xml
 
 class accessor_tree_node ():
 	def __init__ (self, name, accessor):
@@ -77,8 +86,8 @@ class ServeAccessor (tornado.web.RequestHandler):
 		if want_js_version == '5':
 			print('5')
 
-		want_xml = bool(self.get_argument('_xml', False))
-		if want_xml:
+		format = self.get_argument('_format', 'json')
+		if format == 'xml':
 			print('xml')
 			self.set_header('Content-Type', 'application/xml')
 			accessor_xml = self.convert_accessor_to_xml(self.accessor)
@@ -90,6 +99,34 @@ class ServeAccessor (tornado.web.RequestHandler):
 		accessor_json = json.dumps(self.accessor, indent=4)
 		#accessor_json = json.dumps(self.accessor, indent=4).replace('\\n', '\n')
 		self.write(accessor_json)
+
+	def convert_accessor_to_xml (self, accessor):
+		top = ET.Element('class', attrib={'name': accessor['name'],
+		                                  'extends': 'org.terraswarm.kernel.JavaScript'})
+		ET.SubElement(top, 'author').text = accessor['author']
+		ET.SubElement(top, 'version').text = accessor['version']
+		for port in accessor['ports']:
+			props = {'name': port['name']}
+			if 'default' in port:
+				props['value'] = port['default']
+			if 'type' in port:
+				props['type'] = port['type']
+			if 'description' in port:
+				props['description'] = port['description']
+
+			ET.SubElement(top, port['direction'], attrib=props)
+		doc = ET.SubElement(top, 'documentation', attrib={'type': 'text/html'})
+		ET.SubElement(doc, '![CDATA[', attrib={'type': 'text/html'})\
+			.text = accessor['description']
+		ET.SubElement(top, '![CDATA[', attrib={'type': 'text/javascript'})\
+			.text = '\n{}\n'.format(accessor['code']['javascript'])
+
+		s = ET.tostringlist(top, encoding='unicode')
+		s = '''<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type="text/xsl" href="renderHTML.xsl"?>
+<!DOCTYPE class PUBLIC "-//TerraSwarm//DTD Accessor 1//EN"
+    "http://www.terraswarm.org/accessors/Accessor_1.dtd">''' + s
+		return s
 
 
 def create_accessor (structure, accessor, path):
