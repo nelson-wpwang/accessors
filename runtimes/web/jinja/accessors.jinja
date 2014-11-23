@@ -73,7 +73,7 @@ Accessors / University of Michigan
         </div>
         <div class="panel-body">
           <select class="form-control" id="location-select">
-            <option value="0">Select a location</option>
+            <option value="0" disabled>Select a location</option>
             {% for location in locations %}
             <option value="{{ location.path }}">{{ location.name }}</option>
             {% endfor %}
@@ -87,7 +87,7 @@ Accessors / University of Michigan
         </div>
         <div class="panel-body">
           <select class="form-control" id="accessor-select" style="display:none;">
-            <option value="default">Select an accessor</option>
+            <option value="default" disabled>Select an accessor</option>
           </select>
         </div>
       </div>
