@@ -12,11 +12,32 @@ import markdown
 import requests
 import rjsmin
 
+import sh
+try:
+	from sh import bower
+except ImportError:
+	print("Could not find required dependency bower.")
+	print("Install bower from http://bower.io")
+	print("(note: bower is not a python package)")
+
+
+class pushd(object):
+	def __init__(self, path):
+		self.path = path
+
+	def __enter__(self):
+		self.cwd = os.getcwd()
+		os.chdir(self.path)
+
+	def __exit__(self, exception_type, exception_val, trace):
+		os.chdir(self.cwd)
+
+
 # Do a quick check to make sure bower has been run at least once
 if not os.path.exists(os.path.join(os.getcwd(), 'static', 'bower_components')):
-	print("ERR: No static/bower_components directory found.")
-	print("     Is this a new checkout? Did you forget to run `bower install`?")
-	sys.exit(1)
+	print("Running bower...")
+	with pushd('static'):
+		bower("install")
 
 DESC = """
 A webserver that acts as an accessor runtime. It includes some extra templating
