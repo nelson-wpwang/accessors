@@ -107,8 +107,14 @@ def get_accessors (url):
 	accessors = {'accessors': []}
 
 	for accessor_url in accessor_list['accessors']:
-		print("getting {}".format(accessor_url))
-		r2 = requests.get('{}/accessor{}'.format(args.accessor_server, accessor_url))
+		if '?' in accessor_url:
+			i = accessor_url.index('?')
+			accessor_url = accessor_url[:i] + '.json' + accessor_url[i:]
+		else:
+			accessor_url += '.json'
+		get_url = '{}/accessor{}'.format(args.accessor_server, accessor_url)
+		print("GET {}".format(get_url))
+		r2 = requests.get(get_url)
 		if r2.status_code == 200:
 			accessor = r2.json()
 			accessor['clean_name'] = clean(accessor['name'])

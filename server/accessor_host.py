@@ -2,6 +2,7 @@
 
 
 import argparse
+import pprint
 import copy
 import xml.etree.ElementTree as ET
 import json
@@ -169,19 +170,27 @@ class ServeAccessor (tornado.web.RequestHandler):
 		if 'code_alternates' in accessor:
 			del accessor['code_alternates']
 
-		format = self.get_argument('_format', 'json')
-		if format == 'xml':
-			print('xml')
-			self.set_header('Content-Type', 'application/xml')
-			accessor_xml = self.convert_accessor_to_xml(accessor)
-			self.write(accessor_xml)
-			return
+		self.set_content_type()
+		self.write_accessor(accessor)
 
 
+# Wrapper class for serving JSON accessors.
+class ServeAccessorJSON (ServeAccessor):
+	def set_content_type (self):
 		self.set_header('Content-Type', 'application/json')
+
+	def write_accessor (self, accessor):
 		accessor_json = json.dumps(accessor, indent=4)
-		#accessor_json = json.dumps(accessor, indent=4).replace('\\n', '\n')
 		self.write(accessor_json)
+
+# Wrapper class for serving XML accessors.
+class ServeAccessorXML (ServeAccessor):
+	def set_content_type (self):
+			self.set_header('Content-Type', 'application/xml')
+
+	def write_accessor (self, accessor):
+		accessor_xml = self.convert_accessor_to_xml(accessor)
+		self.write(accessor_xml)
 
 	def convert_accessor_to_xml (self, accessor):
 		top = ET.Element('class', attrib={'name': accessor['name'],
@@ -242,24 +251,31 @@ def create_accessor (structure, accessor, path):
 
 	# Create the URL based on the hierarchy
 	name = ''.join(structure)
-	path = '/accessor/{}'.format('/'.join(structure[1:]))
+	json_path = '/accessor/{}.json'.format('/'.join(structure[1:]))
+	xml_path = '/accessor/{}.xml'.format('/'.join(structure[1:]))
 
 	# Create a class for the tornado webserver to use when the accessor
 	# is requested
-	serve_class = type('ServeAccessor' + name, (ServeAccessor,), {
+	json_serve_class = type('ServeAccessor_' + name, (ServeAccessorJSON,), {
 		'accessor': accessor
 	})
 
-	if path in accessors_by_path:
-		accessors_by_path[path].accessor = accessor
-		print('Updating accessor {}'.format(path))
+	xml_serve_class = type('ServeAccessorXML_' + name, (ServeAccessorXML,), {
+		'accessor': accessor
+	})
+
+	if json_path in accessors_by_path:
+		accessors_by_path[json_path].accessor = accessor
+		print('Updating accessor {}'.format(json_path))
+		print('Updating accessor {}'.format(xml_path))
 
 	else:
-
 		# Add the accessor to the list of valid accessors to request
-		server_path_tuples.append((path, serve_class))
-		accessors_by_path[path] = serve_class
-		print('Adding accessor {}'.format(path))
+		server_path_tuples.append((json_path, json_serve_class))
+		server_path_tuples.append((xml_path, xml_serve_class))
+		accessors_by_path[json_path] = json_serve_class
+		print('Adding accessor {}'.format(json_path))
+		print('Adding accessor {}'.format(xml_path))
 
 
 # Build accessors going down the tree
