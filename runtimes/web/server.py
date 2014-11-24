@@ -21,7 +21,6 @@ except ImportError:
 	print("Install bower from http://bower.io")
 	print("(note: bower is not a python package)")
 
-
 class pushd(object):
 	def __init__(self, path):
 		self.path = path
@@ -33,12 +32,20 @@ class pushd(object):
 	def __exit__(self, exception_type, exception_val, trace):
 		os.chdir(self.cwd)
 
-
 # Do a quick check to make sure bower has been run at least once
 if not os.path.exists(os.path.join(os.getcwd(), 'static', 'bower_components')):
 	print("Running bower...")
 	with pushd('static'):
 		bower("install")
+
+# Carry a hack for new-ish firefox for Q.js
+with open('static/bower_components/q/q.js') as q:
+	if 'typeof StopIteration === "undefined"' in q.read():
+		with pushd('static/bower_components/q'):
+			print("Patching q.js...")
+			sh.sed('-e', 's/typeof StopIteration === "undefined"/true/', 'q.js',
+					_out='_temp.js')
+			sh.mv('_temp.js', 'q.js')
 
 DESC = """
 A webserver that acts as an accessor runtime. It includes some extra templating
