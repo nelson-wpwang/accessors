@@ -1,4 +1,4 @@
-<div id="ports">
+<div id="accessor-{{ accessor.clean_name }}">
 
   {{ accessor.description|markdown|safe }}
 
@@ -7,6 +7,7 @@
       <fieldset>
 
         <legend>Controls</legend>
+        <span class="spinner"></span>
 
         {% for port in accessor.ports %}
         {% set fieldname = accessor.clean_name ~ port.name|nospace %}
