@@ -5,6 +5,7 @@ var accessors = [];
 
 $("#location-select").change(function () {
 	if ($(this).val() != 0) {
+		$("#accessor-interface").text('');
 		$.ajax({url: '/location' + $(this).val(),
 			success: function (data) {
 				if ('status' in data && data['status'] == 'error') {
