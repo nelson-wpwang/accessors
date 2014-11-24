@@ -5,10 +5,12 @@ function alert_error (error_str) {
 	$('#alerts').html(html);
 }
 
-function AccessorRuntimeException(message) {
-	this.message = message;
-	this.name = 'AccessorRuntimeException';
-}
+// function AccessorRuntimeException(message) {
+// 	this.message = message;
+// 	this.name = 'AccessorRuntimeException';
+// }
+
+var AccessorRuntimeException = Error;
 
 function accessor_get (accessorname, field) {
 	var port = $('#port-'+accessorname+field);
@@ -33,7 +35,7 @@ function accessor_set (accessorname, field, value) {
 	var port = $('#port-'+accessorname+field);
 
 	if (!port.length) {
-		throw new AccessorRuntimeException('Error calling get(): "'+field+'" is not a valid port name.');
+		throw new AccessorRuntimeException('Error calling set(): "'+field+'" is not a valid port name.');
 	}
 	if (port.attr('data-portdirection') == 'input') {
 		throw new AccessorRuntimeException('Error calling set() on port: "'+field+'". Cannot call set on an input.');
