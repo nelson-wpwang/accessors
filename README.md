@@ -95,7 +95,7 @@ function Power (power_setting) {
 }
 
 function fire (input_setting_choice) {
-  Volume(get("Power"));
+  Power(get("Power"));
 }
 
 function wrapup () {
