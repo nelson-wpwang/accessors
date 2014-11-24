@@ -162,7 +162,7 @@ def create_accessor_javascript (accessor, meta=False):
 		accessor_function_start('{accessorname}');
 		var r = {portname}.apply(this, arguments);
 		if (r && typeof r.next == 'function') {{
-			yield r;
+			yield* r;
 		}}
 		accessor_function_stop('{accessorname}');
 	}} else {{

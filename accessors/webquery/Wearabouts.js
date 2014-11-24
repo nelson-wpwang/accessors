@@ -1,14 +1,14 @@
-function init () {
-	Update();
+function* init () {
+	yield* Update();
 }
 
-function Update () {
+function* Update () {
 	var pid = get_parameter('profile_id');
 	var gatd = get_parameter('gatd_url');
 	var query = btoa(JSON.stringify({'location_str':get_parameter('location')}));
 	var url = gatd + '/viewer/recent/'+pid+'?limit=1&query='+query;
 
-	data = JSON.parse(readURL(url));
+	data = JSON.parse(yield* http.readURL(url));
 
 	if (data.length == 0) {
 		set('People', 'Nobody in the room');

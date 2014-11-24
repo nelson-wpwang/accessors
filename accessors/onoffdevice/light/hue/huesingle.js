@@ -1,8 +1,8 @@
 var bulbid;
 
-function get_bulb_id () {
+function* get_bulb_id () {
 	var url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights';
-	var data = JSON.parse(readURL(url));
+	var data = JSON.parse(yield* http.readURL(url));
 	var name = get('BulbName');
 
 	for (var key in data) {
@@ -15,8 +15,8 @@ function get_bulb_id () {
 }
 
 
-function init () {
-	var data = get_bulb_id();
+function* init () {
+	var data = yield* get_bulb_id();
 	var s = '';
 
 	for (var key in data) {
@@ -26,29 +26,29 @@ function init () {
 
 	if (bulbid) {
 		var url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights/' + bulbid;
-		var data = JSON.parse(readURL(url));
+		var data = JSON.parse(yield* http.readURL(url));
 
 		set('Power', data.state.on);
 		set('Color', data.state.hue);
 	}
 }
 
-function Power (on) {
-	get_bulb_id();
+function* Power (on) {
+	yield* get_bulb_id();
 
 	url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights/' + bulbid + '/state';
-	httpRequest(url, 'PUT', null, JSON.stringify({'on': on}), 3000);
+	yield* http.request(url, 'PUT', null, JSON.stringify({'on': on}), 3000);
 }
 
-function Color (color) {
-	get_bulb_id();
+function* Color (color) {
+	yield* get_bulb_id();
 
 	url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights/' + bulbid + '/state';
-	httpRequest(url, 'PUT', null, JSON.stringify({'hue': parseInt(color)}), 3000);
+	yield* http.request(url, 'PUT', null, JSON.stringify({'hue': parseInt(color)}), 3000);
 }
 
-function BulbName (name) {
-	init();
+function* BulbName (name) {
+	yield* init();
 }
 
 function fire () {

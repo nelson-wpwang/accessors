@@ -5,11 +5,11 @@ function receiver_get_key (xml, key_name) {
 	return value.substring(7, value.length-8);
 }
 
-function init () {
+function* init () {
   receiver_url = get_parameter('device_url') + '/goform/formMainZone_MainZoneXml.xml?_=1416011630214';
 
   /* Get the XML from the receiver via the proxy running on the webserver */
-  receiver_xml = readURL(receiver_url);
+  receiver_xml = yield* http.readURL(receiver_url);
 
   name = receiver_get_key(receiver_xml, 'FriendlyName');
   set('Name', name);
