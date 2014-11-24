@@ -4,3 +4,11 @@ function alert_error (error_str) {
 	$('#alerts').empty();
 	$('#alerts').html(html);
 }
+
+function accessor_function_start (name) {
+	$('#accessor-'+name+' .spinner').show();
+}
+
+function accessor_function_stop (name) {
+	$('#accessor-'+name+' .spinner').hide();
+}

@@ -146,7 +146,17 @@ def get_accessors (url):
 			for port in accessor['ports']:
 				port['clean_name'] = clean(port['name'])
 				function_list += \
-"'{portname}': function () {{ if (typeof {portname} == 'function') {{ {portname}.apply(this, arguments); }} else {{ fire(); }} }},\n".format(portname=nsp(port['name']))
+''''{portname}': function () {{
+	if (typeof {portname} == 'function') {{
+		accessor_function_start('{accessorname}');
+		{portname}.apply(this, arguments);
+		accessor_function_stop('{accessorname}');
+	}} else {{
+		accessor_function_start('{accessorname}');
+		fire();
+		accessor_function_stop('{accessorname}');
+	}}
+}},\n'''.format(accessorname=accessor['clean_name'], portname=nsp(port['name']))
 
 			parameter_list = ''
 			if 'parameters' in accessor:
