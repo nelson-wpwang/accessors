@@ -93,6 +93,9 @@ def create_accessor_javascript (accessor, meta=False):
 
 		function get_parameter (parameter_name) {
 			var parameters = {${parameterlist}};
+			if (parameters[parameter_name] === undefined) {
+				throw new AccessorRuntimeException('Error: parameter "'+parameter_name+'" is not defined.');
+			}
 			return parameters[parameter_name];
 		};
 
