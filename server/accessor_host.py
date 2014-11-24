@@ -258,8 +258,8 @@ def create_accessor (structure, accessor, path):
 			accessor['code_alternates'][language] = code
 
 			if language == 'javascript':
-				assert not os.path.exists('_temp1.js')
-				assert not os.path.exists('_temp2.js')
+				sh.rm('-f', '_temp1.js')
+				sh.rm('-f', '_temp2.js')
 				try:
 					open('_temp1.js', 'w').write(code)
 					traceur('--out', '_temp2.js', '--script', '_temp1.js')
