@@ -153,22 +153,44 @@ class ServeAccessor (tornado.web.RequestHandler):
 					p['value'] = self.get_argument(p['name'])
 				else:
 					p['value'] = self.get_argument(p['name'], p['default'])
+		if 'dependencies' in accessor:
+			for dependency in accessor['dependencies']:
+				if 'parameters' in dependency:
+					for p in dependency['parameters']:
+						if 'required' in p and p['required']:
+							p['value'] = self.get_argument('{}.{}'.format(dependency['name'], p['name']))
+						else:
+							p['value'] = self.get_argument('{}.{}'.format(dependency['name'], p['name']), p['default'])
+
 
 		# Look for any other parameters that change how we will respond
 		language = self.get_argument('_language', 'es6')
 		if language == 'traceur_es5':
 			print('traceur_es5')
 			accessor['code'] = accessor['code_alternates']['traceur_es5']
+			if 'dependencies' in accessor:
+				for dependency in accessor['dependencies']:
+					dependency['code'] = dependency['code_alternates']['traceur_es5']
 		elif language == 'es6' or language == 'javascript':
 			accessor['code'] = accessor['code_alternates']['javascript']
+			if 'dependencies' in accessor:
+				for dependency in accessor['dependencies']:
+					dependency['code'] = dependency['code_alternates']['javascript']
 		else:
 			if language in accessor['code_alternates']:
 				accessor['code'] = accessor['code_alternates'][language]
+			if 'dependencies' in accessor:
+				for dependency in accessor['dependencies']:
+					dependency['code'] = dependency['code_alternates'][language]
 			else:
 				raise NotImplementedError("Unknown language: {}".format(language))
 
 		if 'code_alternates' in accessor:
 			del accessor['code_alternates']
+		if 'dependencies' in accessor:
+			for dependency in accessor['dependencies']:
+				if 'code_alternates' in dependency:
+					del dependency['code_alternates']
 
 		self.set_content_type()
 		self.write_accessor(accessor)
@@ -279,7 +301,7 @@ def create_accessor (structure, accessor, path):
 
 
 # Build accessors going down the tree
-def create_accessors (accessor_tree, current_accessor, structure):
+def create_accessors_recurse (accessor_tree, current_accessor, structure):
 	structure.append(accessor_tree.name)
 
 	# accessor_tree.accessor is the current accessor we are pointing to.
@@ -306,7 +328,20 @@ def create_accessors (accessor_tree, current_accessor, structure):
 	else:
 		# recurse!
 		for atn in accessor_tree.children:
-			create_accessors(atn, accessor_tree.accessor, copy.deepcopy(structure))
+			create_accessors_recurse(atn, accessor_tree.accessor, copy.deepcopy(structure))
+
+def create_accessors (accessor_tree):
+	create_accessors_recurse(accessor_tree, None, [])
+
+	# Do the second pass to determine any dependencies we need to include
+	for path,accessor in accessors_by_path.items():
+		if 'dependencies' in accessor.accessor:
+			for dependency in accessor.accessor['dependencies']:
+				path = '/accessor{}'.format(dependency['path'])
+				dependency['code_alternates'] = copy.deepcopy(accessors_by_path[path].accessor['code_alternates'])
+				dependency['ports'] = copy.deepcopy(accessors_by_path[path].accessor['ports'])
+				dependency['parameters'] = copy.deepcopy(accessors_by_path[path].accessor['parameters'])
+
 
 
 def find_accessors (path, tree_node):
@@ -379,13 +414,13 @@ args = parser.parse_args()
 
 # Initialize the accessors
 root = find_accessors(args.path, None)
-create_accessors(root, None, [])
+create_accessors(root)
 
 # Start a monitor to watch for any changes to accessors
 class AccessorChangeHandler (watchdog.events.FileSystemEventHandler):
 	def on_any_event (self, event):
 		root = find_accessors(args.path, None)
-		create_accessors(root, None, [])
+		create_accessors(root)
 
 observer = watchdog.observers.Observer()
 observer.schedule(AccessorChangeHandler(), path=args.path, recursive=True)
@@ -395,7 +430,8 @@ observer.start()
 accessor_server = tornado.web.Application(
 	server_path_tuples +
 	[(r'/accessors/(.*)', ServerAccessorList, {'path': args.location_path})],
-	static_path="static/"
+	static_path="static/",
+	debug=True
 	)
 accessor_server.listen(ACCESSOR_SERVER_PORT)
 

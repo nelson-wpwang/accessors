@@ -47,6 +47,13 @@ in order for the accessor to work.');
 		var code = accessor.code;
 		$.globalEval(code);
 
+		if (accessor.dependencies) {
+			for (var i=0; i<accessor.dependencies.length; i++) {
+				dependency = accessor.dependencies[i];
+				$.globalEval(dependency.code);
+			}
+		}
+
 		// Call init now.
 		Q.spawn(function* () {
 			yield* window[accessor.clean_name].init();

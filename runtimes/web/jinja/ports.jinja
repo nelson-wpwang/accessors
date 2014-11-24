@@ -74,3 +74,13 @@
   </div>
 
 </div>
+
+{% if 'dependencies' in accessor %}
+{% for dependency in accessor.dependencies %}
+  {% for port in dependency.ports %}
+  {% set fieldname = dependency.clean_name ~ port.clean_name %}
+  <div id="accessor-{{ dependency.clean_name }}" style="display:none;">
+  <input type="hidden" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"></input>
+  {% endfor %}
+{% endfor %}
+{% endif %}

@@ -72,9 +72,7 @@ def clean(s):
 	# TODO: make this better
 	return s.replace(' ', '').replace('-', '')
 
-# This function adds a bunch of javascript to the code section of the accessor
-# to make the browser runtime work.
-def get_accessors (url):
+def create_accessor_javascript (accessor, meta=False):
 	js_module_wrapping = string.Template('''
 	var ${accessorname} = (function () {
 
@@ -92,7 +90,8 @@ def get_accessors (url):
 					accessor_input.prop('checked', false);
 				}
 
-			} else if (accessor_input.attr('type') == 'text') {
+			} else if (accessor_input.attr('type') == 'text' ||
+			           accessor_input.attr('type') == 'hidden') {
 				accessor_input.val(value);
 
 			} else if (accessor_input.prop('tagName') == 'SELECT') {
@@ -138,6 +137,41 @@ def get_accessors (url):
 	})();
 	''')
 
+	function_list = ''
+	for port in accessor['ports']:
+		port['clean_name'] = clean(port['name'])
+		function_list += \
+''''{portname}': function* () {{
+	if (typeof {portname} != 'undefined') {{
+		accessor_function_start('{accessorname}');
+		yield* {portname}.apply(this, arguments);
+		accessor_function_stop('{accessorname}');
+	}} else {{
+		accessor_function_start('{accessorname}');
+		yield* fire();
+		accessor_function_stop('{accessorname}');
+	}}
+}},\n'''.format(accessorname=accessor['clean_name'], portname=port['clean_name'])
+
+	parameter_list = ''
+	if 'parameters' in accessor:
+		for parameter in accessor['parameters']:
+			parameter_list += "'{parametername}':'{parametervalue}',"\
+				.format(parametername=parameter['name'], parametervalue=parameter['value'])
+
+	js = js_module_wrapping.substitute(accessorname=accessor['clean_name'],
+	                                   accessorjs=accessor['code'],
+	                                   functionlist=function_list,
+	                                   parameterlist=parameter_list)
+	accessor['code'] = rjsmin.jsmin(js)
+
+
+
+
+# This function adds a bunch of javascript to the code section of the accessor
+# to make the browser runtime work.
+def get_accessors (url):
+
 	r = requests.get(url)
 	if r.status_code != 200:
 		return flask.jsonify(**{'status': 'error'})
@@ -161,33 +195,13 @@ def get_accessors (url):
 			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
 
 			# Do the code
-			function_list = ''
-			for port in accessor['ports']:
-				port['clean_name'] = clean(port['name'])
-				function_list += \
-''''{portname}': function* () {{
-	if (typeof {portname} != 'undefined') {{
-		accessor_function_start('{accessorname}');
-		yield* {portname}.apply(this, arguments);
-		accessor_function_stop('{accessorname}');
-	}} else {{
-		accessor_function_start('{accessorname}');
-		yield* fire();
-		accessor_function_stop('{accessorname}');
-	}}
-}},\n'''.format(accessorname=accessor['clean_name'], portname=nsp(port['name']))
+			create_accessor_javascript(accessor)
 
-			parameter_list = ''
-			if 'parameters' in accessor:
-				for parameter in accessor['parameters']:
-					parameter_list += "'{parametername}':'{parametervalue}',"\
-						.format(parametername=parameter['name'], parametervalue=parameter['value'])
+			if 'dependencies' in accessor:
+				for dependency in accessor['dependencies']:
+					dependency['clean_name'] = clean(dependency['name'])
+					create_accessor_javascript(dependency)
 
-			js = js_module_wrapping.substitute(accessorname=accessor['clean_name'],
-			                                   accessorjs=accessor['code'],
-			                                   functionlist=function_list,
-			                                   parameterlist=parameter_list)
-			accessor['code'] = rjsmin.jsmin(js)
 
 			accessors['accessors'].append(accessor)
 

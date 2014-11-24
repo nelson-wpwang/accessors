@@ -5,6 +5,7 @@
 		"/lockunlockdevice/door/rpidoor?host=2607:f018:800:10f:c298:e552:5048:d86e&password=unlock4908",
 		"/onoffdevice/light/hue/huesingle?bridge_url=http://4908hue.eecs.umich.edu&username=lab11in4908",
 		"/onoffdevice/light/hue/allbridgehues?bridge_url=http://4908hue.eecs.umich.edu&username=lab11in4908",
-		"/webquery/Wearabouts?gatd_url=http://memristor-v1.eecs.umich.edu:8086&profile_id=hsYQx8blbd&location=University of Michigan|BBB|4908"
+		"/webquery/Wearabouts?gatd_url=http://memristor-v1.eecs.umich.edu:8086&profile_id=hsYQx8blbd&location=University of Michigan|BBB|4908",
+		"/onoffdevice/light/hue/huebradpat?BradHue.bridge_url=http://4908hue.eecs.umich.edu&BradHue.username=lab11in4908&PatHue.bridge_url=http://4908hue.eecs.umich.edu&PatHue.username=lab11in4908"
 	]
 }
