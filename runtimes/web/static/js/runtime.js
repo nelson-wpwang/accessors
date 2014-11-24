@@ -1,4 +1,5 @@
 /* This runtime conforms to accessor runtime v0.1.0 */
+/* vim: set noet ts=2 sts=2 sw=2: */
 
 /*** GENERAL UTILITY ***/
 
@@ -90,6 +91,70 @@ socket.socket = function* (family, sock_type) {
 }
 
 
+/*** HTTP REQUESTS ***/
+
+http = Object();
+
+http.request = function* request(url, method, properties, body, timeout) {
+	log.debug("httpRequest("
+				+ (function(obj) {
+					result=[];
+					for(p in obj) {
+						result.push(JSON.stringify(obj[p]));
+					};
+					return result;
+				})(arguments)
+				+ ")");
+
+	var request_defer = Q.defer();
+	var request = new XMLHttpRequest();
+
+	request.onload = function request_listener () {
+		request_defer.resolve();
+	}
+
+	request.open(method, "/proxy?method="+method+"&url="+btoa(url));
+	request.send(body);
+
+	yield request_defer.promise;
+
+	if (request.readyState === request.DONE) {
+		if (request.status == 200) {
+			return request.responseText;
+		} else {
+			throw "httpRequest failed with code " + request.status + " at URL: " + url;
+		}
+	} else {
+		throw "httpRequest did not complete: " + url;
+	}
+}
+
+http.readURL = function* readURL(url) {
+	log.debug("readURL(" + url + ")");
+
+	var request_defer = Q.defer();
+	var request = new XMLHttpRequest();
+
+	request.onload = function readURL_listener () {
+		request_defer.resolve();
+	}
+
+	request.open("GET", "/proxy?method=get&url="+btoa(url));
+	// Null argument says there is no body.
+	request.send(null);
+
+	yield request_defer.promise;
+
+	if (request.readyState === request.DONE) {
+		if (request.status == 200) {
+			return request.responseText;
+		} else {
+			throw "readURL failed with code " + request.status + " at URL: " + url;
+		}
+	} else {
+		throw "readURL did not complete: " + url;
+	}
+}
 
 
 /*** OTHER / UNDOCUMENTED / WORK-IN-PROGRESS ***/

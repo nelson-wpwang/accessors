@@ -1,3 +1,4 @@
+/* vim: set noet ts=2 sts=2 sw=2: */
 
 var accessors = [];
 
@@ -54,12 +55,9 @@ function call_accessor (element, arg) {
 	var accessor_name = element.attr('data-accessorname');
 	var accessor_func = element.attr('data-function');
 
-	var function_result = window[accessor_name][accessor_func](arg);
-	if (function_result != undefined) {
-		Q.spawn(function* () {
-			yield* function_result;
-		});
-	}
+	Q.spawn(function* () {
+		yield* window[accessor_name][accessor_func](arg);
+	});
 }
 
 // Call the correct method in the object loaded for the accessor

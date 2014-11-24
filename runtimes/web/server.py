@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import base64
+import time
 import sys
 import os
 import argparse
@@ -111,24 +112,24 @@ def get_accessors (url):
 		${accessorjs}
 
 		return {
-			'init': function () {
-						if (typeof init == 'function') {
+			'init': function* () {
+						if (typeof init != 'undefined') {
 							accessor_function_start('${accessorname}');
-							init();
+							yield* init();
 							accessor_function_stop('${accessorname}');
 						}
 					},
-			'fire': function () {
-						if (typeof fire == 'function') {
+			'fire': function* () {
+						if (typeof fire != 'undefined') {
 							accessor_function_start('${accessorname}');
-							fire();
+							yield* fire();
 							accessor_function_stop('${accessorname}');
 						}
 					},
-			'wrapup': function () {
-						if (typeof wrapup == 'function') {
+			'wrapup': function* () {
+						if (typeof wrapup != 'undefined') {
 							accessor_function_start('${accessorname}');
-							wrapup();
+							yield* wrapup();
 							accessor_function_stop('${accessorname}');
 						}
 					},
@@ -164,14 +165,14 @@ def get_accessors (url):
 			for port in accessor['ports']:
 				port['clean_name'] = clean(port['name'])
 				function_list += \
-''''{portname}': function () {{
-	if (typeof {portname} == 'function') {{
+''''{portname}': function* () {{
+	if (typeof {portname} != 'undefined') {{
 		accessor_function_start('{accessorname}');
-		{portname}.apply(this, arguments);
+		yield* {portname}.apply(this, arguments);
 		accessor_function_stop('{accessorname}');
 	}} else {{
 		accessor_function_start('{accessorname}');
-		fire();
+		yield* fire();
 		accessor_function_stop('{accessorname}');
 	}}
 }},\n'''.format(accessorname=accessor['clean_name'], portname=nsp(port['name']))
