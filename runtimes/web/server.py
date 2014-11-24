@@ -121,21 +121,30 @@ def create_accessor_javascript (accessor, meta=False):
 			'init': function* () {
 						if (typeof init != 'undefined') {
 							accessor_function_start('${accessorname}');
-							yield* init();
+							var r = init();
+							if (r && typeof r.next == 'function') {
+								yield* r;
+							}
 							accessor_function_stop('${accessorname}');
 						}
 					},
 			'fire': function* () {
 						if (typeof fire != 'undefined') {
 							accessor_function_start('${accessorname}');
-							yield* fire();
+							var r = fire();
+							if (r && typeof r.next == 'function') {
+								yield* r;
+							}
 							accessor_function_stop('${accessorname}');
 						}
 					},
 			'wrapup': function* () {
 						if (typeof wrapup != 'undefined') {
 							accessor_function_start('${accessorname}');
-							yield* wrapup();
+							var r = wrapup();
+							if (r && typeof r.next == 'function') {
+								yield* r;
+							}
 							accessor_function_stop('${accessorname}');
 						}
 					},
@@ -151,11 +160,17 @@ def create_accessor_javascript (accessor, meta=False):
 ''''{portname}': function* () {{
 	if (typeof {portname} != 'undefined') {{
 		accessor_function_start('{accessorname}');
-		yield* {portname}.apply(this, arguments);
+		var r = {portname}.apply(this, arguments);
+		if (r && typeof r.next == 'function') {{
+			yield r;
+		}}
 		accessor_function_stop('{accessorname}');
 	}} else {{
 		accessor_function_start('{accessorname}');
-		yield* fire();
+		var r = fire();
+		if (r && typeof r.next == 'function') {{
+			yield* r;
+		}}
 		accessor_function_stop('{accessorname}');
 	}}
 }},\n'''.format(accessorname=accessor['clean_name'], portname=port['clean_name'])
