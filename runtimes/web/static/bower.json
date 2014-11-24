@@ -2,6 +2,6 @@
   "name": "accessors",
   "dependencies": {
     "jquery": ">= 1.10.2",
-    "q": "= 1.0.1"
+    "q": ">= 1.0.1 <2.0.0"
   }
 }
