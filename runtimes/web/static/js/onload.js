@@ -48,7 +48,6 @@ in order for the accessor to work.');
 		$.globalEval(code);
 
 		// Call init now.
-		print(window[accessor.clean_name]);
 		Q.spawn(function* () {
 			yield* window[accessor.clean_name].init();
 		});
