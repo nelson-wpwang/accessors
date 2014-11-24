@@ -25,11 +25,6 @@ This controls a single Hue bulb.
 			"name": "Bulb Name"
 		},
 		{
-			"direction": "inout",
-			"type": "numeric",
-			"name": "Color"
-		},
-		{
 			"direction": "output",
 			"name": "Bulbs"
 		}

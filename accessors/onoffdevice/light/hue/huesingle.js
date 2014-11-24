@@ -15,6 +15,13 @@ function get_bulb_id () {
 	}
 }
 
+function* set_bulb_paramter (params) {
+	var bulbid = get_bulb_id();
+
+	url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights/' + bulbid + '/state';
+	yield* http.request(url, 'PUT', null, JSON.stringify(params), 3000);
+}
+
 function* init () {
 	yield* prefetch_bulb_layout();
 	var s = '';
@@ -26,17 +33,19 @@ function* init () {
 }
 
 function* Power (on) {
-	var bulbid = get_bulb_id();
-
-	url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights/' + bulbid + '/state';
-	yield* http.request(url, 'PUT', null, JSON.stringify({'on': on}), 3000);
+	yield* set_bulb_paramter({'on': on});
 }
 
 function* Color (color) {
-	var bulbid = get_bulb_id();
+	yield* set_bulb_paramter({'hue': parseInt(color)});
+}
 
-	url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights/' + bulbid + '/state';
-	yield* http.request(url, 'PUT', null, JSON.stringify({'hue': parseInt(color)}), 3000);
+function* Brightness (brightness) {
+	yield* set_bulb_paramter({'bri': parseInt(brightness)});
+}
+
+function* Saturation (sat) {
+	yield* set_bulb_paramter({'sat': parseInt(sat)});
 }
 
 function* BulbName (name) {
@@ -47,5 +56,6 @@ function* BulbName (name) {
 
 		set('Power', data.state.on);
 		set('Color', data.state.hue);
+		set('Brightness', data.state.bri);
 	}
 }

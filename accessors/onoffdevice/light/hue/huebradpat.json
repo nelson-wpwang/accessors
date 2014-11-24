@@ -8,13 +8,6 @@ Hue Light Bulbs for Brad and Pat
 
 This is an example of a meta-accessor.
 ",
-	"ports": [
-		{
-			"direction": "inout",
-			"type": "numeric",
-			"name": "Color"
-		}
-	],
 	"code": {
 		"javascript": {
 			"include": ["huebradpat.js"]

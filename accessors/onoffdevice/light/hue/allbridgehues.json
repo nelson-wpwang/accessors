@@ -20,16 +20,6 @@ This controls all of the hues behind a bridge.
 	],
 	"ports": [
 		{
-			"direction": "inout",
-			"type": "numeric",
-			"name": "Color"
-		},
-		{
-			"direction": "inout",
-			"type": "numeric",
-			"name": "Brightness"
-		},
-		{
 			"direction": "output",
 			"name": "Bridge"
 		},

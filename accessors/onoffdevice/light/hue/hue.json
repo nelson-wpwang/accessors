@@ -7,5 +7,22 @@ Hue Accessor
 ============
 
 Control Hues.
-"
+",
+	"ports": [
+		{
+			"direction": "inout",
+			"type": "numeric",
+			"name": "Color"
+		},
+		{
+			"direction": "inout",
+			"type": "numeric",
+			"name": "Brightness"
+		},
+		{
+			"direction": "inout",
+			"type": "numeric",
+			"name": "Saturation"
+		}
+	]
 }
