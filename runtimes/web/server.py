@@ -111,9 +111,27 @@ def get_accessors (url):
 		${accessorjs}
 
 		return {
-			'init':   function () { if (typeof init == 'function') { init(); } },
-			'fire':   function () { if (typeof fire == 'function') { fire(); } },
-			'wrapup': function () { if (typeof wrapup == 'function') { wrapup(); } },
+			'init': function () {
+						if (typeof init == 'function') {
+							accessor_function_start('${accessorname}');
+							init();
+							accessor_function_stop('${accessorname}');
+						}
+					},
+			'fire': function () {
+						if (typeof fire == 'function') {
+							accessor_function_start('${accessorname}');
+							fire();
+							accessor_function_stop('${accessorname}');
+						}
+					},
+			'wrapup': function () {
+						if (typeof wrapup == 'function') {
+							accessor_function_start('${accessorname}');
+							wrapup();
+							accessor_function_stop('${accessorname}');
+						}
+					},
 			${functionlist}
 		}
 	})();
