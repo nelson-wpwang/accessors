@@ -419,6 +419,9 @@ create_accessors(root)
 # Start a monitor to watch for any changes to accessors
 class AccessorChangeHandler (watchdog.events.FileSystemEventHandler):
 	def on_any_event (self, event):
+		if str(event.src_path[-1]) == '~' or str(event.src_path[-4:-1] == '.sw'):
+			# Ignore temporary files
+			return
 		root = find_accessors(args.path, None)
 		create_accessors(root)
 
