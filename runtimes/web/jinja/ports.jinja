@@ -10,27 +10,27 @@
         <legend>Controls</legend>
 
         {% for port in accessor.ports %}
-        {% set fieldname = accessor.clean_name ~ port.name|nospace %}
+        {% set fieldname = 'port-' ~ accessor.clean_name ~ port.name|nospace %}
         <div class="form-group">
           <label for="{{ fieldname }}" class="col-lg-2 control-label">{{ port.name }}</label>
 
 
           {% if port.direction == "output" %}
           <div class="col-lg-10">
-            <span id="{{ fieldname }}">unknown</span>
+            <span id="{{ fieldname }}" data-portdirection="output">unknown</span>
           </div>
 
           {% elif port.type == "bool" %}
           <div class="col-lg-10">
             <div class="checkbox"><label>
-              <input type="checkbox" name="{{ fieldname }}" id="{{ fieldname }}" class="form-control accessor-checkbox" data-accessorname="{{ accessor.clean_name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name|nospace }}">
+              <input type="checkbox" name="{{ fieldname }}" id="{{ fieldname }}" class="form-control accessor-checkbox" data-accessorname="{{ accessor.clean_name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name|nospace }}" data-portdirection="{{ port.direction }}">
               </label>
             </div>
           </div>
 
           {% elif port.type == "numeric" %}
           <div class="col-lg-7">
-            <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %}></input>
+            <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %} data-portdirection="{{ port.direction }}"></input>
           </div>
           <div class="col-lg-3">
             <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.clean_name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name|nospace }}">Update</button>
@@ -38,7 +38,7 @@
 
           {% elif port.type == "string" %}
           <div class="col-lg-7">
-            <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %}></input>
+            <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %} data-portdirection="{{ port.direction }}"></input>
           </div>
           <div class="col-lg-3">
             <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.clean_name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name|nospace }}">Update</button>
@@ -46,7 +46,7 @@
 
           {% elif port.type == "select" %}
           <div class="col-lg-10">
-            <select class="form-control" name="{{ port.name }}" id="{{ fieldname }}">
+            <select class="form-control" name="{{ port.name }}" id="{{ fieldname }}" data-portdirection="{{ port.direction }}">
               {% for opt in port.options %}
               <option value="{{ loop.index }}"{% if 'default' in port and port.default == 'opt' %} selected="selected"{% endif %}>{{ opt }}</option>
               {% endfor %}
@@ -55,12 +55,12 @@
 
           {% elif port.type == "button" %}
           <div class="col-lg-3">
-            <button type="button" class="form-control accessor-button" data-accessorname="{{ accessor.clean_name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name|nospace }}">Execute</button>
+            <button type="button" class="form-control accessor-button" data-accessorname="{{ accessor.clean_name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name|nospace }}" data-portdirection="{{ port.direction }}">Execute</button>
           </div>
 
           {% else %}
           <div class="col-lg-10">
-            <span id="{{ fieldname }}">unknown</span>
+            <span id="{{ fieldname }}" data-portdirection="{{ port.direction }}">unknown</span>
           </div>
 
           {% endif %}

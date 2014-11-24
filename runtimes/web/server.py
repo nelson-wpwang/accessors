@@ -84,30 +84,11 @@ def create_accessor_javascript (accessor, meta=False):
 	var ${accessorname} = (function () {
 
 		function get (field) {
-			return $$('#${accessorname}'+field).val();
+			return accessor_get('${accessorname}', field);
 		};
 
 		function set (field, value) {
-			var accessor_input = $$('#${accessorname}'+field);
-
-			if (accessor_input.attr('type') == 'checkbox') {
-				if (value) {
-					accessor_input.prop('checked', true);
-				} else {
-					accessor_input.prop('checked', false);
-				}
-
-			} else if (accessor_input.attr('type') == 'text' ||
-			           accessor_input.attr('type') == 'hidden') {
-				accessor_input.val(value);
-
-			} else if (accessor_input.prop('tagName') == 'SELECT') {
-				$$('#${accessorname}'+field+' option:eq('+value+')').prop('selected', true);
-
-			} else if (accessor_input.prop('tagName') == 'SPAN') {
-				accessor_input.text(value);
-
-			}
+			accessor_set('${accessorname}', field, value);
 		};
 
 		function get_parameter (parameter_name) {
