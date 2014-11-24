@@ -29,6 +29,17 @@ $("#accessor-select").change(function () {
 		accessor = accessors[$(this).val()];
 		$("#accessor-interface").html(accessor.html);
 
+		// Check to see if any accessor port names are reserved javascript
+		// functions and won't work because of the conflict.
+		for (var i=0; i<accessor.ports.length; i++) {
+			var port = accessor.ports[i];
+			if (typeof window[port.clean_name] == 'function') {
+				alert_error('Port name "'+port.clean_name+'" conflicts with an \
+existing JavaScript function. The name of the port will need to be changed \
+in order for the accessor to work.');
+			}
+		}
+
 		// Oh yeah, call eval on code we downloaded.
 		// As a wise undergrad once said: "Safety Off"
 		var code = accessor.code;

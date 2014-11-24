@@ -144,6 +144,7 @@ def get_accessors (url):
 			# Do the code
 			function_list = ''
 			for port in accessor['ports']:
+				port['clean_name'] = clean(port['name'])
 				function_list += \
 "'{portname}': function () {{ if (typeof {portname} == 'function') {{ {portname}.apply(this, arguments); }} else {{ fire(); }} }},\n".format(portname=nsp(port['name']))
 
