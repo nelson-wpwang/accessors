@@ -1,0 +1,33 @@
+{
+	"name": "Brad-Pat Hue",
+	"version": "0.1",
+	"author": "Brad Campbell",
+	"description": "
+Hue Light Bulbs for Brad and Pat
+================================
+
+This is an example of a meta-accessor.
+",
+	"ports": [
+		{
+			"direction": "inout",
+			"type": "numeric",
+			"name": "Color"
+		}
+	],
+	"code": {
+		"javascript": {
+			"include": ["huebradpat.js"]
+		}
+	},
+	"dependencies": [
+		{
+			"path": "/onoffdevice/light/hue/huesingle.json",
+			"name": "BradHue"
+		},
+		{
+			"path": "/onoffdevice/light/hue/huesingle.json",
+			"name": "PatHue"
+		}
+	]
+}

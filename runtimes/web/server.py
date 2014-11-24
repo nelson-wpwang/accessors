@@ -118,6 +118,9 @@ def create_accessor_javascript (accessor, meta=False):
 		${accessorjs}
 
 		return {
+			'get': get,
+			'set': set,
+			'get_parameter': get_parameter,
 			'init': function* () {
 						if (typeof init != 'undefined') {
 							accessor_function_start('${accessorname}');
@@ -214,7 +217,6 @@ def get_accessors (url):
 		if r2.status_code == 200:
 			accessor = r2.json()
 			accessor['clean_name'] = clean(accessor['name'])
-			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
 
 			# Do the code
 			create_accessor_javascript(accessor)
@@ -225,6 +227,7 @@ def get_accessors (url):
 					create_accessor_javascript(dependency)
 
 
+			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
 			accessors['accessors'].append(accessor)
 
 	return flask.jsonify(**accessors)
