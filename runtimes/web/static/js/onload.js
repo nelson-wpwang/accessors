@@ -54,11 +54,12 @@ in order for the accessor to work.');
 			}
 		}
 
-		// Activate all sliders
-		$('#accessor-'+accessor.clean_name+' .slider').slider()
-			.on('slideStop', function (slide_event) {
+		// // Activate all sliders
+		$('#accessor-'+accessor.clean_name+' .slider').each(function () {
+			$(this).slider().on('slideStop', function (slide_event) {
 				call_accessor($(this), slide_event.value);
 			});
+		});
 
 		// Call init now.
 		Q.spawn(function* () {

@@ -4,6 +4,25 @@ function* init () {
 
 	yield* BradHue.init();
 	yield* PatHue.init();
+
+	yield* BradHue.BulbName('Brad');
+	yield* PatHue.BulbName('Pat');
+
+	if (BradHue.get('Power') && PatHue.get('Power')) {
+		set('Power', true);
+	}
+
+	if (BradHue.get('Color') == PatHue.get('Color')) {
+		set('Color', PatHue.get('Color'));
+	}
+
+	if (BradHue.get('Brightness') == PatHue.get('Brightness')) {
+		set('Brightness', PatHue.get('Brightness'));
+	}
+
+	if (BradHue.get('Saturation') == PatHue.get('Saturation')) {
+		set('Saturation', PatHue.get('Saturation'));
+	}
 }
 
 function* Power (on) {

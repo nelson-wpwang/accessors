@@ -50,6 +50,10 @@ function accessor_set (accessorname, field, value) {
 
 	} else if (port.attr('type') == 'text' ||
 	           port.attr('type') == 'hidden') {
+		if (port.hasClass('slider')) {
+			port.slider('setValue', Number(value));
+		}
+
 		port.val(value);
 
 	} else if (port.prop('tagName') == 'SELECT') {
