@@ -176,11 +176,16 @@ http.readURL = function* readURL(url) {
 	}
 }
 
-color = Object()
+var color = Object();
 
 color.hex_to_hsv = function hex_to_hsv (hex_code) {
 	c = tinycolor(hex_code);
 	return c.toHsv();
+}
+
+color.hsv_to_hex = function hsv_to_hex (hsv) {
+	c = tinycolor(hsv);
+	return c.toHex();
 }
 
 

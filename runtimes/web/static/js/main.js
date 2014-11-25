@@ -71,6 +71,9 @@ function accessor_set (accessorname, field, value) {
 	} else if (port.prop('tagName') == 'SPAN') {
 		port.text(value);
 
+	} else if (port.prop('tagName') == 'DIV' && port.hasClass('colorpicker')) {
+		port.colpickSetColor(value);
+
 	}
 };
 

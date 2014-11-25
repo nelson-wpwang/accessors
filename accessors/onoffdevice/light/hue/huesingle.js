@@ -55,7 +55,7 @@ function* BulbName (name) {
 		var data = JSON.parse(yield* http.readURL(url));
 
 		set('Power', data.state.on);
-		set('Color', data.state.hue);
+		set('Color', color.hsv_to_hex({h:data.state.hue/182.04, s:data.state.sat/255, v:data.state.bri/255}));
 		set('Brightness', data.state.bri);
 	}
 }
