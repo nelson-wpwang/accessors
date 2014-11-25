@@ -101,38 +101,38 @@ def create_accessor_javascript (accessor, meta=False):
 
 		${accessorjs}
 
+		function* run_accessor (accessor_fn, accessor_name) {
+			accessor_function_start(accessor_name);
+			var r = accessor_fn();
+			if (r && typeof r.next == 'function') {
+				yield* r;
+			}
+			accessor_function_stop(accessor_name);
+		}
+
 		return {
 			'get': get,
 			'set': set,
 			'get_parameter': get_parameter,
 			'init': function* () {
 						if (typeof init != 'undefined') {
-							accessor_function_start('${accessorname}');
-							var r = init();
-							if (r && typeof r.next == 'function') {
-								yield* r;
-							}
-							accessor_function_stop('${accessorname}');
+							yield* run_accessor(init, '${accessorname}');
+						} else {
+							log.warn("Accessor did not define an init() method");
 						}
 					},
 			'fire': function* () {
 						if (typeof fire != 'undefined') {
-							accessor_function_start('${accessorname}');
-							var r = fire();
-							if (r && typeof r.next == 'function') {
-								yield* r;
-							}
-							accessor_function_stop('${accessorname}');
+							yield* run_accessor(fire, '${accessorname}');
+						} else {
+							log.warn("Accessor did not define an fire() method");
 						}
 					},
 			'wrapup': function* () {
 						if (typeof wrapup != 'undefined') {
-							accessor_function_start('${accessorname}');
-							var r = wrapup();
-							if (r && typeof r.next == 'function') {
-								yield* r;
-							}
-							accessor_function_stop('${accessorname}');
+							yield* run_accessor(wrapup, '${accessorname}');
+						} else {
+							log.warn("Accessor did not define an wrapup() method");
 						}
 					},
 			${functionlist}
@@ -153,12 +153,11 @@ def create_accessor_javascript (accessor, meta=False):
 		}}
 		accessor_function_stop('{accessorname}');
 	}} else {{
-		accessor_function_start('{accessorname}');
-		var r = fire();
-		if (r && typeof r.next == 'function') {{
-			yield* r;
+		if (typeof fire != 'undefined') {{
+			yield* run_accessor(fire, '{accessorname}');
+		}} else {{
+			log.warn("Accessor did not define an fire() method");
 		}}
-		accessor_function_stop('{accessorname}');
 	}}
 }},\n'''.format(accessorname=accessor['clean_name'], portname=port['clean_name'])
 
