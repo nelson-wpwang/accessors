@@ -82,6 +82,13 @@ information.
 exception, terminating the current execution. Do not use critical for transient
 errors (e.g. a 503).
 
+- _Blocking_ `<null> time.sleep(<float> time_in_ms)`: Suspends execution for at
+least the amount of time requested.
+
+- `<null> time.run_later(<float> delay_in_ms, <fn> fn_to_run, <T> args)`:
+Schedules `fn_to_run` for execution in the future.
+
+
 ### Accessor Interface and Properties
 
 - `<T> get(<string> port_name)`: Get the current value of an input to a given

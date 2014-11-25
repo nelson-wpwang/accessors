@@ -34,6 +34,20 @@ log.critical = function _log_critical (message) {
 }
 
 
+time = Object();
+time.sleep = function* (time_in_ms) {
+	var deferred = Q.defer();
+	setTimeout(deferred.resolve, time_in_ms);
+	yield deferred.promise;
+}
+time.run_later = function (time_in_ms, fn_to_run, args) {
+	if (args != null) {
+		throw new AccessorRuntimeException("runtime doesn't support arguments yet");
+	}
+	setTimeout(fn_to_run, time_in_ms);
+}
+
+
 /*** ACCESSOR INTERFACE AND PROPERTIES ***/
 // get(), set(), and get_parameter() are in the accessor and created
 // by the webserver.
