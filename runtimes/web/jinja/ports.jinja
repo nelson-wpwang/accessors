@@ -4,7 +4,6 @@
 
   <div class="well bs-component">
     <form class="form-horizontal">
-        <span class="spinner" style="display:none;float:right;"><img src="static/images/ajax-loader.gif" /></span>
       <fieldset>
 
         <legend>Controls</legend>
@@ -28,13 +27,22 @@
             </div>
           </div>
 
-          {% elif port.type == "numeric" %}
+          {% elif port.type in ["numeric", "integer"] %}
+
+          {% if 'min' in port and 'max' in port %}
+          {# Do a slider #}
+          <div class="col-lg-10">
+            <input type="text" name="{{ fieldname }}" id="{{ fieldname }}" class="slider" data-slider-id='{{ fieldname }}-slider' data-slider-min="{{ port.min }}" data-slider-max="{{ port.max }}" data-slider-step="1" data-slider-value="{{ port.min }}" data-accessorname="{{ accessor.clean_name|nospace }}" data-function="{{ port.name|nospace }}"/>
+          </div>
+          {% else %}
+          {# Do a text box #}
           <div class="col-lg-7">
             <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %} data-portdirection="{{ port.direction }}"></input>
           </div>
           <div class="col-lg-3">
             <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.clean_name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name|nospace }}">Update</button>
           </div>
+          {% endif %}
 
           {% elif port.type == "string" %}
           <div class="col-lg-7">
@@ -71,6 +79,7 @@
 
       </fieldset>
     </form>
+    <span class="spinner" style="display:none"><img src="static/images/ajax-loader.gif" /></span>
   </div>
 
 </div>

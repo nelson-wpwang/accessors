@@ -17,12 +17,15 @@ Control Hues.
 		{
 			"direction": "inout",
 			"type": "numeric",
-			"name": "Brightness"
+			"name": "Saturation"
 		},
 		{
 			"direction": "inout",
-			"type": "numeric",
-			"name": "Saturation"
+			"type": "integer",
+			"name": "Brightness",
+			"min": 0,
+			"max": 255
+
 		}
 	]
 }

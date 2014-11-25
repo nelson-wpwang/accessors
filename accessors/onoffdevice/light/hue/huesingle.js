@@ -57,5 +57,6 @@ function* BulbName (name) {
 		set('Power', data.state.on);
 		set('Color', data.state.hue);
 		set('Brightness', data.state.bri);
+		set('Saturation', data.state.sat);
 	}
 }
