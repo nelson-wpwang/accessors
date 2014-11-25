@@ -73,10 +73,14 @@ version environment. The version request may include range specifiers (e.g.
 is unchanged and the original version is returned.  The accesor runtime is
 versioned using [semantic versioning](http://semver.org/).
 
-- `<void> log.[debug,info,warn,error,critical](<string> line)`: The log family
+- `<void> log.[debug,info,warn,error](<string> line)`: The log family
 of functions provides a means for logging messages. These messages are
 generally intended for developers and should not be used to convey runtime
 information.
+
+- `<void> log.critical(<string> line)`: A critical error will throw a runtime
+exception, terminating the current execution. Do not use critical for transient
+errors (e.g. a 503).
 
 ### Accessor Interface and Properties
 

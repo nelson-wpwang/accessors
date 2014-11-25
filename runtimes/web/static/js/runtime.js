@@ -30,6 +30,7 @@ log.error = function _log_error (message) {
 
 log.critical = function _log_critical (message) {
 	log.log(" CRIT: " + message);
+	throw new AccessorRuntimeException(message);
 }
 
 
@@ -45,9 +46,12 @@ socket = Object();
 socket.socket = function* (family, sock_type) {
 	var s = new Object();
 
+	if (typeof ws_server_address == 'undefined') {
+		log.critical("No websocket server. Socket facilities unavailable");
+	}
+
 	// Make a connection back to the socket tunneling server (ws_server)
-	// TODO: This should probably be a configurable parameter
-	var ws = new WebSocket("ws://patbook.eecs.umich.edu:8765");
+	var ws = new WebSocket(ws_server_address);
 	var ws_defer = Q.defer();
 
 	ws.onopen = function (evt) {
@@ -56,14 +60,16 @@ socket.socket = function* (family, sock_type) {
 	}
 	ws.onclose = function (evt) {
 		console.log("ws onclose");
-		console.log("TODO: Do something about this");
+		ws_defer.reject(new Error(evt));
 	}
 	ws.onmessage = function (evt) {
 		console.log("ws message");
 	}
 	ws.onerror = function (evt) {
+		// TODO On connect failure we get this and an onclose, should really only
+		// reject the promise once.
 		console.log("ws onerror");
-		console.log("TODO: Do something about this");
+		ws_defer.reject(new Error(evt));
 	}
 
 	console.log('before yield');

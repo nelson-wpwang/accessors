@@ -57,6 +57,9 @@ parser = argparse.ArgumentParser(description=DESC)
 parser.add_argument('-s', '--accessor-server',
 		required=True,
 		help='Server to load accessors from')
+parser.add_argument('-w', '--websocket-server',
+		required=True,
+		help='Server to tunnel websockets over')
 args = parser.parse_args()
 
 if args.accessor_server[0:4] != 'http':
@@ -82,6 +85,8 @@ def clean(s):
 def create_accessor_javascript (accessor, meta=False):
 	js_module_wrapping = string.Template('''
 	var ${accessorname} = (function () {
+
+		ws_server_address = '${websocket_server}';
 
 		function get (field) {
 			return accessor_get('${accessorname}', field);
@@ -177,7 +182,8 @@ def create_accessor_javascript (accessor, meta=False):
 			parameter_list += "'{parametername}':'{parametervalue}',"\
 				.format(parametername=parameter['name'], parametervalue=parameter['value'])
 
-	js = js_module_wrapping.substitute(accessorname=accessor['clean_name'],
+	js = js_module_wrapping.substitute(websocket_server=args.websocket_server,
+	                                   accessorname=accessor['clean_name'],
 	                                   accessorjs=accessor['code'],
 	                                   functionlist=function_list,
 	                                   parameterlist=parameter_list)
