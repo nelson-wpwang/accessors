@@ -103,11 +103,16 @@ def create_accessor_javascript (accessor, meta=False):
 
 		function* run_accessor (accessor_fn, accessor_name) {
 			accessor_function_start(accessor_name);
-			var r = accessor_fn();
-			if (r && typeof r.next == 'function') {
-				yield* r;
+			try {
+				var r = accessor_fn();
+				if (r && typeof r.next == 'function') {
+					yield* r;
+				}
+			} catch(err) {
+				console.log(err);
+			} finally {
+				accessor_function_stop(accessor_name);
 			}
-			accessor_function_stop(accessor_name);
 		}
 
 		return {
@@ -147,11 +152,16 @@ def create_accessor_javascript (accessor, meta=False):
 ''''{portname}': function* () {{
 	if (typeof {portname} != 'undefined') {{
 		accessor_function_start('{accessorname}');
-		var r = {portname}.apply(this, arguments);
-		if (r && typeof r.next == 'function') {{
-			yield* r;
+		try {{
+			var r = {portname}.apply(this, arguments);
+			if (r && typeof r.next == 'function') {{
+				yield* r;
+			}}
+		}} catch (err) {{
+			console.log(err);
+		}} finally {{
+			accessor_function_stop('{accessorname}');
 		}}
-		accessor_function_stop('{accessorname}');
 	}} else {{
 		if (typeof fire != 'undefined') {{
 			yield* run_accessor(fire, '{accessorname}');
