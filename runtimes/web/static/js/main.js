@@ -28,6 +28,15 @@ function accessor_get (accessorname, field) {
 	// 	// If there was never a value
 	// 	throw new AccessorRuntimeException('Error calling get() on uninitialized port: "'+field);
 	// }
+
+	if (port.attr('type') == 'checkbox') {
+		return port.prop('checked');
+	}
+
+	if (port.attr('data-porttype') == 'bool') {
+		return port.val() == 'true';
+	}
+
 	return port.val();
 }
 

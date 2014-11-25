@@ -89,7 +89,7 @@
 <div id="accessor-{{ dependency.clean_name }}" style="display:none;">
   {% for port in dependency.ports %}
   {% set fieldname = 'port-' ~ dependency.clean_name ~ port.clean_name %}
-  <input type="hidden" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"></input>
+  <input type="hidden" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}" data-porttype="{{ port.type }}"></input>
   {% endfor %}
 </div>
 {% endfor %}

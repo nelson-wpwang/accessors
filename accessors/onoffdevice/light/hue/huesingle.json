@@ -7,6 +7,9 @@ Hue Light Bulb
 ==============
 
 This controls a single Hue bulb.
+
+To use, select a Bulb name by entering it in the `Bulb Name` box and
+click update.
 ",
 	"parameters": [
 		{
