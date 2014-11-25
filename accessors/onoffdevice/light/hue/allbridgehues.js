@@ -31,8 +31,12 @@ function* Power (on) {
 	yield* on_each({'on': on});
 }
 
-function* Color (color) {
-	yield* on_each({'hue': parseInt(color)});
+function* Color (hex_color) {
+	hsv = color.hex_to_hsv(hex_color);
+	params = {'hue': Math.round(hsv.h*182.04),
+	          'sat': Math.round(hsv.s*255),
+	          'bri': Math.round(hsv.v*255)}
+	yield* on_each(params);
 }
 
 function* Brightness (brightness) {

@@ -11,13 +11,8 @@ Control Hues.
 	"ports": [
 		{
 			"direction": "inout",
-			"type": "numeric",
+			"type": "color",
 			"name": "Color"
-		},
-		{
-			"direction": "inout",
-			"type": "numeric",
-			"name": "Saturation"
 		},
 		{
 			"direction": "inout",

@@ -54,11 +54,21 @@ in order for the accessor to work.');
 			}
 		}
 
-		// // Activate all sliders
+		// Activate all sliders
 		$('#accessor-'+accessor.clean_name+' .slider').each(function () {
 			$(this).slider().on('slideStop', function (slide_event) {
 				call_accessor($(this), slide_event.value);
 			});
+		});
+
+		// // Activate all color pickers
+		$('#accessor-'+accessor.clean_name+' .colorpicker').colpick({
+			flat: true,
+			layout: 'hex',
+			submit: 0,
+			onChange: function (hsb, hex, rgb, el, bySetColor) {
+				call_accessor($(this), hex);
+			}
 		});
 
 		// Call init now.

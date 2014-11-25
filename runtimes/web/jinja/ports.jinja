@@ -66,6 +66,12 @@
             <button type="button" class="form-control accessor-button" data-accessorname="{{ accessor.clean_name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name|nospace }}" data-portdirection="{{ port.direction }}">Execute</button>
           </div>
 
+          {% elif port.type == "color" %}
+          {# color picker #}
+          <div class="col-lg-10">
+            <div class="colorpicker" name="{{ fieldname }}" id="{{ fieldname }}" data-accessorname="{{ accessor.clean_name|nospace }}" data-port="{{ fieldname }}" data-function="{{ port.name|nospace }}" data-portdirection="{{ port.direction }}"></div>
+          </div>
+
           {% else %}
           <div class="col-lg-10">
             <span id="{{ fieldname }}" data-portdirection="{{ port.direction }}">unknown</span>

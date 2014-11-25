@@ -39,8 +39,3 @@ function* Brightness (bri) {
 	yield* BradHue.Brightness(bri);
 	yield* PatHue.Brightness(bri);
 }
-
-function* Saturation (sat) {
-	yield* BradHue.Saturation(sat);
-	yield* PatHue.Saturation(sat);
-}

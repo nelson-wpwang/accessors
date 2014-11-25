@@ -36,16 +36,16 @@ function* Power (on) {
 	yield* set_bulb_paramter({'on': on});
 }
 
-function* Color (color) {
-	yield* set_bulb_paramter({'hue': parseInt(color)});
+function* Color (hex_color) {
+	hsv = color.hex_to_hsv(hex_color);
+	params = {'hue': Math.round(hsv.h*182.04),
+	          'sat': Math.round(hsv.s*255),
+	          'bri': Math.round(hsv.v*255)}
+	yield* set_bulb_paramter(params);
 }
 
 function* Brightness (brightness) {
 	yield* set_bulb_paramter({'bri': parseInt(brightness)});
-}
-
-function* Saturation (sat) {
-	yield* set_bulb_paramter({'sat': parseInt(sat)});
 }
 
 function* BulbName (name) {
@@ -57,6 +57,5 @@ function* BulbName (name) {
 		set('Power', data.state.on);
 		set('Color', data.state.hue);
 		set('Brightness', data.state.bri);
-		set('Saturation', data.state.sat);
 	}
 }
