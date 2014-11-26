@@ -9,13 +9,25 @@ function set_to_locked () {
 function* Lock (lock) {
 	if (lock) return;
 
-	var s = yield* socket.socket('AF_INET6', 'SOCK_DGRAM');
+	try {
+		var s = yield* socket.socket('AF_INET6', 'SOCK_DGRAM');
+	} catch (err) {
+		log.error("Failed to connect to socket: " + err);
+		set_to_locked();
+		return;
+	}
 	log.debug("socket value:");
 	log.debug(s);
 	var host = get_parameter('host');
 	var port = get_parameter('port');
 	var pass = get_parameter('password');
-	s.sendto(pass, [host, port]);
+	try {
+		yield* s.sendto(pass, [host, port]);
+	} catch (err) {
+		log.error("Failed to send open pacekt: " + err);
+		set_to_locked();
+		return;
+	}
 	set('Lock', false);
 
 	time.run_later(2000, set_to_locked);

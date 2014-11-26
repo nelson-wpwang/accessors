@@ -104,23 +104,22 @@ configured parameter.
 
 All socket related functions are scoped under the `socket` object. The socket
 API mirrors the traditional Berkeley sockets API and should look very familiar
-to anyone who has used an object-oriented version before (e.g. python's).
+to anyone who has used an object-oriented version before (e.g. python's). Note
+that __all__ socket operations are blocking.  This is due to the fact that some
+runtimes (e.g. a web browser) do not have native socket support and may need to
+perform complex operations (e.g. tunnel to a support server).
 
 - _Blocking_ `<socket> socket.socket(<string> family, <string> sock_type)`:
 This function creates a new socket object. The `family` must be one of the
 standard family names (e.g. `AF_INET` or `AF_INET6`) and the `sock_type` must
 be a standard socket name (e.g. `SOCK_DGRAM` or `SOCK_STREAM`).
-**Note** that this function is _blocking_ and must be called with `yield*`. This
-is due to the fact that some runtimes (e.g. a web browser) do not have native
-socket support and may need to perform complex operations (e.g. open a tunnel
-to a support server).
 
 The remaining functions are all members of the returned socket object.
 
 **TODO:** How should data be passed into the send/recv functions? Perhaps they
 should use [blobs](https://developer.mozilla.org/en-US/docs/Web/API/Blob)?
-- `void <socket>.sendto (<string> message, [<string> host, <int> port])`: This
-method is only valid for `SOCK_DGRAM` sockets. It sends the message to the
+- _Blocking_ `void <socket>.sendto (<string> message, [<string> host, <int> port])`:
+This method is only valid for `SOCK_DGRAM` sockets. It sends the message to the
 specified host.
 
 ### HTTP Requests

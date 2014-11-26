@@ -59,6 +59,7 @@ socket = Object();
 
 socket.socket = function* (family, sock_type) {
 	var s = new Object();
+	s._packet_id = 0;
 
 	if (typeof ws_server_address == 'undefined') {
 		log.critical("No websocket server. Socket facilities unavailable");
@@ -74,22 +75,52 @@ socket.socket = function* (family, sock_type) {
 	}
 	ws.onclose = function (evt) {
 		console.log("ws onclose");
-		ws_defer.reject(new Error(evt));
+		if (Q.isPending(ws_defer)) {
+			ws_defer.reject(new Error(evt));
+		} else {
+			s._send_reply_defer.reject(new Error(evt));
+		}
 	}
 	ws.onmessage = function (evt) {
 		console.log("ws message");
+		s._send_reply_defer.resolve(evt);
 	}
 	ws.onerror = function (evt) {
 		// TODO On connect failure we get this and an onclose, should really only
 		// reject the promise once.
 		console.log("ws onerror");
-		ws_defer.reject(new Error(evt));
+		if (Q.isPending(ws_defer)) {
+			ws_defer.reject(new Error(evt));
+		} else {
+			s._send_reply_defer.reject(new Error(evt));
+		}
 	}
 
-	console.log('before yield');
 	s.ws = yield ws_defer.promise;
-	console.log('s.ws:');
-	console.log(s.ws);
+
+	s._send = function* (msg) {
+		msg['packet_id'] = s._packet_id;
+		s._packet_id += 1;
+		s._send_reply_defer = Q.defer();
+		console.log("socket >> " + JSON.stringify(msg));
+		s.ws.send(JSON.stringify(msg));
+
+		var evt = yield s._send_reply_defer.promise;
+		console.log("socket << " + evt['data']);
+
+		var resp = JSON.parse(evt['data']);
+
+		if (resp['type'] != 'ack') {
+			console.log(resp['data']['type']);
+			throw new AccessorRuntimeException("Internal Error: ws protocol expected ack?");
+		}
+		if (resp['packet_id'] != msg['packet_id']) {
+			throw new AccessorRuntimeException("Internal Error: ws synchronization fail?");
+		}
+		if (resp['result'] != 'success') {
+			throw new AccessorRuntimeException("Send failed.");
+		}
+	}
 
 	var msg = {
 		type: 'handshake',
@@ -97,15 +128,15 @@ socket.socket = function* (family, sock_type) {
 		family: family,
 		sock_type: sock_type
 	};
-	s.ws.send(JSON.stringify(msg));
+	yield* s._send(msg);
 
-	s.sendto = function (bytes, dest) {
+	s.sendto = function* (bytes, dest) {
 		var msg = {
 			type: 'udp',
 			bytes: bytes,
 			dest: dest
 		};
-		s.ws.send(JSON.stringify(msg));
+		yield* s._send(msg);
 	};
 	return s;
 }
