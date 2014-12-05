@@ -80,7 +80,8 @@ def nsp(s):
 
 def clean(s):
 	# TODO: make this better
-	return s.replace(' ', '').replace('-', '')
+	#return s.replace(' ', '').replace('-', '')
+	return s.replace(' ', '_SPACE').replace('-', '_DASH')
 
 def create_accessor_javascript (accessor, meta=False):
 	js_module_wrapping = string.Template('''

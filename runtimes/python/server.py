@@ -309,14 +309,19 @@ log.criticl = function (msg) { _log('critical', msg); };
 		def get(port_name):
 			for port in self.ports:
 				if port_name == port.accessor_name:
-					return port.get()
+					r = port.get()
+					log.debug("%s: get(%s) => %s", self.name, port_name, r)
+					return r
+			raise NotImplementedError("get unknown port: {}".format(port_name))
 		self._js.export(get)
 
 		def set(port_name, value):
 			for port in self.ports:
 				if port_name == port.accessor_name:
+					log.debug("%s: set(%s) <= %s", self.name, port_name, value)
 					port.set(value)
 					return
+			raise NotImplementedError("set unknown port: {}".format(port_name))
 		self._js.export(set)
 
 		def get_parameter(parameter_name):
@@ -364,7 +369,7 @@ try:
 	stocktick = accessors['Anywhere'][0]
 	for symbol in ['GOOG', 'MSFT', 'YHOO']:
 		stocktick.stock_symbol = symbol
-		print("Stock {} price ${}".format(stocktick.stock_symbol, stocktick.price))
+		print("Stock {} price {}".format(stocktick.stock_symbol, stocktick.price))
 finally:
 	# Hack until I undertsand bond better
 	sh.killall('node')

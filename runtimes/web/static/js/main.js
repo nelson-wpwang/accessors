@@ -12,7 +12,13 @@ function alert_error (error_str) {
 
 var AccessorRuntimeException = Error;
 
+function sanitize_field (field) {
+	return field.replace(' ', '_SPACE').replace('-', '_DASH');
+}
+
 function accessor_get (accessorname, field) {
+	field = sanitize_field(field);
+
 	var port = $('#port-'+accessorname+field);
 
 	// Check if this is a valid port
@@ -41,6 +47,8 @@ function accessor_get (accessorname, field) {
 }
 
 function accessor_set (accessorname, field, value) {
+	field = sanitize_field(field);
+
 	var port = $('#port-'+accessorname+field);
 
 	if (!port.length) {
