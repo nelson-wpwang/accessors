@@ -4,3 +4,4 @@ requests
 watchdog
 markdown
 rjsmin
+websockets
