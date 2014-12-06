@@ -16,8 +16,6 @@ function* Lock (lock) {
 		set_to_locked();
 		return;
 	}
-	log.debug("socket value:");
-	log.debug(s);
 	var host = get_parameter('host');
 	var port = get_parameter('port');
 	var pass = get_parameter('password');

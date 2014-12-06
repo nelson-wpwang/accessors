@@ -5,6 +5,7 @@ import pprint
 import time
 import sys
 import os
+import socket
 import argparse
 import string
 import urllib.parse
@@ -82,7 +83,7 @@ def get_all_accessors_from_location (path):
 		raise NotImplementedError("Failed to get accessor list:\n\t{}".format(url))
 
 	accessor_list = r.json()
-	accessors = []
+	accessors = {}
 
 	for accessor_url in accessor_list['accessors']:
 		if '?' in accessor_url:
@@ -94,7 +95,8 @@ def get_all_accessors_from_location (path):
 		logging.debug("GET {}".format(get_url))
 		r2 = requests.get(get_url)
 		if r2.status_code == 200:
-			accessors.append(Accessor(r2.json()))
+			accessor = Accessor(accessor_url, r2.json())
+			accessors[accessor._raw_name] = accessor
 		else:
 			raise NotImplementedError("Failed to get accessor: {}".format(get_url))
 
@@ -178,9 +180,13 @@ class InputPort(Port):
 		if self.accessor._js is None:
 			self.accessor._init()
 		try:
-			self.accessor._js.call(self.accessor_name, value)
+			log.debug("%s: call accesor fn: %s(%s)", self, self.accessor_name, value)
+			r = self.accessor._js.call('_port_call', self.accessor_name, value)
+			log.debug("%s: return %s", self, r)
+			log.debug("%s: end accesor fn: %s(%s)", self, self.accessor_name, value)
 		except bond.RemoteException:
 			# TODO distinguish missing fn from other exception
+			log.debug("%s: no port fn, default to fire", self)
 			log.debug("%s: pre-fire", self)
 			self.accessor._js.eval('fire().next()')
 			log.debug("%s: post-fire", self)
@@ -202,80 +208,96 @@ class InoutPort(InputPort,OutputPort):
 
 
 class Accessor():
-	def __init__(self, json):
-		# Required Keys
-		self.name = json['name']
-		self.version = json['version']
+	def __init__(self, url, json):
+		# Save a copy of the url, just in case
+		self._url = url
+		self._raw_name = url.split('.json')[0].split('/')[-1]
 
-		log.debug("Creating new accessor: %s", self.name)
+		# Required Keys
+		self._name = json['name']
+		self._version = json['version']
+
+		log.debug("Creating new accessor: %s", self._name)
 
 		if 'author' in json:
-			self.author = json['author']
+			self._author = json['author']
 		else:
-			self.author = None
+			self._author = None
 
 		if 'description' in json:
-			self.description = json['description']
+			self._description = json['description']
 		else:
-			self.description = None
+			self._description = None
 
-		if 'parameters' in json:
-			self.parameters = json['parameters']
-		else:
-			self.parameters = []
-
-		self.ports = []
+		self._ports = []
 		for port in json['ports']:
-			self.ports.append(Port.create(port, self))
+			self._ports.append(Port.create(port, self))
+
+		self._parameters = {}
+		if 'parameters' in json:
+			for parameter in json['parameters']:
+				if 'value' in parameter:
+					self._parameters[parameter['name']] = parameter['value']
+				elif 'default' in parameter:
+					self._parameters[parameter['name']] = parameter['default']
 
 		if 'code' not in json:
 			raise NotImplementedError("Accessor without code?")
-		self.code = json['code']
+		self._code = json['code']
 
 		# Lazy-bind accessor init until first use
 		self._js = None
 
-		self._strict_attr_enforcement = True
-
 	def _init(self):
-		log.debug("%s: creating JS runtime", self.name)
+		'''Call accessor init method'''
+		if self._js is not None:
+			raise RuntimeError("Multiple requests to init accessor")
+
+		log.debug("%s: creating JS runtime", self._name)
 		self._js = bond.make_bond('JavaScript', 'node', ['--harmony'])
 
-		log.debug("%s: loading accessor", self.name)
-		self._js.eval_block(self.code)
+		log.debug("%s: loading accessor", self._name)
+		self._js.eval_block(self._code)
 
 		self._init_runtime()
 
-		log.debug("%s: running init", self.name)
+		log.debug("%s: running init", self._name)
 		ret = self._js.eval("init()");
-		log.debug("%s: init ret %r", self.name, ret)
+		log.debug("%s: init ret %r", self._name, ret)
 
 	def __str__(self):
-		return self.name
+		return self._name
 
 	def __repr__(self):
-		return "<Accessor: {}>".format(self.name)
+		return "<Accessor: {}>".format(self._name)
 
 	def __getattribute__(self, attr):
-		if attr != 'ports' and hasattr(self, 'ports'):
-			for port in self.ports:
+		if attr != '_ports' and hasattr(self, '_ports'):
+			for port in self._ports:
 				if attr == port.python_name:
 					return port._get()
 		return object.__getattribute__(self, attr)
 
 	def __setattr__(self, attr, value):
-		if hasattr(self, 'ports'):
-			for port in self.ports:
+		if hasattr(self, '_ports'):
+			for port in self._ports:
 				if attr == port.python_name:
 					port._set(value)
 					return
-		if hasattr(self, '_strict_attr_enforcement') and self._strict_attr_enforcement:
-			if not hasattr(self, attr):
-				raise AttributeError("%r object has no attribute %r" %
-						(self, attr))
+		# All internal state must be prefixed with '_'
+		if attr[0] != '_' and not hasattr(self, attr):
+			raise AttributeError("%r object has no attribute %r" % (self, attr))
 		return object.__setattr__(self, attr, value)
 
 	def _init_runtime(self):
+		### SUPPORT FUNCTIONS FOR THIS RUNTIME
+		self._js.eval_block('''\
+function _port_call (port, value) {
+	log.debug("before port call of " + port + "(" + value + ")");
+	global[port](value).next();
+}
+''')
+
 		### GENERAL UTILITY
 
 		def version(set_to):
@@ -299,44 +321,86 @@ log.criticl = function (msg) { _log('critical', msg); };
 ''')
 		self._js.export(do_log, "_log")
 
-		#TODO time.sleep
+		def runtime_time_sleep(time_in_ms):
+			time.sleep(time_in_ms / 1000)
+		self._js.export(runtime_time_sleep, '_time_sleep')
 
-		#TODO time.run_later
+		self._js.eval_block('''\
+time = Object();
+time.sleep = _time_sleep;
+time.run_later = function (delay_in_ms, fn_to_run, args) {
+	log.warn("TODO: time.run_later is a synchronous wait in this runtime currently");
+	_time_sleep(delay_in_ms);
+	fn_to_run(args);
+};
+''')
 
 
 		### ACCESSOR INTERFACE AND PROPERTIES
 
 		def get(port_name):
-			for port in self.ports:
+			for port in self._ports:
 				if port_name == port.accessor_name:
 					r = port.get()
-					log.debug("%s: get(%s) => %s", self.name, port_name, r)
+					log.debug("%s: get(%s) => %s", self._name, port_name, r)
 					return r
 			raise NotImplementedError("get unknown port: {}".format(port_name))
 		self._js.export(get)
 
 		def set(port_name, value):
-			for port in self.ports:
+			for port in self._ports:
 				if port_name == port.accessor_name:
-					log.debug("%s: set(%s) <= %s", self.name, port_name, value)
+					log.debug("%s: set(%s) <= %s", self._name, port_name, value)
 					port.set(value)
 					return
 			raise NotImplementedError("set unknown port: {}".format(port_name))
 		self._js.export(set)
 
 		def get_parameter(parameter_name):
-			return self.parameters['parameter_name']
+			try:
+				r = self._parameters[parameter_name]
+			except:
+				log.warn("get_parameter lookup failed for: >%s<", parameter_name)
+				raise
+			log.debug("get_parameter(%r) => %r", parameter_name, r)
+			return r
 		self._js.export(get_parameter)
 
 
 		### SOCKETS
 
 		def runtime_socket(family, sock_type):
-			raise NotImplementedError("socket")
+			family = getattr(socket, family)
+			sock_type = getattr(socket, sock_type)
+			sock = socket.socket(family, sock_type)
+			if not hasattr(self, '_socks'):
+				self._socks = {}
+			self._socks[sock.fileno()] = sock
+			log.debug("runtime_socket(%r, %r) => %r", family, sock_type, sock.fileno())
+			return sock.fileno()
 		self._js.export(runtime_socket, '_socket')
+
+		def runtime_socket_sendto(fd, msg, dest):
+			log.debug("runtime_socket_sendto(%r, %r, %r)", fd, msg, dest)
+			sock = self._socks[fd]
+			dest = (dest[0], int(dest[1]))
+			msg = msg.encode('utf-8')
+			sock.sendto(msg, dest)
+		self._js.export(runtime_socket_sendto, '_socket_sendto')
+
 		self._js.eval_block('''\
 socket = Object();
-socket.socket = _socket;
+socket.socket = function* (family, sock_type) {
+	var s = Object();
+
+	s._fd = _socket(family, sock_type);
+
+	s.sendto = function* (message, destination) {
+		_socket_sendto(s._fd, message, destination);
+	};
+
+	return s;
+}
 ''')
 
 
@@ -347,7 +411,7 @@ socket.socket = _socket;
 		self._js.export(http_request, '_http_request')
 
 		def http_readURL(url):
-			log.debug("%s: readUrl('%s')", self.name, url)
+			log.debug("%s: readUrl('%s')", self._name, url)
 			r = requests.get(url)
 			if r.status_code != 200:
 				raise NotImplementedError("request code != 200")
@@ -365,8 +429,18 @@ for location in get_locations():
 	logging.debug('{} :: {}'.format(location['name'], location['path']))
 	accessors[location['name']] = get_all_accessors_from_location(location['path'])
 
+pprint.pprint(accessors)
+
 try:
-	stocktick = accessors['Anywhere'][0]
+	rpidoor = accessors['University of Michigan - 4908 BBB']['rpidoor']
+	log.debug("before lock")
+	rpidoor.lock = False
+	log.debug('after lock')
+finally:
+	sh.killall('node')
+
+try:
+	stocktick = accessors['Anywhere']['StockTick']
 	for symbol in ['GOOG', 'MSFT', 'YHOO']:
 		stocktick.stock_symbol = symbol
 		print("Stock {} price {}".format(stocktick.stock_symbol, stocktick.price))
