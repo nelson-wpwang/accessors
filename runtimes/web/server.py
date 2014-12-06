@@ -246,7 +246,7 @@ def location(location):
 	return get_accessors('{}/accessors/{}/accessors.json'.format(args.accessor_server, location))
 
 
-@app.route('/accessor')
+@app.route('/')
 def accessor():
 
 	locations = []
