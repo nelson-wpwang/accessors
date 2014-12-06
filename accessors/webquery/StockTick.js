@@ -10,7 +10,7 @@ function* fire() {
     log.error("Stock query failed");
     set('Price', '<ERR>');
   } else {
-    var tick = parseFloat(json.query.results.quote.AskRealtime);
+    var tick = parseFloat(json.query.results.quote.LastTradePriceOnly);
     set('Price', '$' + tick);
   }
   log.debug("StockTick fire end");
