@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import logging
+log = logging.getLogger(__name__)
+
 import base64
 import pprint
 import time
@@ -23,42 +26,30 @@ import requests
 try:
 	node_version = str(sh.node('--version')).strip()
 except sh.CommandNotFound:
-	print("This tool requires that `node` is installed.")
+	print("Accessors require that `node` is installed.")
 	print("Please get a copy from https://nodejs.org")
 	sys.exit(1)
 
 if node_version[0] == 'v':
 	node_version = node_version[1:]
 if not semver.match(node_version, ">=0.11.0"):
-	print("This tool requires node version >=0.11.0")
+	print("Accessors require node version >=0.11.0")
 	print("You have node version {} installed.".format(node_version))
 	print("Please update your node installation")
 	print("(You can use `nvm` to do this easily: github.com/creationix/nvm)")
 	print("(then run `nvm use 0.11`)")
 	sys.exit(1)
 
-import logging
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
-DESC = """
-A command line interface to accessors as a step towards a more general python
-accessor library / runtime.
-"""
-
-parser = argparse.ArgumentParser(description=DESC)
-parser.add_argument('-s', '--accessor-server',
-		required=True,
-		help='Server to load accessors from')
-args = parser.parse_args()
-
-if args.accessor_server[0:4] != 'http':
-	args.accessor_server = "http://" + args.accessor_server
-if args.accessor_server[-1] == '/':
-	args.accessor_server = args.accessor_server[:-1]
+def format_accessor_server(url):
+	if url[0:4] != 'http':
+		url = "http://" + url
+	if url[-1] == '/':
+		url = url[:-1]
+	return url
 
 
-def get_locations():
+def get_known_locations():
 	locations = []
 	locations.append({'name': 'University of Michigan - 4908 BBB',
 	                  'path': '/usa/michigan/annarbor/universityofmichigan/bbb/4908'})
@@ -70,8 +61,10 @@ def get_locations():
 	return locations
 
 
-def get_all_accessors_from_location (path):
-	url = args.accessor_server + '/accessors'
+def get_all_accessors_from_location (server, path):
+	server = format_accessor_server(server)
+
+	url = server + '/accessors'
 	if path[0] != '/':
 		url += '/'
 	url += path
@@ -91,7 +84,7 @@ def get_all_accessors_from_location (path):
 			accessor_url = accessor_url[:i] + '.json' + accessor_url[i:]
 		else:
 			accessor_url += '.json'
-		get_url = '{}/accessor{}'.format(args.accessor_server, accessor_url)
+		get_url = '{}/accessor{}'.format(server, accessor_url)
 		logging.debug("GET {}".format(get_url))
 		r2 = requests.get(get_url)
 		if r2.status_code == 200:
@@ -424,26 +417,18 @@ http.request = _http_request;
 http.readURL = function* (url) { return _http_readURL(url); };
 ''')
 
-accessors = {}
-for location in get_locations():
-	logging.debug('{} :: {}'.format(location['name'], location['path']))
-	accessors[location['name']] = get_all_accessors_from_location(location['path'])
 
-pprint.pprint(accessors)
+def get_accessor_by_location(server, location, name):
+	for loc in get_known_locations():
+		if location == loc['name']:
+			location = loc['path']
+			break
+	accessors = get_all_accessors_from_location(server, location)
+	return accessors[name]
 
-try:
-	rpidoor = accessors['University of Michigan - 4908 BBB']['rpidoor']
-	log.debug("before lock")
-	rpidoor.lock = False
-	log.debug('after lock')
-finally:
-	sh.killall('node')
-
-try:
-	stocktick = accessors['Anywhere']['StockTick']
-	for symbol in ['GOOG', 'MSFT', 'YHOO']:
-		stocktick.stock_symbol = symbol
-		print("Stock {} price {}".format(stocktick.stock_symbol, stocktick.price))
-finally:
-	# Hack until I undertsand bond better
-	sh.killall('node')
+#accessors = {}
+#for location in get_known_locations():
+#	logging.debug('{} :: {}'.format(location['name'], location['path']))
+#	accessors[location['name']] = get_all_accessors_from_location(location['path'])
+#
+#pprint.pprint(accessors)
