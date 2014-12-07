@@ -133,3 +133,16 @@ runtimes.
 
 - _Blocking_ `<string> http.readURL(<string> url)`: A convenience function for
 `GET`-ing a URL that wraps `http.request`.
+
+### Color Functions
+
+When writing accessors that use colors (such as lighting) it may be useful
+to change colors between various color representations. The `color` object
+makes this easier.
+
+- `<hsv object> color.hex_to_hsv(<string> hex_color)`: Convert a hex color
+string (like "0000FF") to an HSV object (like
+`{h: [hue (0-360)], s: [saturation (0-1)], v: [value (0-1)]}`).
+
+- `<string> color.hsv_to_hex(<hsv object> hsv_color)`: Convert an HSV object
+to an RGB hex string.
