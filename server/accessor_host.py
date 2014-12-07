@@ -437,7 +437,7 @@ Run an accessor hosting server.
 
 
 parser = argparse.ArgumentParser(description=DESC)
-parser.add_argument('-p', '--path',
+parser.add_argument('-p', '--accessor_path',
                     required=True,
                     help='The root of the tree that holds the accessors.')
 parser.add_argument('-l', '--location_path',
