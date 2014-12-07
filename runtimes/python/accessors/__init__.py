@@ -185,7 +185,7 @@ class InputPort(Port):
 			if e.data == 'TypeError: undefined is not a function':
 				log.debug("%s: no port fn, default to fire", self)
 				log.debug("%s: pre-fire", self)
-				self.accessor._js.eval('fire().next()')
+				self.accessor._js.call('_port_call', 'fire')
 				log.debug("%s: post-fire", self)
 			else:
 				raise
@@ -276,7 +276,7 @@ class Accessor():
 		self._init_runtime()
 
 		log.debug("%s: running accessor init method", self._name)
-		ret = self._js.eval("init().next()");
+		ret = self._js.call('_port_call', 'init')
 		log.debug("%s: accessor init ret %r", self._name, ret)
 
 	def __str__(self):
@@ -308,7 +308,11 @@ class Accessor():
 		self._js.eval_block('''\
 function _port_call (port, value) {
 	log.debug("before port call of " + port + "(" + value + ")");
-	global[port](value).next();
+	var r = global[port](value);
+	if (r && typeof r.next == 'function') {
+		r = r.next().value;
+	}
+	return r;
 }
 ''')
 
@@ -445,17 +449,7 @@ time.run_later = function (delay_in_ms, fn_to_run, args) {
 
 		def marshall(fn, arg):
 			log.debug("python %s, type %s", arg, type(arg))
-			return self._js.call("_marshall_wrapper", fn, arg);
-		self._js.eval_block('''
-function _marshall_wrapper(fn, arg) {
-	var r = global[fn](arg);
-	if (r && typeof r.next == 'function') {
-		r = r.next().value;
-	}
-	log.debug("marshalled: " + fn + "(" + arg + ") => " + r);
-	return r;
-}
-''')
+			return self._js.call("_port_call", fn, arg);
 		self._runtime.marshall = marshall
 
 		def get_parameter(parameter_name):
