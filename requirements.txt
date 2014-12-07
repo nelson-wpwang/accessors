@@ -1,4 +1,4 @@
-tornado
+tornado>=3.1
 flask
 requests
 watchdog

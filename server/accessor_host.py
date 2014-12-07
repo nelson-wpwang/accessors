@@ -9,8 +9,13 @@ import json
 import sys
 import os
 
+import semver
+
+import tornado
 import tornado.ioloop
 import tornado.web
+if not semver.match(tornado.version, ">=3.1.0"):
+	raise ImportError("tornado version >=3.1 required")
 
 import watchdog.events
 import watchdog.observers
