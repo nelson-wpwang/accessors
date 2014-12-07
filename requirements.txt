@@ -5,3 +5,6 @@ watchdog
 markdown
 rjsmin
 websockets
+sh
+python-bond
+semver
