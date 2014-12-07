@@ -15,6 +15,9 @@ The basic format is:
 }
 ```
 
+Accessor Fields
+---------------
+
 Here is the list of valid keys, some of which are required.
 Any other keys will be ignored.
 
@@ -30,8 +33,7 @@ Any other keys will be ignored.
 | `dependencies` | no       | array         | Other accessors that must be loaded in order for this accessor to run. See the "Accessor Dependencies" section for more details. |
 
 
-Ports
------
+### Ports
 
 Ports specify how data goes into and out of accessors. Ports are specified
 as a list of objects where each object is a port. Here are the keys that
@@ -47,7 +49,7 @@ are valid in the port object:
 | `max`          | no       | number        | Only valid when `type` == "integer" or "numeric". Allows the accessor runtime to limit input values. |
 
 
-### Port Types
+#### Port Types
 
 Port types essentially specify the data type of the port. Valid choices are:
 
@@ -61,9 +63,9 @@ Port types essentially specify the data type of the port. Valid choices are:
 | `select`  | Shows the user a list of options to choose from. Use the `options` key to specify the options. |
 | `color`   | Allow the user to enter a color. Will likely display a color picker. Color will be represented by a six digit RGB hex string. Example: "00FF00". |
 
-### Ports Example
+#### Ports Example
 
-```
+```json
 "ports": [
 	{
 		"direction": "output",
@@ -93,8 +95,7 @@ Port types essentially specify the data type of the port. Valid choices are:
 
 
 
-Parameters
-----------
+### Parameters
 
 Parameters allow for otherwise generic accessors to be customized to a particular
 device or room. Parameters are specified as a list of objects. Here are the valid
@@ -102,13 +103,13 @@ keys in an accessor parameter object:
 
 | KEY            | Required | Type          | Description |
 | ---            | -------- | ------        | ----------- |
-| name           | yes      | string        | Name of the parameter. |
-| default        | no       | string        | Value of the parameter if it is not otherwise specified when the accessor is requested. Has no effect if `required` is set to `true`. |
-| required       | no       | bool          | Defaults to `false`. Specifies whether the parameter must be set when the accessor is requested. If the parameter is not specified in the request an error will be returned. |
+| `name`         | yes      | string        | Name of the parameter. |
+| `default`      | no       | string        | Value of the parameter if it is not otherwise specified when the accessor is requested. Has no effect if `required` is set to `true`. |
+| `required`     | no       | bool          | Defaults to `false`. Specifies whether the parameter must be set when the accessor is requested. If the parameter is not specified in the request an error will be returned. |
 
-### Parameters Example
+#### Parameters Example
 
-```
+```json
 "parameters": [
 	{
 		"name": "username",
@@ -125,8 +126,7 @@ keys in an accessor parameter object:
 ]
 ```
 
-Code
-----
+### Code
 
 The magic of accessors is their included code. The `code` key specifies the available
 code and what language(s) the code is in. Code is specified as an object. The keys
@@ -138,9 +138,9 @@ object as its value. The valid keys in the second object are:
 | `code`         | no       | string        | A string of code. Will be included first in the generated accessor by the accessor host server. |
 | `include`      | no       | array         | A list of files that should be included when the final code blob is created by the accessor host server. The files will be appended in order. Using `include` makes writing the accessor code easier than including it in this file. |
 
-### Code Example
+#### Code Example
 
-```
+```json
 "code": {
 	"javascript": {
 		"include": ["some_common_code.js", myaccessor.js"]
@@ -154,8 +154,7 @@ def fire():
 }
 ```
 
-Dependencies
-------------
+### Dependencies
 
 Often it may be useful to compose accessors, that is, create a higher-level interface
 from a set of lower-level accessors. Think of this like an "all-in-one remote":
@@ -171,9 +170,9 @@ objects:
 | `name`         | yes      | string        | Name to map the sub-accessor to. This name will be used when creating the object for the sub-accessor. |
 | `path`         | yes      | string        | Path to the sub-accessor. Can point to an accessor on the local accessor host server or a remote one. Parameters can also be passed if needed. |
 
-### Dependencies Example
+#### Dependencies Example
 
-```
+```json
 "dependencies": [
 	{
 		"name": "MyHue",
@@ -191,5 +190,54 @@ objects:
 ```
 
 
+
+Accessor Example
+----------------
+
+```json
+{
+	"name":    "Denon AVR-1913",
+	"version": "0.1",
+	"author":  "Brad Campbell",
+	"description": "
+Denon AVR-1913 Accessor
+=======================
+
+The Denon AVR-1913 is a digital receiver.
+",
+
+	"ports": [
+		{
+			"direction": "output",
+			"name":      "Name"
+		},
+		{
+			"direction": "inout",
+			"name":      "Input",
+			"type":      "select",
+			"options":   ["PC", "Apple TV", "Internet"]
+		},
+		{
+			"direction": "inout",
+			"name":      "Audio Mode",
+			"type":      "select",
+			"options":   ["Multi Channel Stereo, Stereo"]
+		}
+	],
+
+	"parameters": [
+		{
+			"name": "device_url",
+			"default": "http://localhost"
+		}
+	],
+
+	"code": {
+		"javascript": {
+			"include": ["denonavr1913.js"]
+		}
+	}
+}
+```
 
 
