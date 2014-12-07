@@ -143,7 +143,7 @@ object as its value. The valid keys in the second object are:
 ```json
 "code": {
 	"javascript": {
-		"include": ["some_common_code.js", myaccessor.js"]
+		"include": ["some_common_code.js", "myaccessor.js"]
 	},
 	"python": {
 		"code": "import myaccessor
