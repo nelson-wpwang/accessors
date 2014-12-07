@@ -11,7 +11,7 @@ import os
 import socket
 import argparse
 import string
-import urllib.parse
+import json
 
 try:
 	import bond
@@ -95,6 +95,10 @@ def get_all_accessors_from_location (server, path):
 
 	return accessors
 
+# I've clearly been writing too much JS since I think this is a good idea...
+class Object():
+	pass
+
 class Port():
 	@staticmethod
 	def create(port, accessor):
@@ -140,9 +144,7 @@ class Port():
 	def __init__(self, port, accessor):
 		self.accessor = accessor
 
-		self.accessor_name = port['name']
-
-		self.python_name = port['name'].lower().replace(' ','_').replace('-','_')
+		self.name = port['name']
 
 		if port['type'] == 'select':
 			self.type = Port.SelectType(port['options'])
@@ -150,7 +152,7 @@ class Port():
 			self.type = Port.TYPE_MAP[port['type']]
 
 	def __str__(self):
-		return '<{}> {}(<{}>)'.format(self.direction, self.python_name, str(self.type))
+		return '<{}> {}(<{}>)'.format(self.direction, self.name, str(self.type))
 
 
 	# For the runtime use, allow anything to '_get' regardless of port direction
@@ -173,16 +175,19 @@ class InputPort(Port):
 		if self.accessor._js is None:
 			self.accessor._init()
 		try:
-			log.debug("%s: call accesor fn: %s(%s)", self, self.accessor_name, value)
-			r = self.accessor._js.call('_port_call', self.accessor_name, value)
+			log.debug("%s: call accesor fn: %s(%s)", self, self.name, value)
+			r = self.accessor._js.call('_port_call', self.name, value)
 			log.debug("%s: return %s", self, r)
-			log.debug("%s: end accesor fn: %s(%s)", self, self.accessor_name, value)
-		except bond.RemoteException:
-			# TODO distinguish missing fn from other exception
-			log.debug("%s: no port fn, default to fire", self)
-			log.debug("%s: pre-fire", self)
-			self.accessor._js.eval('fire().next()')
-			log.debug("%s: post-fire", self)
+			log.debug("%s: end accesor fn: %s(%s)", self, self.name, value)
+		except bond.RemoteException as e:
+			# This is maybe hack-y, maybe the best that can be done
+			if e.data == 'TypeError: undefined is not a function':
+				log.debug("%s: no port fn, default to fire", self)
+				log.debug("%s: pre-fire", self)
+				self.accessor._js.eval('fire().next()')
+				log.debug("%s: post-fire", self)
+			else:
+				raise
 
 class OutputPort(Port):
 	def __init__(self, *args, **kwargs):
@@ -199,11 +204,13 @@ class InoutPort(InputPort,OutputPort):
 		self.direction = 'inout'
 
 
-
 class Accessor():
-	def __init__(self, url, json):
-		# Save a copy of the url, just in case
+	def __init__(self, url, json, parent=None):
 		self._url = url
+		self._json = json
+		self._parent = parent
+
+		# This is a nice short handle, may have namespace issues though (TODO)
 		self._raw_name = url.split('.json')[0].split('/')[-1]
 
 		# Required Keys
@@ -211,6 +218,9 @@ class Accessor():
 		self._version = json['version']
 
 		log.debug("Creating new accessor: %s", self._name)
+
+		# Lazy-bind accessor init until first use
+		self._js = None
 
 		if 'author' in json:
 			self._author = json['author']
@@ -222,9 +232,10 @@ class Accessor():
 		else:
 			self._description = None
 
-		self._ports = []
+		self._ports = {}
 		for port in json['ports']:
-			self._ports.append(Port.create(port, self))
+			new_port = Port.create(port, self)
+			self._ports[new_port.name] = new_port
 
 		self._parameters = {}
 		if 'parameters' in json:
@@ -238,8 +249,8 @@ class Accessor():
 			raise NotImplementedError("Accessor without code?")
 		self._code = json['code']
 
-		# Lazy-bind accessor init until first use
-		self._js = None
+		if 'dependencies' in json:
+			self._sub_accessors = {}
 
 	def _init(self):
 		'''Call accessor init method'''
@@ -249,40 +260,49 @@ class Accessor():
 		log.debug("%s: creating JS runtime", self._name)
 		self._js = bond.make_bond('JavaScript', 'node', ['--harmony'])
 
+		log.debug("%s: loading `harmony-reflect` (patches to support ES6 Proxy)", self)
+		try:
+			self._js.eval_block("var Reflect = require('harmony-reflect');")
+		except bond.RemoteException as e:
+			if e.data == "Error: Cannot find module 'harmony-reflect'":
+				log.critical("Missing required node package harmony-reflect")
+				log.critical("Install via `npm install harmony-reflect`")
+				sys.exit(1)
+
 		log.debug("%s: loading accessor", self._name)
 		self._js.eval_block(self._code)
 
 		self._init_runtime()
 
-		log.debug("%s: running init", self._name)
-		ret = self._js.eval("init()");
-		log.debug("%s: init ret %r", self._name, ret)
+		log.debug("%s: running accessor init method", self._name)
+		ret = self._js.eval("init().next()");
+		log.debug("%s: accessor init ret %r", self._name, ret)
 
 	def __str__(self):
+		if self._parent:
+			return str(self._parent) + '.' + self._name
 		return self._name
 
 	def __repr__(self):
 		return "<Accessor: {}>".format(self._name)
 
 	def __getattribute__(self, attr):
-		if attr != '_ports' and hasattr(self, '_ports'):
-			for port in self._ports:
-				if attr == port.python_name:
-					return port._get()
+		if attr != '_ports' and hasattr(self, '_ports') and attr in self._ports:
+			return self._ports[attr]._get()
 		return object.__getattribute__(self, attr)
 
 	def __setattr__(self, attr, value):
-		if hasattr(self, '_ports'):
-			for port in self._ports:
-				if attr == port.python_name:
-					port._set(value)
-					return
+		if hasattr(self, '_ports') and attr in self._ports:
+			self._ports[attr]._set(value)
+			return
 		# All internal state must be prefixed with '_'
 		if attr[0] != '_' and not hasattr(self, attr):
 			raise AttributeError("%r object has no attribute %r" % (self, attr))
 		return object.__setattr__(self, attr, value)
 
 	def _init_runtime(self):
+		self._runtime = Object()
+
 		### SUPPORT FUNCTIONS FOR THIS RUNTIME
 		self._js.eval_block('''\
 function _port_call (port, value) {
@@ -298,6 +318,73 @@ function _port_call (port, value) {
 				log.warn("Request for runtime version %s ignored", set_to)
 			return "0.1.0"
 		self._js.export(version)
+
+		def subinit(sub_accessor, port_values):
+			log.debug("%s: Creating sub accessor: %s", self, sub_accessor)
+			dependency = None
+			for dep in self._json['dependencies']:
+				if dep['name'] == sub_accessor:
+					dependency = dep
+			if dependency is None:
+				raise RuntimeError("Request for sub accessor not listed in depenecies")
+			sub_accessor = Accessor(dependency['path'], dependency, parent=self)
+			self._sub_accessors[sub_accessor._name] = sub_accessor
+
+			log.debug("%s: Setting initial port values for %s", self, sub_accessor)
+			if port_values is not None:
+				for port,value in port_values.items():
+					# Write port value directly, not through _set so fn doesn't run
+					sub_accessor._ports[port].value = value
+
+			log.debug("%s: Running init() in subaccessor %s", self, sub_accessor)
+			sub_accessor._init()
+
+			log.debug("Creating proxy %s <> %s", self, sub_accessor)
+			self._js.export(
+				sub_accessor._runtime.get,
+				'_{}_handler_get'.format(sub_accessor._name)
+				)
+			self._js.export(
+				sub_accessor._runtime.set,
+				'_{}_handler_set'.format(sub_accessor._name)
+				)
+			self._js.export(
+				sub_accessor._runtime.marshall,
+				'_{}_handler_marshall'.format(sub_accessor._name)
+				)
+			self._js.eval_block('''
+var _{name}_handler = {{
+get: function (target, name) {{
+	log.debug("target " + target + ", name " + name);
+	if (name == 'get') {{
+		return function (to_get) {{
+			return _{name}_handler_get(to_get);
+		}};
+	}} else {{
+		return function* (arg) {{
+			log.debug("arg " + arg);
+			log.debug("source: " + typeof arg);
+			r = _{name}_handler_marshall(name, arg);
+			log.debug("source: " + r);
+			return r;
+		}};
+	}}
+}},
+set: function (target, prop, value) {{
+	_{name}_handler_set(prop, value);
+}}
+}};
+_{name}_proxy = new Proxy({{}}, _{name}_handler);
+'''.format(name=sub_accessor._name))
+			log.debug("%s: Created sub accessor: %s", self, sub_accessor)
+			return '_{}_proxy'.format(sub_accessor._name);
+		self._js.export(subinit, '_subinit')
+		self._js.eval_block('''\
+subinit = function* (sub_accessor, port_values) {
+	var name = _subinit(sub_accessor, port_values);
+	return global[name];
+};
+''')
 
 		def do_log(level, msg):
 			f = getattr(log, level)
@@ -332,22 +419,43 @@ time.run_later = function (delay_in_ms, fn_to_run, args) {
 		### ACCESSOR INTERFACE AND PROPERTIES
 
 		def get(port_name):
-			for port in self._ports:
-				if port_name == port.accessor_name:
-					r = port.get()
-					log.debug("%s: get(%s) => %s", self._name, port_name, r)
-					return r
-			raise NotImplementedError("get unknown port: {}".format(port_name))
+			try:
+				port = self._ports[port_name]
+				r = port.get()
+				log.debug("%s: get(%s) => %s", self._name, port_name, r)
+				return r
+			except:
+				log.exception("Uncaught error in %s.get(%s)", self, port_name)
+				raise
+		self._runtime.get = get
 		self._js.export(get)
 
 		def set(port_name, value):
-			for port in self._ports:
-				if port_name == port.accessor_name:
-					log.debug("%s: set(%s) <= %s", self._name, port_name, value)
-					port.set(value)
-					return
-			raise NotImplementedError("set unknown port: {}".format(port_name))
+			try:
+				port = self._ports[port_name]
+				log.debug("%s: set(%s) <= %s", self._name, port_name, value)
+				port.set(value)
+				return
+			except:
+				log.exception("Uncaught error in %s.set(%s, %s)", self, port_name, value)
+				raise
+		self._runtime.set = set
 		self._js.export(set)
+
+		def marshall(fn, arg):
+			log.debug("python %s, type %s", arg, type(arg))
+			return self._js.call("_marshall_wrapper", fn, arg);
+		self._js.eval_block('''
+function _marshall_wrapper(fn, arg) {
+	var r = global[fn](arg);
+	if (r && typeof r.next == 'function') {
+		r = r.next().value;
+	}
+	log.debug("marshalled: " + fn + "(" + arg + ") => " + r);
+	return r;
+}
+''')
+		self._runtime.marshall = marshall
 
 		def get_parameter(parameter_name):
 			try:
@@ -400,21 +508,52 @@ socket.socket = function* (family, sock_type) {
 		### HTTP Requests
 
 		def http_request(url, method, properties=None, body=None, timeout=None):
-			raise NotImplementedError("http_request")
+			log.debug("%s: http_request(%s, %s, prop=%s, body=%s, timeout=%s",
+					self, url, method, properties, body, timeout)
+			fn = getattr(requests, method.lower())
+			if properties is not None:
+				raise NotImplementedError("http_request properties")
+			if body is not None:
+				r = fn(url, data=body, timeout=timeout)
+			else:
+				r = fn(url, timeout=timeout)
+			if r.status_code != 200:
+				raise NotImplementedError("http_request: code != 200")
+			log.debug("%s: http_request => %s", self, r.text)
+			return r.text
 		self._js.export(http_request, '_http_request')
 
 		def http_readURL(url):
-			log.debug("%s: readUrl('%s')", self._name, url)
+			log.debug("%s: readUrl('%s')", self, url)
 			r = requests.get(url)
 			if r.status_code != 200:
-				raise NotImplementedError("request code != 200")
+				raise NotImplementedError("readURL: request code != 200")
 			return r.text
 		self._js.export(http_readURL, '_http_readURL')
 
 		self._js.eval_block('''\
 http = Object();
-http.request = _http_request;
+http.request = function* (url, method, prop, body, timeout) {
+	return _http_request (url, method, prop, body, timeout);
+};
 http.readURL = function* (url) { return _http_readURL(url); };
+''')
+
+
+		### Color
+		def color_hex_to_hsv(hex_code):
+			log.warn("Not implemented hex_to_hsv")
+			return (0, 0, 0)
+		self._js.export(color_hex_to_hsv, '_color_hex_to_hsv')
+
+		def color_hsv_to_hex(hsv):
+			return 0
+		self._js.export(color_hsv_to_hex, '_color_hsv_to_hex')
+
+		self._js.eval_block('''\
+color = Object();
+color.hex_to_hsv = _color_hex_to_hsv;
+color.hsv_to_hex = _color_hsv_to_hex;
 ''')
 
 

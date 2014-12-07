@@ -56,6 +56,51 @@ is omitted, the call will return immediately without actually doing anything.
 > functionality is emulated using generators that return promises.
 
 
+Meta-Accessors
+--------------
+
+Accessors may express dependencies on other accessors, allowing a single
+_meta-accessor_ to control both a projector and stereo for example. A
+sub-accessor is listed as a dependency with a name and a path to the
+sub-accessor. The runtime will make the sub-accessor available as an object in
+the meta-accessor runtime. For example, if an accessor listed this dependency:
+
+```javascript
+	"dependencies": [
+		{
+			"path": "/onoffdevice/light/hue/huesingle.json",
+			"name": "PatHue"
+		}
+	]
+```
+
+Then in the accessor execution environment, a `PatHue` object can be used as:
+
+```javascript
+function* fire() {
+	if (typeof PatHue == 'undefined') {
+		PatHue = yield* subinit('PatHue', {'BulbName': 'Pat'});
+	}
+	PatHue.Power(true);
+}
+```
+
+### `init()`ing sub-accesors
+
+The runtime does **not** automatically init sub-accessors. It is the
+responsibility of the meta-accessor (using the `subinit` runtime function).
+This is for a few reasons:
+
+* The sub-accessor may not be used and there is no reason to init it until it
+   is actually needed.
+* The meta-accessor may need to set input values before init is called.
+* It provides a mechanism to synchronously set initial values for multiple
+  input/inout ports.
+
+The behavoir of any operations on the sub-accessor before calling `subinit`
+is undefined.
+
+
 Runtime Functions
 -----------------
 
@@ -72,6 +117,12 @@ version environment. The version request may include range specifiers (e.g.
 `>=2.0.0`). If the requested version change cannot be satisfied, the version
 is unchanged and the original version is returned.  The accesor runtime is
 versioned using [semantic versioning](http://semver.org/).
+
+- _Blocking_ `<accessor> subinit(<string> sub_accessor, <dict> port_values`:
+Calls the `init()` method of a sub accessor, after setting initial values for
+all ports specified in `port_values`.
+   - TODO: Allow multiple subinits of the same sub-accessor? Easy in python,
+     but may be harder in other runtimes.
 
 - `<void> log.[debug,info,warn,error](<string> line)`: The log family
 of functions provides a means for logging messages. These messages are

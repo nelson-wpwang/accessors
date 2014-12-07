@@ -47,13 +47,6 @@ in order for the accessor to work.');
 		var code = accessor.code;
 		$.globalEval(code);
 
-		if (accessor.dependencies) {
-			for (var i=0; i<accessor.dependencies.length; i++) {
-				dependency = accessor.dependencies[i];
-				$.globalEval(dependency.code);
-			}
-		}
-
 		// Activate all sliders
 		$('#accessor-'+accessor.clean_name+' .slider').each(function () {
 			$(this).slider().on('slideStop', function (slide_event) {

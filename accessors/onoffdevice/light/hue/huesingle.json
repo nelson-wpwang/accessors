@@ -25,7 +25,7 @@ click update.
 		{
 			"direction": "input",
 			"type": "string",
-			"name": "Bulb Name"
+			"name": "BulbName"
 		},
 		{
 			"direction": "output",

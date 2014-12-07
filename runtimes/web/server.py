@@ -6,7 +6,6 @@ import sys
 import os
 import argparse
 import string
-import urllib.parse
 
 import flask
 import markdown

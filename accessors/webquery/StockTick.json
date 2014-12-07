@@ -11,7 +11,7 @@ This accessor, when fired, reads the most recent bid price for the specified sto
   "ports": [
               {
                 "direction": "input",
-                "name": "Stock Symbol",
+                "name": "StockSymbol",
                 "type": "string",
                 "default": "YHOO",
                 "description": "The stock symbol."

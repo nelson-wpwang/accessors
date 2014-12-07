@@ -10,7 +10,7 @@ rpidoor = accessors.get_accessor_by_location(
 	'rpidoor'
 	)
 try:
-	rpidoor.lock = False
+	rpidoor.Lock = False
 finally:
 	# Hack until I understand bond better
 	sh.killall('node')

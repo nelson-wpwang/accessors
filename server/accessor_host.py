@@ -245,6 +245,8 @@ class ServeAccessorXML (ServeAccessor):
 
 
 def create_accessor (structure, accessor, path):
+	validate_accessor_ports(accessor)
+
 	# Handle any code include directives
 	if 'code' in accessor:
 		accessor['code_alternates'] = {}
@@ -299,6 +301,36 @@ def create_accessor (structure, accessor, path):
 		print('Adding accessor {}'.format(json_path))
 		print('Adding accessor {}'.format(xml_path))
 
+def validate_accessor_ports(accessor):
+	RESERVED_PORTS = ('init', 'fire', 'wrapup')
+	RUNTIME_KEYWORDS = ('version', 'subinit', 'log', 'time', 'get', 'set', 'get_parameter', 'socket', 'http')
+
+	for port in accessor['ports']:
+		name = port['name']
+		if name.lower() in RESERVED_PORTS:
+			print("Illegal port name", name)
+			print("{} are reserved".format(RESERVED_PORTS))
+			print("Found parsing", accessor)
+			sys.exit(1)
+		if name.lower() in RUNTIME_KEYWORDS:
+			print("Illegal port name", name)
+			print("{} are runtime keywords".format(RUNTIME_KEYWORDS))
+			print("Found parsing", accessor)
+			sys.exit(1)
+		if ' ' in name:
+			print("Illegal character 'SPACE' in port", name)
+			print("Found parsing", accessor)
+			sys.exit(1)
+		if '-' in name:
+			print("Illegal character 'DASH' in port", name)
+			print("Consider using an underscore instead.")
+			print("Found parsing", accessor)
+			sys.exit(1)
+		if ord(name[0].upper()) not in range(65,91):
+			print("Ports must start with a letter")
+			print("Illegal port", name)
+			print("Found parsing", accessor)
+			sys.exit(1)
 
 # Build accessors going down the tree
 def create_accessors_recurse (accessor_tree, current_accessor, structure):
@@ -338,6 +370,7 @@ def create_accessors (accessor_tree):
 		if 'dependencies' in accessor.accessor:
 			for dependency in accessor.accessor['dependencies']:
 				path = '/accessor{}'.format(dependency['path'])
+				dependency['version'] = copy.deepcopy(accessors_by_path[path].accessor['version'])
 				dependency['code_alternates'] = copy.deepcopy(accessors_by_path[path].accessor['code_alternates'])
 				dependency['ports'] = copy.deepcopy(accessors_by_path[path].accessor['ports'])
 				dependency['parameters'] = copy.deepcopy(accessors_by_path[path].accessor['parameters'])

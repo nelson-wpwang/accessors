@@ -1,9 +1,6 @@
 function* init () {
-	BradHue.set('BulbName', 'Brad');
-	PatHue.set('BulbName', 'Pat');
-
-	yield* BradHue.init();
-	yield* PatHue.init();
+	BradHue = yield* subinit('BradHue', {BulbName: 'Brad'});
+	PatHue = yield* subinit('PatHue', {BulbName: 'Pat'});
 
 	yield* BradHue.BulbName('Brad');
 	yield* PatHue.BulbName('Pat');
@@ -18,10 +15,6 @@ function* init () {
 
 	if (BradHue.get('Brightness') == PatHue.get('Brightness')) {
 		set('Brightness', PatHue.get('Brightness'));
-	}
-
-	if (BradHue.get('Saturation') == PatHue.get('Saturation')) {
-		set('Saturation', PatHue.get('Saturation'));
 	}
 }
 
