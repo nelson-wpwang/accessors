@@ -446,7 +446,7 @@ parser.add_argument('-l', '--location_path',
 args = parser.parse_args()
 
 # Initialize the accessors
-root = find_accessors(args.path, None)
+root = find_accessors(args.accessor_path, None)
 create_accessors(root)
 
 # Start a monitor to watch for any changes to accessors
@@ -455,11 +455,11 @@ class AccessorChangeHandler (watchdog.events.FileSystemEventHandler):
 		if str(event.src_path[-1]) == '~' or str(event.src_path[-4:-1]) == '.sw':
 			# Ignore temporary files
 			return
-		root = find_accessors(args.path, None)
+		root = find_accessors(args.accessor_path, None)
 		create_accessors(root)
 
 observer = watchdog.observers.Observer()
-observer.schedule(AccessorChangeHandler(), path=args.path, recursive=True)
+observer.schedule(AccessorChangeHandler(), path=args.accessor_path, recursive=True)
 observer.start()
 
 # Start the webserver for accessors
