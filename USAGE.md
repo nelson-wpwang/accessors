@@ -50,7 +50,7 @@ accessor files and the in-browser javascript runtime.
 
 Setting up the webserver requires two servers to be running. The first is a
 websockets server. This is used by the javascript runtime to tunnel UDP and
-TCP sockets over websockets since browsers do not allow arbritrary socket
+TCP sockets over websockets since browsers do not allow arbitrary socket
 connections. To start this:
 
     ./ws_server.py
@@ -61,12 +61,21 @@ The next is the HTTP server that hosts the accessor pages. To run this:
 
 Note this server requires [Bower](http://bower.io/) to be installed.
 
-Now `localhost:5000` should run the accessor server.
+Now visit `http://localhost:5000` in a browser.
 
 
 
 ### Accessor Python Runtime
 
+The python runtime uses [node](http://nodejs.org) to run accessors.
 
+The python runtime allows for more traditional programmatic access to
+accessors. An accessor is a python object. All of the accessor ports are
+mapped as attributes of the object. Writing an attribute will fire the
+port with the new value. Python accessors are lazily loaded, that is they
+are not `init()`'ed until first use. You can use the `_init()` method to
+initialize the accessor immediately.
+
+`runtimes/python` contains some examples for using accessors in python.
 
 ### Accessor Java Runtime
