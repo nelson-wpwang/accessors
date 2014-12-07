@@ -12,6 +12,7 @@ import socket
 import argparse
 import string
 import json
+import colorsys
 
 try:
 	import bond
@@ -542,12 +543,19 @@ http.readURL = function* (url) { return _http_readURL(url); };
 
 		### Color
 		def color_hex_to_hsv(hex_code):
-			log.warn("Not implemented hex_to_hsv")
-			return (0, 0, 0)
+			if hex_code[0] == '#':
+				hex_code = hex_code[1:]
+			r = int(hex_code[0:2], 16)
+			g = int(hex_code[2:4], 16)
+			b = int(hex_code[4:6], 16)
+			r, g, b = map(lambda x: x/255, (r, g, b))
+			return colorsys.rgb_to_hsv(r, g, b)
 		self._js.export(color_hex_to_hsv, '_color_hex_to_hsv')
 
 		def color_hsv_to_hex(hsv):
-			return 0
+			rgb = colorsys.hsv_to_rgb(hsv['h'], hsv['s'], hsv['v'])
+			r, g, b = map(lambda x: int(255*x), rgb)
+			return "{:02x}{:02x}{:02x}".format(r, g, b)
 		self._js.export(color_hsv_to_hex, '_color_hsv_to_hex')
 
 		self._js.eval_block('''\
