@@ -2,7 +2,7 @@ Accessor Updates from Michigan
 ==============================
 
 After deciding to take our own spin with accessors we made some changes along
-the way. None of these changes is necessarily permanent but were inspired
+the way. None of these changes are necessarily permanent but were inspired
 by our own workflow and vision for what accessors can be.
 
 
@@ -10,10 +10,11 @@ Changes
 -------
 
 1. **XML -> JSON**. Our accessors are written in the JSON format rather than
-XML. JSON is simpler to write than XML while being just as useful for accessors.
+XML. JSON is simpler to read and write than XML while being just as useful for accessors.
 It is also easier to parse into Javascript and Python as it very well matches
-the datatypes in those languages. Not that even though accessors are specified
-in JSON, they can be transparently converted to XML.
+the datatypes in those languages. Note that even though accessors are specified
+in JSON, they can be transparently converted to XML, a feature used by our Java
+runtime.
 
 2. **Renamed and Updated Runtime Functions**. We use the term "runtime" to refer to an
 environment in which accessors are executed in. The runtime functions are
@@ -91,10 +92,11 @@ URL. In the Hue example:
 
 6. **Accessor Dependencies**. Low-level accessors may be useful for interacting
 with specific devices but may not provide the interfaces that people actually
-want to use. Consider the example of trying to play a movie and having to use
-the audio receiver accessor to enable sound and the TV accessor to enable the
-display and the lights accessor to dim the lighting. Instead, a user most likely
-wants to use the movie accessor. To enable this without duplicating the code
+want to use. Consider the example of trying to play a movie: first you use
+the audio receiver accessor to enable sound, then the TV accessor to enable the
+display, and then the lights accessor to dim the lighting. Instead, a user most likely
+wants to use a movie accessor, which knows about the A/V equipment and lighting in the
+room. To enable this without duplicating the code
 for the audio, TV, and light accessors, we allow the movie accessor to specify
 those accessors as dependencies. The movie accessor can then invoke the
 sub-accessor code rather than recreating it. The code would look something like
