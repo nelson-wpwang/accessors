@@ -2,6 +2,7 @@ import java.lang.String;
 import javax.script.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.io.BufferedReader;
 import java.util.List;
 import java.util.ArrayList;
@@ -61,7 +62,7 @@ public class AccessorRuntime {
 			usage(1);
 		}
 
-		// Get Accessors
+		// Get accessor list for location
 		URL loc_url = new URL(server_host + "/accessors" + location + "accessors.xml");
 		System.out.println("GET " + loc_url.toString());
 		HttpURLConnection urlConnection = (HttpURLConnection) loc_url.openConnection();
@@ -82,8 +83,8 @@ public class AccessorRuntime {
 		}
 
 		root_doc.getDocumentElement().normalize();
-		//System.out.println("Root element :" + root_doc.getDocumentElement().getNodeName());
 
+		// Get all of the accessors from that location
 		List<Document> accessors_array = new ArrayList<Document>();
 		NodeList nList = root_doc.getElementsByTagName("accessor");
 		for (int i = 0; i < nList.getLength(); i++) {
@@ -94,7 +95,35 @@ public class AccessorRuntime {
 			if (idx == -1) {
 				accessor_url += ".xml";
 			} else {
-				accessor_url = accessor_url.substring(0, idx) + ".xml" + accessor_url.substring(idx);
+				// Ugh, really Java? Every other runtime will do this for me
+				String root = accessor_url.substring(0, idx);
+				String params = accessor_url.substring(idx+1);
+				accessor_url =  root + ".xml?";
+				String rest;
+				//System.out.println("--------------------");
+				do {
+					//System.out.println("accessor_url: " + accessor_url);
+					//System.out.println("      params: " + params + "\n");
+					int eidx = params.indexOf("=");
+					int sidx = params.indexOf("&");
+					String param = params.substring(0, eidx);
+					String value;
+					if (sidx != -1) {
+						value = params.substring(eidx+1, sidx);
+						params = params.substring(sidx+1);
+					} else {
+						value = params.substring(eidx+1);
+						params = "";
+					}
+
+					accessor_url += URLEncoder.encode(param, "UTF-8");
+					accessor_url += "=";
+					accessor_url += URLEncoder.encode(value, "UTF-8");
+					if (sidx != -1) {
+						accessor_url += "&";
+					}
+				} while (params.length() > 0);
+				//System.out.println("accessor_url: " + accessor_url);
 			}
 
 			URL get_url = new URL(server_host + "/accessor" + accessor_url);
