@@ -133,7 +133,7 @@ information.
 exception, terminating the current execution. Do not use critical for transient
 errors (e.g. a 503).
 
-- _Blocking_ `<null> time.sleep(<float> time_in_ms)`: Suspends execution for at
+- _Blocking_ `<null> time.sleep(<int> time_in_ms)`: Suspends execution for at
 least the amount of time requested.
 
 - `<null> time.run_later(<float> delay_in_ms, <fn> fn_to_run, <T> args)`:

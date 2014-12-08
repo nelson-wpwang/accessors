@@ -195,7 +195,13 @@ public class AccessorRuntime {
 		engine.eval("log.warn  = Packages.AccessorRuntime.log_warn");
 		engine.eval("log.error = Packages.AccessorRuntime.log_error");
 		engine.eval("log.critical = Packages.AccessorRuntime.log_critical");
-		// TODO time
+		engine.eval("time = new Object()");
+		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; time.sleep = $traceurRuntime.initGeneratorFunction(function $__0(time_in_ms) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: Packages.AccessorRuntime.time_sleep(time_in_ms); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
+		engine.eval("time.run_later = function(delay_in_ms, fn_to_run, args) {"
+				+ "log.warn('NotImplemented: time.run_later is a blocking sleep in this runtime');"
+				+ "Packages.AccessorRuntime.time_sleep(delay_in_ms);"
+				+ "fn_to_run(args);"
+				+ "};");
 
 		engine.eval("get = Packages.AccessorRuntime.get");
 		engine.eval("set = Packages.AccessorRuntime.set");
@@ -312,6 +318,9 @@ public class AccessorRuntime {
 		throw new RuntimeException();
 	}
 
+	public static void time_sleep(long time_in_ms) throws InterruptedException {
+		Thread.sleep(time_in_ms);
+	}
 
 	// ### ACCESSOR INTERFACE AND PROPERTIES
 
