@@ -1,0 +1,7 @@
+{
+  "name": "accessor-runtime-java",
+  "dependencies": {
+    "traceur": ">= 0.0.74",
+    "traceur-runtime": ">= 0.0.74"
+  }
+}

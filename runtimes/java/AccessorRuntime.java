@@ -1,9 +1,9 @@
 import java.lang.String;
 import javax.script.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.io.BufferedReader;
+import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.io.*;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -183,14 +183,52 @@ public class AccessorRuntime {
 			System.exit(1);
 		}
 
-		// Run code
+		// Initialize traceur runtime
+		engine.eval(new java.io.FileReader("bower_components/traceur-runtime/traceur-runtime.js"));
+
+		// Initialize the accessor runtime
+		engine.eval("version = Packages.AccessorRuntime.version");
+		// TODO subinit
+		// TODO log
+		// TODO time
+
+		engine.eval("get = Packages.AccessorRuntime.get");
+		engine.eval("set = Packages.AccessorRuntime.set");
+		engine.eval("get_parameter = Packages.AccessorRuntime.get_parameter");
+
+		// TODO socket
+
+		engine.eval("http = Object()");
+		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; var o = Object(); http.request = $traceurRuntime.initGeneratorFunction(function $__0(url, method) { var properties, body, timeout; var $arguments = arguments; return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: properties = $arguments[2] !== (void 0) ? $arguments[2] : null; body = $arguments[3] !== (void 0) ? $arguments[3] : null; timeout = $arguments[4] !== (void 0) ? $arguments[4] : null; $ctx.state = 4; break; case 4: $ctx.returnValue = Packages.AccessorRuntime.http_request(url, method, properties, body, timeout); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
+		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; http.readURL = $traceurRuntime.initGeneratorFunction(function $__0(url) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: $ctx.returnValue = Packages.AccessorRuntime.http_readURL(url); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
+
+		// TODO color
+
+		// Load accessor code
 		NodeList script = hue_single_element.getElementsByTagName("script");
 		Element wtf = (Element) script.item(0);
 		String code = getCharacterDataFromElement(wtf);
-		System.out.println("Script: " + code);
+		//System.out.println("Script: " + code);
 		engine.eval(code);
 
-		System.out.println("Done. Goodbye.");
+		// Call accessor init
+		System.out.println("Initializing accessor...");
+		// TODO: Handle init vs init*
+		engine.eval("init().next()");
+
+		// Turn on a fucking light
+		System.out.println("Setting power on");
+		engine.eval("Power(true).next()");
+		Thread.sleep(2000);
+
+		System.out.println("Setting power off");
+		engine.eval("Power(false).next()");
+		Thread.sleep(2000);
+
+		System.out.println("Setting power on");
+		engine.eval("Power(true).next()");
+
+		System.out.println("\n\nDone. Goodbye.");
 	}
 
 	// http://stackoverflow.com/questions/11553697/
@@ -212,6 +250,12 @@ public class AccessorRuntime {
 		return "";
 	}
 
+	// http://stackoverflow.com/questions/326390/
+	static String readFile(String path) throws IOException {
+		byte[] encoded = Files.readAllBytes(Paths.get(path));
+		return new String(encoded);
+	}
+
 	public static void usage(int retcode) {
 		System.out.println("");
 		System.out.println("USAGE: java AccessorRuntime -s ACCESSOR_SERVER -l LOCATION");
@@ -221,5 +265,88 @@ public class AccessorRuntime {
 		System.out.println("");
 
 		System.exit(retcode);
+	}
+
+	// ACCESSOR RUNTIME
+	//
+	// ### GENERAL UTILITY
+	public static String version() {
+		return "0.1.0";
+	}
+	public static String version(String set_to) {
+		if (!set_to.equals("0.1.0")) {
+			System.out.println("Request for runtime version " + set_to + " ignored.");
+		}
+		return version();
+	}
+
+	// TODO polymorphic return type?
+	public static String get(String port_name) {
+		System.out.println("runtime: get(" + port_name + ")");
+		if (port_name.equals("BulbName")) {
+			return "Pat";
+		}
+		System.out.println("hack fail on get");
+		System.exit(1);
+		return "";
+	}
+
+	// TODO polymorphic set value?
+	public static void set(String port_name, String value) {
+		System.out.println("runtime: set(" + port_name + "," + value + ")");
+	}
+
+	public static String get_parameter(String parameter_name) {
+		if (parameter_name.equals("bridge_url"))
+			return "http://4908hue.eecs.umich.edu";
+		if (parameter_name.equals("username"))
+			return "lab11in4908";
+		return "XXX_ERROR";
+	}
+
+
+	// ### HTTP REQUESTS
+	public static String http_request(String url_str, String method, String properties, String body, int timeout) throws Exception {
+		// http://stackoverflow.com/questions/1051004/
+		URL url = new URL(url_str);
+		HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
+		httpCon.setDoOutput(true);
+		httpCon.setRequestMethod(method);
+		OutputStreamWriter out = new OutputStreamWriter( httpCon.getOutputStream());
+		out.write(body);
+		out.close();
+		String resp = URLConnectionReader.getTextFromStream(httpCon.getInputStream());
+		System.out.println("runtime: http_request(" + url + ", ...) => " + resp);
+		return resp;
+	}
+
+	public static String http_readURL(String url) throws Exception {
+		String resp = URLConnectionReader.getText(url);
+		System.out.println("runtime: http_readURL(" + url + ") => " + resp);
+		return resp;
+	}
+}
+
+// http://stackoverflow.com/questions/4328711/
+class URLConnectionReader {
+	public static String getText(String url) throws Exception {
+		URL website = new URL(url);
+		URLConnection connection = website.openConnection();
+		return getTextFromStream(connection.getInputStream());
+	}
+
+	public static String getTextFromStream(InputStream is) throws Exception {
+		BufferedReader in = new BufferedReader(
+				new InputStreamReader(is));
+
+		StringBuilder response = new StringBuilder();
+		String inputLine;
+
+		while ((inputLine = in.readLine()) != null)
+			response.append(inputLine);
+
+		in.close();
+
+		return response.toString();
 	}
 }

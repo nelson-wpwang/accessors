@@ -2,6 +2,15 @@
 
 set -e
 
+if [ ! -e bower_components/traceur-runtime/traceur-runtime.js ]; then
+	echo -e "\nRunning bower..."
+	bower install
+fi
+if [ ! -e bower_components/traceur/traceur.js ]; then
+	echo -e "\nRunning bower..."
+	bower install
+fi
+
 echo -e "\nCompiling..."
 javac AccessorRuntime.java
 
