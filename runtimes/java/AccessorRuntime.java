@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
+import org.w3c.dom.CharacterData;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
@@ -93,7 +94,7 @@ public class AccessorRuntime {
 
 			int idx = accessor_url.indexOf("?");
 			if (idx == -1) {
-				accessor_url += ".xml";
+				accessor_url += ".xml?_language=traceur_es5";
 			} else {
 				// Ugh, really Java? Every other runtime will do this for me
 				String root = accessor_url.substring(0, idx);
@@ -124,6 +125,7 @@ public class AccessorRuntime {
 					}
 				} while (params.length() > 0);
 				//System.out.println("accessor_url: " + accessor_url);
+				accessor_url += "&_language=traceur_es5";
 			}
 
 			URL get_url = new URL(server_host + "/accessor" + accessor_url);
@@ -157,15 +159,57 @@ public class AccessorRuntime {
 			System.out.println("\t" + eElement.getAttribute("name"));
 		}
 
+		Element hue_single_element = null;
+		for (int i = 0; i < accessors.length; i++) {
+			hue_single_element = (Element) accessors[i].getDocumentElement();
+			if (hue_single_element.getAttribute("name").equals("Hue Single")) {
+				System.out.println("Got Hue Single");
+				break;
+			}
+		}
+
+		if (!hue_single_element.getAttribute("name").equals("Hue Single")) {
+			System.exit(1);
+		}
+
 		// create a script engine manager
 		ScriptEngineManager factory = new ScriptEngineManager();
 		// create JavaScript engine
 		ScriptEngine engine = factory.getEngineByName("nashorn");
 
+		if (engine == null) {
+			System.out.println("Failed to get nashorn engine. Dying.");
+			System.out.println("(Are you running Java 8?)");
+			System.exit(1);
+		}
+
 		// Run code
-		//engine.eval(new java.io.FileReader(args[i]));
+		NodeList script = hue_single_element.getElementsByTagName("script");
+		Element wtf = (Element) script.item(0);
+		String code = getCharacterDataFromElement(wtf);
+		System.out.println("Script: " + code);
+		engine.eval(code);
 
 		System.out.println("Done. Goodbye.");
+	}
+
+	// http://stackoverflow.com/questions/11553697/
+	public static String getCharacterDataFromElement(Element e) {
+		NodeList list = e.getChildNodes();
+		String data;
+
+		for (int i = 0; i < list.getLength(); i++) {
+			if (list.item(i) instanceof CharacterData) {
+				CharacterData child = (CharacterData) list.item(i);
+				data = child.getData();
+
+				if (data != null && data.trim().length() > 0) {
+					return child.getData();
+				}
+			}
+		}
+		System.out.println("WARN: Request CDATA from not CDATA element");
+		return "";
 	}
 
 	public static void usage(int retcode) {

@@ -237,7 +237,8 @@ class ServeAccessorXML (ServeAccessor):
 		doc = ET.SubElement(top, 'documentation', attrib={'type': 'text/html'})
 		ET.SubElement(doc, '![CDATA[', attrib={'type': 'text/html'})\
 			.text = accessor['description']
-		ET.SubElement(top, '![CDATA[', attrib={'type': 'text/javascript'})\
+		script = ET.SubElement(top, 'script', attrib={'type': 'text/javascript'})
+		ET.SubElement(script, '![CDATA[', attrib={'type': 'text/javascript'})\
 			.text = '\n{}\n'.format(accessor['code'])
 
 		s = '\n'.join(ET.tostringlist(top, encoding='unicode'))
