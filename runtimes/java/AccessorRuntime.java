@@ -189,7 +189,12 @@ public class AccessorRuntime {
 		// Initialize the accessor runtime
 		engine.eval("version = Packages.AccessorRuntime.version");
 		// TODO subinit
-		// TODO log
+		engine.eval("log = new Object()");
+		engine.eval("log.debug = Packages.AccessorRuntime.log_debug");
+		engine.eval("log.info  = Packages.AccessorRuntime.log_info");
+		engine.eval("log.warn  = Packages.AccessorRuntime.log_warn");
+		engine.eval("log.error = Packages.AccessorRuntime.log_error");
+		engine.eval("log.critical = Packages.AccessorRuntime.log_critical");
 		// TODO time
 
 		engine.eval("get = Packages.AccessorRuntime.get");
@@ -279,6 +284,36 @@ public class AccessorRuntime {
 		}
 		return version();
 	}
+
+	// So, I tried passing an actual class to JS as an object, b/c in principle I
+	// think you can do that, but that gave me this awesome error:
+	//   Exception in thread "main" java.lang.IncompatibleClassChangeError: AccessorRuntime and AccessorRuntime$RuntimeLog disagree on InnerClasses attribute
+	// which is beyond the amount of java I know or understand (and may actually
+	// be a JVM bug from some reading), so... we'll make the object in JS and just
+	// export individaul functions for everything, no real difference I don't think
+	public static void log_debug(String msg) {
+		System.out.println("DEBUG: " + msg);
+	}
+
+	public static void log_info(String msg) {
+		System.out.println(" INFO: " + msg);
+	}
+
+	public static void log_warn(String msg) {
+		System.out.println(" WARN: " + msg);
+	}
+
+	public static void log_error(String msg) {
+		System.out.println("ERROR: " + msg);
+	}
+
+	public static void log_critical(String msg) throws RuntimeException {
+		System.out.println(" CRIT: " + msg);
+		throw new RuntimeException();
+	}
+
+
+	// ### ACCESSOR INTERFACE AND PROPERTIES
 
 	// TODO polymorphic return type?
 	public static String get(String port_name) {
