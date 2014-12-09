@@ -7,7 +7,7 @@ based on the folder hierarchy where they are stored.
 
 For example, a URL might look like:
 
-    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue
+    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.json
 
 
 ### Parameters
@@ -17,26 +17,29 @@ and devices. These parameters are passed in the URL. For example, different
 Hue light bulbs may have different IP addresses. To avoid hard-coding
 the IP addresses in the accessor, the request can look like:
 
-    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue?ipaddress=123.45.67.1
-    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue?ipaddress=123.45.67.2
+    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.json?ipaddress=123.45.67.1
+    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.json?ipaddress=123.45.67.2
 
+
+### XML
+
+Accessors can also be requested in XML format. To do so simply replace '.json'
+with '.xml':
+
+    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.xml
 
 ### Other Options
 
 The accessor server can do other transformations on accessors before
-they are sent to the client.
+they are sent to the client. These are, like parameters, specified by URL
+parameters. Example:
 
-- **Convert to XML**: Certain applications may want the accessor in XML
-instead of JSON. To do this add `_format=xml` to the URL:
+    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.json?_language=traceur
 
-        http://accessors.com/accessor/onoffdevice/MyLight?_format=xml
 
-- **ECMAscript 5**: Certain runtimes may not be able to support newer
-ECMAscript 6 features. To request that the javascript code in the accessor
-be transpiled to version 5, include `_ecmascript_version=5` in the URL:
-
-        http://accessors.com/accessor/onoffdevice/MyLight?_ecmascript_version=5
-
+| Option Name | Valid Values             | Default | Description |
+| ----------- | ------------             | ------- | ----------- |
+| _language   | traceur, es6, javascript | es6     | Choose the language of the accessor code. By default the code is in the latest version of javascript. |
 
 
 

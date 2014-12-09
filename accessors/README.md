@@ -85,10 +85,10 @@ Port types essentially specify the data type of the port. Valid choices are:
 	},
 	{
 		"direction": "inout",
-		"name": "Volume",
-		"type": "integer",
-		"min": 0,
-		"max": 100
+		"name":      "Volume",
+		"type":      "integer",
+		"min":       0,
+		"max":       100
 	}
 ]
 ```
