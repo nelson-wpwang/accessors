@@ -4,24 +4,24 @@ import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.io.*;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
-import org.w3c.dom.CharacterData;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Node;
-import org.w3c.dom.Element;
+import org.w3c.dom.*;
 
 public class AccessorRuntime {
 	Log log;
 	Log runtimeLog;
 
+	Map<String, String> parameters;
+
 	AccessorRuntime(Arguments args) throws Exception {
 		log = Log.GetLog("AccessorRuntime");
 		runtimeLog = Log.GetLog("AccessorRuntime." + args.accessor);
+		if (log.level != runtimeLog.level) {
+			runtimeLog.level = log.level;
+		}
 
 		// Get accessor list for location
 		URL loc_url = new URL(args.server_host + "/accessors" + args.location + "accessors.xml");
@@ -54,7 +54,7 @@ public class AccessorRuntime {
 
 			int idx = accessor_url.indexOf("?");
 			if (idx == -1) {
-				accessor_url += ".xml?_language=traceur_es5";
+				accessor_url += ".xml?_language=traceur";
 			} else {
 				// Ugh, really Java? Every other runtime will do this for me
 				String root = accessor_url.substring(0, idx);
@@ -85,7 +85,7 @@ public class AccessorRuntime {
 					}
 				} while (params.length() > 0);
 				//System.out.println("accessor_url: " + accessor_url);
-				accessor_url += "&_language=traceur_es5";
+				accessor_url += "&_language=traceur";
 			}
 
 			URL get_url = new URL(args.server_host + "/accessor" + accessor_url);
@@ -130,6 +130,23 @@ public class AccessorRuntime {
 		if (!accessorElement.getAttribute("name").equals(args.accessor)) {
 			log.Error("Could not find accessor " + args.accessor);
 			throw new Exception();
+		}
+
+		// Okay, now we have the accessor, parse out the interesting bits
+		parameters = new HashMap<String, String>();
+		NodeList parameterList = accessorElement.getElementsByTagName("parameter");
+		for (int i = 0; i < parameterList.getLength(); i++) {
+			Node parameterNode = parameterList.item(i);
+
+			NamedNodeMap nodeMap = parameterNode.getAttributes();
+
+			Node nameNode = nodeMap.getNamedItem("name");
+			Node valueNode = nodeMap.getNamedItem("value");
+
+			String name = nameNode.getTextContent();
+			String value = valueNode.getTextContent();
+
+			parameters.put(name, value);
 		}
 
 		// create a script engine manager
@@ -331,11 +348,9 @@ public class AccessorRuntime {
 	}
 
 	public String get_parameter(String parameter_name) {
-		if (parameter_name.equals("bridge_url"))
-			return "http://4908hue.eecs.umich.edu";
-		if (parameter_name.equals("username"))
-			return "lab11in4908";
-		return "XXX_ERROR";
+		String ret = parameters.get(parameter_name);
+		runtimeLog.Debug("get_parameter(" + parameter_name + ") => " + ret);
+		return ret;
 	}
 
 

@@ -170,12 +170,11 @@ class ServeAccessor (tornado.web.RequestHandler):
 
 		# Look for any other parameters that change how we will respond
 		language = self.get_argument('_language', 'es6')
-		if language == 'traceur_es5':
-			print('traceur_es5')
-			accessor['code'] = accessor['code_alternates']['traceur_es5']
+		if language == 'traceur':
+			accessor['code'] = accessor['code_alternates']['traceur']
 			if 'dependencies' in accessor:
 				for dependency in accessor['dependencies']:
-					dependency['code'] = dependency['code_alternates']['traceur_es5']
+					dependency['code'] = dependency['code_alternates']['traceur']
 		elif language == 'es6' or language == 'javascript':
 			accessor['code'] = accessor['code_alternates']['javascript']
 			if 'dependencies' in accessor:
@@ -220,26 +219,55 @@ class ServeAccessorXML (ServeAccessor):
 		self.write(accessor_xml)
 
 	def convert_accessor_to_xml (self, accessor):
+		# Start with common accessor stuff
 		top = ET.Element('class', attrib={'name': accessor['name'],
 		                                  'extends': 'org.terraswarm.kernel.JavaScript'})
-		ET.SubElement(top, 'author').text = accessor['author']
 		ET.SubElement(top, 'version').text = accessor['version']
+		ET.SubElement(top, 'author').text = accessor['author']
+
+		if 'description' in accessor:
+			ET.SubElement(top, 'description').text = accessor['description']
+
 		for port in accessor['ports']:
+			# Direction is tag in xml
 			props = {'name': port['name']}
-			if 'default' in port:
-				props['value'] = port['default']
+
 			if 'type' in port:
 				props['type'] = port['type']
-			if 'description' in port:
-				props['description'] = port['description']
-
+			if 'default' in port:
+				props['value'] = str(port['default'])
+			if 'options' in port:
+				print("WARN: json -> xml: should probably make options elements");
+				props['options'] = port['options']
+			if 'min' in port:
+				props['min'] = str(port['min'])
+			if 'max' in port:
+				props['max'] = str(port['max'])
 			ET.SubElement(top, port['direction'], attrib=props)
-		doc = ET.SubElement(top, 'documentation', attrib={'type': 'text/html'})
-		ET.SubElement(doc, '![CDATA[', attrib={'type': 'text/html'})\
-			.text = accessor['description']
+
+		if 'parameters' in accessor:
+			for parameter in accessor['parameters']:
+				props = {'name': parameter['name']}
+				if 'default' in parameter:
+					props['default'] = str(parameter['default'])
+				if 'value' in parameter:
+					props['value'] = str(parameter['value'])
+				if 'required' in parameter:
+					props['required'] = str(parameter['required'])
+				ET.SubElement(top, 'parameter', attrib=props)
+
+		# For legacy, the 'code' key is named 'script'
 		script = ET.SubElement(top, 'script', attrib={'type': 'text/javascript'})
 		ET.SubElement(script, '![CDATA[', attrib={'type': 'text/javascript'})\
 			.text = '\n{}\n'.format(accessor['code'])
+
+		if 'dependencies' in accessor:
+			print("WARN: json -> xml: dependencies")
+
+		# This is legacy xml for v0 accessors, we don't use it
+		doc = ET.SubElement(top, 'documentation', attrib={'type': 'text/html'})
+		ET.SubElement(doc, '![CDATA[', attrib={'type': 'text/html'})\
+			.text = accessor['description']
 
 		s = '\n'.join(ET.tostringlist(top, encoding='unicode'))
 		s = '''<?xml version="1.0" encoding="utf-8"?>
@@ -272,7 +300,7 @@ def create_accessor (structure, accessor, path):
 					open('_temp1.js', 'w').write(code)
 					traceur('--out', '_temp2.js', '--script', '_temp1.js')
 					try:
-						accessor['code_alternates']['traceur_es5'] = open('_temp2.js').read()
+						accessor['code_alternates']['traceur'] = open('_temp2.js').read()
 					finally:
 						rm("_temp2.js")
 				finally:
