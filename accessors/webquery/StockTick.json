@@ -19,6 +19,7 @@ This accessor, when fired, reads the most recent bid price for the specified sto
               {
                 "direction": "output",
                 "name": "Price",
+                "type": "numeric",
                 "description": "The most recent stock price (bid)."
               }
   ],

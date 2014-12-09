@@ -1,20 +1,25 @@
-import java.lang.String;
-import javax.script.*;
+import java.io.*;
+import java.lang.*;
 import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.io.*;
 import java.util.*;
 
+import javax.script.*;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
+
 import org.w3c.dom.*;
+
 
 public class AccessorRuntime {
 	Log log;
 	Log runtimeLog;
 
 	Map<String, String> parameters;
+	Map<String, Port> ports;
+
+	ScriptEngine engine;
 
 	AccessorRuntime(Arguments args) throws Exception {
 		log = Log.GetLog("AccessorRuntime");
@@ -149,10 +154,20 @@ public class AccessorRuntime {
 			parameters.put(name, value);
 		}
 
+
+		ports = new HashMap<String, Port>();
+		NodeList inputList = accessorElement.getElementsByTagName("input");
+		MakePortsFromNodeList(inputList, "input", ports);
+		NodeList outputList = accessorElement.getElementsByTagName("output");
+		MakePortsFromNodeList(outputList, "output", ports);
+		NodeList inoutList = accessorElement.getElementsByTagName("inout");
+		MakePortsFromNodeList(inoutList, "inout", ports);
+
+
 		// create a script engine manager
 		ScriptEngineManager factory = new ScriptEngineManager();
 		// create JavaScript engine
-		ScriptEngine engine = factory.getEngineByName("nashorn");
+		engine = factory.getEngineByName("nashorn");
 
 		if (engine == null) {
 			log.Warn("(Are you running Java 8?)");
@@ -167,19 +182,19 @@ public class AccessorRuntime {
 		// Initialize the accessor runtime
 		log.Debug("Loading accessor runtime");
 
-		exportInstanceMethod(engine, "version", "version");
+		exportInstanceMethod("version", "version");
 
 		// TODO subinit
 
 		engine.eval("log = new Object()");
-		exportInstanceMethod(engine, "log.debug", "log_debug");
-		exportInstanceMethod(engine, "log.info", "log_info");
-		exportInstanceMethod(engine, "log.warn", "log_warn");
-		exportInstanceMethod(engine, "log.error", "log_error");
-		exportInstanceMethod(engine, "log.critical", "log_critical");
+		exportInstanceMethod("log.debug", "log_debug");
+		exportInstanceMethod("log.info", "log_info");
+		exportInstanceMethod("log.warn", "log_warn");
+		exportInstanceMethod("log.error", "log_error");
+		exportInstanceMethod("log.critical", "log_critical");
 
 		engine.eval("time = new Object()");
-		exportInstanceMethod(engine, "_time_sleep", "time_sleep");
+		exportInstanceMethod("_time_sleep", "time_sleep");
 		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; time.sleep = $traceurRuntime.initGeneratorFunction(function $__0(time_in_ms) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: _time_sleep(time_in_ms); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
 		engine.eval("time.run_later = function(delay_in_ms, fn_to_run, args) {"
 				+ "log.warn('NotImplemented: time.run_later is a blocking sleep in this runtime');"
@@ -187,16 +202,16 @@ public class AccessorRuntime {
 				+ "fn_to_run(args);"
 				+ "};");
 
-		exportInstanceMethod(engine, "get", "get");
-		exportInstanceMethod(engine, "set", "set");
-		exportInstanceMethod(engine, "get_parameter", "get_parameter");
+		exportInstanceMethod("get", "get");
+		exportInstanceMethod("set", "set");
+		exportInstanceMethod("get_parameter", "get_parameter");
 
 		// TODO socket
 
 		engine.eval("http = Object()");
-		exportInstanceMethod(engine, "_http_request", "http_request");
+		exportInstanceMethod("_http_request", "http_request");
 		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; var o = Object(); http.request = $traceurRuntime.initGeneratorFunction(function $__0(url, method) { var properties, body, timeout; var $arguments = arguments; return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: properties = $arguments[2] !== (void 0) ? $arguments[2] : null; body = $arguments[3] !== (void 0) ? $arguments[3] : null; timeout = $arguments[4] !== (void 0) ? $arguments[4] : null; $ctx.state = 4; break; case 4: $ctx.returnValue = _http_request(url, method, properties, body, timeout); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
-		exportInstanceMethod(engine, "_http_readURL", "http_readURL");
+		exportInstanceMethod("_http_readURL", "http_readURL");
 		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; http.readURL = $traceurRuntime.initGeneratorFunction(function $__0(url) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: $ctx.returnValue = _http_readURL(url); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
 
 		// TODO color
@@ -212,20 +227,124 @@ public class AccessorRuntime {
 		log.Info("Initializing new accessor: " + args.accessor);
 		// TODO: Handle init vs init*
 		engine.eval("init().next()");
+	}
 
-		// Turn on a fucking light
-		log.Info("Setting power on");
-		engine.eval("Power(true).next()");
-		Thread.sleep(2000);
+	class PortMaker<T> {
+		Port NewInput(String name) {
+			Port port = new Port<T>(name);
+			port.input = true;
+			return port;
+		}
 
-		log.Info("Setting power off");
-		engine.eval("Power(false).next()");
-		Thread.sleep(2000);
+		Port NewOutput(String name) {
+			Port port = new Port(name);
+			port.output = true;
+			return port;
+		}
 
-		log.Info("Setting power on");
-		engine.eval("Power(true).next()");
+		Port NewInout(String name) {
+			Port port = new Port(name);
+			port.input = true;
+			port.output = true;
+			return port;
+		}
+	}
 
-		log.Info("Done. Goodbye.");
+	void MakePortsFromNodeList(NodeList list, String dir, Map<String, Port> ports) throws Exception {
+		for (int i = 0; i < list.getLength(); i++) {
+			Node node = list.item(i);
+			NamedNodeMap nodeMap = node.getAttributes();
+
+			String name = nodeMap.getNamedItem("name").getTextContent();
+			String type = nodeMap.getNamedItem("type").getTextContent();
+			// TODO: Other port parameters
+
+			PortMaker portMaker;
+			if (type.equals("button")) {
+				throw new Exception("Not implemented: button port");
+			} else if (type.equals("bool")) {
+				portMaker = new PortMaker<Boolean>();
+			} else if (type.equals("string")) {
+				portMaker = new PortMaker<String>();
+			} else if (type.equals("numeric")) {
+				portMaker = new PortMaker<Double>();
+			} else if (type.equals("integer")) {
+				portMaker = new PortMaker<Integer>();
+			} else if (type.equals("select")) {
+				throw new Exception("Not implemented: select port");
+			} else if (type.equals("color")) {
+				log.Warn("Not implemented: color port");
+				continue;
+			} else {
+				throw new Exception("Bad Port Type");
+			}
+
+			Port port;
+			if (dir.equals("input")) {
+				port = portMaker.NewInput(name);
+			} else if (dir.equals("output")) {
+				port = portMaker.NewOutput(name);
+			} else if (dir.equals("inout")) {
+				port = portMaker.NewInout(name);
+			} else {
+				throw new Exception("Illegal port direction");
+			}
+
+			ports.put(name, port);
+		}
+	}
+
+	class Port<T> {
+		String name;
+		T value;
+		boolean input = false;
+		boolean output = false;
+
+		Port(String port_name) {
+			name = port_name;
+		}
+
+		public T get() {
+			assert input;
+			if (value == null) {
+				log.Debug("Port.get("+name+") => null");
+			} else {
+				log.Debug("Port.get("+name+") => " + value.toString());
+			}
+			return value;
+		}
+
+		public void set(T new_value) {
+			assert output;
+			log.Debug(name);
+			if (new_value == null) {
+				log.Debug("Port.set("+name+") <= <null>");
+			} else {
+				log.Debug("Port.set("+name+") <= " + new_value.toString());
+			}
+			value = new_value;
+		}
+
+		public String toString() {
+			return name;
+		}
+	}
+
+	public Object getPort(String port_name) {
+		return ports.get(port_name).value;
+	}
+
+	public void setPort(String port_name, Object value) {
+		ports.get(port_name).value = value;
+	}
+
+	public void firePort(String port_name, Object arg) throws Exception {
+		engine.eval(
+				"_fire = function(arg) {"
+				+ port_name + "(arg).next();"
+				+ "}");
+		Invocable invocable = (Invocable) engine;
+		invocable.invokeFunction("_fire", arg);
 	}
 
 	// http://stackoverflow.com/questions/11553697/
@@ -255,7 +374,7 @@ public class AccessorRuntime {
 
 	// ACCESSOR RUNTIME
 
-	void exportInstanceMethod(ScriptEngine engine, String js_method, String java_method) throws Exception {
+	void exportInstanceMethod(String js_method, String java_method) throws Exception {
 		/* This doesn't work, throws an exception (Java bug)
 		engine.eval(
 			  "_wrap = function(th) {"
@@ -332,19 +451,26 @@ public class AccessorRuntime {
 	// ### ACCESSOR INTERFACE AND PROPERTIES
 
 	// TODO polymorphic return type?
-	public String get(String port_name) {
-		runtimeLog.Debug("get(" + port_name + ")");
-		if (port_name.equals("BulbName")) {
-			return "Pat";
+	public Object get(String port_name) {
+		Port port = ports.get(port_name);
+		Object ret = ports.get(port_name).get();
+		if (ret == null) {
+			runtimeLog.Debug("get(" + port_name + ") => null");
+		} else {
+			runtimeLog.Debug("get(" + port_name + ") => " + ret.toString());
 		}
-		runtimeLog.Critical("hack fail on get");
-		System.exit(1);
-		return "";
+		return ret;
 	}
 
 	// TODO polymorphic set value?
-	public void set(String port_name, String value) {
-		runtimeLog.Debug("set(" + port_name + "," + value + ")");
+	public void set(String port_name, Object value) {
+		Port port = ports.get(port_name);
+		port.set(value);
+		if (value == null) {
+			runtimeLog.Debug("set(" + port_name + ", null)");
+		} else {
+			runtimeLog.Debug("set(" + port_name + "," + value.toString() + ")");
+		}
 	}
 
 	public String get_parameter(String parameter_name) {

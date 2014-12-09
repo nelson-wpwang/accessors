@@ -12,6 +12,7 @@ The Denon AVR-1913 is a digital receiver.
   "ports": [
             {
               "direction": "output",
+              "type":      "string",
               "name":      "Name"
             },
             {

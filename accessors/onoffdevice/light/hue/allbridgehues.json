@@ -21,7 +21,8 @@ This controls all of the hues behind a bridge.
 	"ports": [
 		{
 			"direction": "output",
-			"name": "Bridge"
+			"name": "Bridge",
+			"type": "string"
 		}
 	],
 	"code": {

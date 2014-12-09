@@ -12,6 +12,7 @@ Get list of people in the room.
               {
                 "direction": "output",
                 "name": "People",
+                "type": "string",
                 "description": "The people in the room."
               },
               {

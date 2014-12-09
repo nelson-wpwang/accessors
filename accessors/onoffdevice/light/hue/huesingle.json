@@ -29,6 +29,7 @@ click update.
 		},
 		{
 			"direction": "output",
+			"type": "string",
 			"name": "Bulbs"
 		}
 	],

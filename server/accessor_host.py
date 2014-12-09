@@ -230,10 +230,8 @@ class ServeAccessorXML (ServeAccessor):
 
 		for port in accessor['ports']:
 			# Direction is tag in xml
-			props = {'name': port['name']}
+			props = {'name': port['name'], 'type': port['type']}
 
-			if 'type' in port:
-				props['type'] = port['type']
 			if 'default' in port:
 				props['value'] = str(port['default'])
 			if 'options' in port:
@@ -363,6 +361,16 @@ def validate_accessor_ports(accessor):
 		if ord(name[0].upper()) not in range(65,91):
 			print("Ports must start with a letter")
 			print("Illegal port", name)
+			print("Found parsing", accessor)
+			sys.exit(1)
+
+		if 'direction' not in port:
+			print("Missing required 'direction' key in", name)
+			print("Found parsing", accessor)
+			sys.exit(1)
+
+		if 'type' not in port:
+			print("Missing required 'type' key in", name)
 			print("Found parsing", accessor)
 			sys.exit(1)
 

@@ -12,7 +12,7 @@ if [ ! -e bower_components/traceur/traceur.js ]; then
 fi
 
 echo -e "\nCompiling..."
-javac AccessorRuntime.java
+javac -Xlint:unchecked AccessorRuntime.java
 javac Arguments.java
 javac Log.java
 javac HueSingle.java

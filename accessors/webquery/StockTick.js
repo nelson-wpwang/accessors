@@ -11,7 +11,7 @@ function* fire() {
     set('Price', '<ERR>');
   } else {
     var tick = parseFloat(json.query.results.quote.LastTradePriceOnly);
-    set('Price', '$' + tick);
+    set('Price', tick);
   }
   log.debug("StockTick fire end");
 }

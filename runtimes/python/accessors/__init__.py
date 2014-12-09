@@ -103,10 +103,6 @@ class Object():
 class Port():
 	@staticmethod
 	def create(port, accessor):
-		# Default type is <string>
-		if 'type' not in port:
-			port['type'] = 'string'
-
 		if port['direction'] == 'input':
 			return InputPort(port, accessor)
 		elif port['direction'] == 'output':
