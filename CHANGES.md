@@ -81,11 +81,11 @@ light looks like: `http://accessors.io/accessor/onoffdevice/light/hue/huesingle.
 
 5. **Accessor Parameters**. Accessors are intended to be generic interfaces and
 code for accessing a certain device. For example, the Hue accessor should be
-able to control any Hue bulb. However, The Hue accessor needs to know the URL
+able to control any Hue bulb. However, the Hue accessor needs to know the URL
 of the Hue bridge a specific bulb is attached to in order to control it. Rather
 than make the user specify this, this can be specified when the accessor is
-downloaded from the accessor host server. This accessor then becomes a method
-to control a particular bulb, which is often more useful than being able
+downloaded from the accessor host server. This accessor can then
+control a particular bulb, which is often more useful than being able
 to control any bulb. Parameters are passed as HTTP arguments on the GET request
 URL. In the Hue example:
 `http://accessors.io/accessor/onoffdevice/light/hue/huesingle.json?bridge_url=http://myhue.com`
