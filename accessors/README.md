@@ -43,7 +43,7 @@ are valid in the port object:
 | ---            | -------- | ------        | ----------- |
 | `direction`    | yes      | string        | Specifies if this port takes data from the user, displays data to the user, or both. Valid choices are: `input`, `output`, and `inout`. |
 | `name`         | yes      | string        | Accessor name. Valid characters are "A-Z", "a-z", "0-9", and "_". |
-| `type`         | no       | string        | Specifies the data type of the port. See "Port Types" below for more information. Only valid for `input` and `inout` ports. |
+| `type`         | yes      | string        | Specifies the data type of the port. See "Port Types" below for more information. Only valid for `input` and `inout` ports. |
 | `default`      | no       | `<type>`      | Specify a default value for the port |
 | `options`      | no       | array         | Only valid when `type` == "select". Specifies the list of valid options the user can select from. |
 | `min`          | no       | number        | Only valid when `type` == "integer" or "numeric". Allows the accessor runtime to limit input values. |
