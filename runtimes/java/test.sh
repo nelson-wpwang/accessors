@@ -13,6 +13,10 @@ fi
 
 echo -e "\nCompiling..."
 javac AccessorRuntime.java
+javac Arguments.java
+javac Log.java
+javac HueSingle.java
 
 echo -e "\nRunning..."
-java AccessorRuntime -s http://localhost:6565 -l /usa/michigan/annarbor/universityofmichigan/bbb/4908/
+#java AccessorRuntime -s http://localhost:6565 -l /usa/michigan/annarbor/universityofmichigan/bbb/4908/
+java HueSingle
