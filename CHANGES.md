@@ -26,20 +26,20 @@ and to make accessors easier to write, we are taking advantage of ECMAscript
 6 features that make writing asynchronous code look like synchronous code
 (similar to await in C#).
 
-```javascript
-        // Examples of function renaming:
-        send(<value>, <port name>) -> set(<port name>, <value>)
-        readURL(<url>) -> http.readURL(<url>)
+    ```javascript
+// Examples of function renaming:
+send(<value>, <port name>) -> set(<port name>, <value>)
+readURL(<url>) -> http.readURL(<url>)
 
-        // Examples of asynchronous code
-        html = yield* http.readURL('http://google.com');
+// Examples of asynchronous code
+html = yield* http.readURL('http://google.com');
 
-        vs.
+vs.
 
-        http.readURL('http://google.com', function (html) {
-        	...
-        });
-```
+http.readURL('http://google.com', function (html) {
+	...
+});
+    ```
 
 2. **Expanded Accessor Interface**. We keep `init()`, `fire()`, and `wrapup()`
 as the main interface for the accessor runtime to call an accessor. However,
