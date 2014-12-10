@@ -1,3 +1,5 @@
+// vim: set ts=2 sts=2 sw=2 noet:
+
 import java.io.*;
 import java.lang.*;
 import java.net.*;
@@ -330,21 +332,49 @@ public class AccessorRuntime {
 		}
 	}
 
-	public Object getPort(String port_name) {
-		return ports.get(port_name).value;
+	public Object getPort(String port_name) throws Exception {
+		Port port = ports.get(port_name);
+		if (port == null) {
+			throw new Exception("Cannot get. No such port: " + port_name);
+		} else {
+			return port.value;
+		}
 	}
 
-	public void setPort(String port_name, Object value) {
-		ports.get(port_name).value = value;
+	public void setPort(String port_name, Object value) throws Exception {
+		Port port = ports.get(port_name);
+		if (port == null) {
+			throw new Exception("Cannot set. No such port: " + port_name);
+		} else {
+			port.value = value;
+		}
 	}
 
-	public void firePort(String port_name, Object arg) throws Exception {
+	void _firePort(String port_name, Object arg) throws Exception {
 		engine.eval(
 				"_fire = function(arg) {"
-				+ port_name + "(arg).next();"
-				+ "}");
+				+ "if (typeof " + port_name + " != 'function') {"
+				+ "  log.warn('I want to remove direct call to port => implicit fire');"
+				+ "  fire(arg).next();"
+				+ "} else {"
+				+   port_name + "(arg).next();"
+				+ "}"
+				+"}");
 		Invocable invocable = (Invocable) engine;
 		invocable.invokeFunction("_fire", arg);
+	}
+
+	public void firePort(String port_name) throws Exception {
+		_firePort(port_name, getPort(port_name));
+	}
+
+	public void setAndFirePort(String port_name, Object arg) throws Exception {
+		setPort(port_name, arg);
+		firePort(port_name);
+	}
+
+	public void fire() throws Exception {
+		_firePort("fire", null);
 	}
 
 	// http://stackoverflow.com/questions/11553697/

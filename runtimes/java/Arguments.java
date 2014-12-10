@@ -1,3 +1,5 @@
+// vim: set ts=2 sts=2 sw=2 noet:
+
 public class Arguments {
 	String server_host = "http://localhost:6565";
 	String location = "/usa/michigan/annarbor/universityofmichigan/bbb/4908/";

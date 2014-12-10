@@ -1,3 +1,4 @@
+// vim: set ts=2 sts=2 sw=2 noet:
 
 public class HueSingle {
 	public static void main(String[] cmd_line) throws Exception {
@@ -15,15 +16,16 @@ public class HueSingle {
 		hueSingle.setPort("BulbName", "Pat");
 
 		log.Info("Setting power on");
-		hueSingle.firePort("Power", true);
+		hueSingle.setAndFirePort("Power", true);
 		Thread.sleep(2000);
 
 		log.Info("Setting power off");
-		hueSingle.firePort("Power", false);
+		hueSingle.setAndFirePort("Power", false);
 		Thread.sleep(2000);
 
 		log.Info("Setting power on");
-		hueSingle.firePort("Power", true);
+		hueSingle.set("Power", true);
+		hueSingle.firePort("Power");
 
 		log.Info("Done. Goodbye.");
 	}
