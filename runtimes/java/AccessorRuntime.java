@@ -184,6 +184,17 @@ public class AccessorRuntime {
 		// Initialize the accessor runtime
 		log.Debug("Loading accessor runtime");
 
+		engine.eval(
+ "function _port_call (port, value) {"
++"	var r = port(value);"
++"	if (r && typeof r.next == 'function') {"
++"		r = r.next().value;"
++"	}"
++"	return r;"
++"}"
+);
+
+
 		exportInstanceMethod("version", "version");
 
 		// TODO subinit
@@ -208,7 +219,26 @@ public class AccessorRuntime {
 		exportInstanceMethod("set", "set");
 		exportInstanceMethod("get_parameter", "get_parameter");
 
-		// TODO socket
+		engine.eval("socket = Object()");
+		engine.eval(
+"_create_socket = function (family, sock_type) {"
++"	var s = Object();"
++"	s._family = family;"
++"	s._sock_type = sock_type;"
++"	"
++"	s._sock = _runtime_socket(family, sock_type);"
++"	s._sendto = function (message, destination) {"
++"		return _runtime_sendto(s._sock, s._family, message, destination[0], destination[1]);"
++"	};"
++"	"
++"	$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; s.sendto = $traceurRuntime.initGeneratorFunction(function $__0(message, destination) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: $ctx.returnValue = s._sendto(message, destination); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });"
++"	"
++"	return s;"
++"}"
+);
+		exportInstanceMethod("_runtime_socket", "runtime_socket");
+		exportInstanceMethod("_runtime_sendto", "runtime_sendto");
+		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; socket.socket = $traceurRuntime.initGeneratorFunction(function $__0(family, sock_type) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: $ctx.returnValue = _create_socket(family, sock_type); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
 
 		engine.eval("http = Object()");
 		exportInstanceMethod("_http_request", "http_request");
@@ -227,8 +257,7 @@ public class AccessorRuntime {
 
 		// Call accessor init
 		log.Info("Initializing new accessor: " + args.accessor);
-		// TODO: Handle init vs init*
-		engine.eval("init().next()");
+		engine.eval("_port_call(init, null)");
 	}
 
 	class PortMaker<T> {
@@ -355,9 +384,9 @@ public class AccessorRuntime {
 				"_fire = function(arg) {"
 				+ "if (typeof " + port_name + " != 'function') {"
 				+ "  log.warn('I want to remove direct call to port => implicit fire');"
-				+ "  fire(arg).next();"
+				+ "  _port_call(fire, arg);"
 				+ "} else {"
-				+   port_name + "(arg).next();"
+				+ "  _port_call("+port_name+", arg);"
 				+ "}"
 				+"}");
 		Invocable invocable = (Invocable) engine;
@@ -474,7 +503,7 @@ public class AccessorRuntime {
 		throw new RuntimeException();
 	}
 
-	public static void time_sleep(long time_in_ms) throws InterruptedException {
+	public void time_sleep(long time_in_ms) throws InterruptedException {
 		Thread.sleep(time_in_ms);
 	}
 
@@ -507,6 +536,55 @@ public class AccessorRuntime {
 		String ret = parameters.get(parameter_name);
 		runtimeLog.Debug("get_parameter(" + parameter_name + ") => " + ret);
 		return ret;
+	}
+
+
+	// ### SOCKETS
+
+	// You might think that it would make sense for a socket instance
+	// to be a class, since that's what it is on the JS side, but trying
+	// to do anything but export simple member functions seems to find
+	// ever new and more interesting Java<>JavaScript bugs (this comment
+	// hails from early JDK 8 (u25) days, fwiw), so... fuck it.
+
+	public Object runtime_socket(String family, String sock_type) throws Exception {
+		Object s;
+		if (sock_type.equals("SOCK_DGRAM")) {
+			s = new DatagramSocket();
+		} else {
+			throw new Exception("Not Implemented: socket type " + sock_type);
+		}
+
+		if (! (family.equals("AF_INET") || family.equals("AF_INET6")) ) {
+			throw new Exception("Not Implemented: family " + family);
+		}
+		return s;
+	}
+
+	public void runtime_sendto(
+			Object s, String family,
+			String message,
+			String dest_address, int dest_port)
+		throws Exception
+	{
+		assert s instanceof DatagramSocket;
+		DatagramSocket socket = (DatagramSocket) s;
+
+		InetAddress address;
+		if (family.equals("AF_INET")) {
+			address = InetAddress.getByName(dest_address);
+		} else if (family.equals("AF_INET6")) {
+			address = Inet6Address.getByName(dest_address);
+		} else {
+			throw new Exception("Unknown family: " + family);
+		}
+
+		byte[] payload = message.getBytes();
+
+		DatagramPacket packet = new DatagramPacket(
+				payload, payload.length, address, dest_port);
+
+		socket.send(packet);
 	}
 
 
