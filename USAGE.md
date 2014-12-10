@@ -8,7 +8,7 @@ Initial Setup
 -------------
 
 A decent portion of the accessor code runs in Python3. Make sure you have
-python 3.4+ installed then run
+python 3.3+ installed then run
 
     sudo pip3 install -r requirements.txt
 
