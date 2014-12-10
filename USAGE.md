@@ -48,16 +48,20 @@ The web runtime allows you to use accessors inside of a browser. The web
 runtime has two parts: a webserver that hosts the HTML pages and retrieves
 accessor files and the in-browser javascript runtime.
 
+#### Web runtime setup
+
+The web runtime uses the browser javascript engine to run accessors.
+
 Setting up the webserver requires two servers to be running. The first is a
 websockets server. This is used by the javascript runtime to tunnel UDP and
 TCP sockets over websockets since browsers do not allow arbitrary socket
 connections. To start this:
 
-    ./ws_server.py
+    runtimes/web/ws_server.py
 
 The next is the HTTP server that hosts the accessor pages. To run this:
 
-    ./server.py -s localhost:6565 -w localhost:8765
+    runtimes/web/server.py -s localhost:6565 -w localhost:8765
 
 Note this server requires [Bower](http://bower.io/) to be installed.
 
@@ -78,4 +82,36 @@ initialize the accessor immediately.
 
 `runtimes/python` contains some examples for using accessors in python.
 
+#### Python runtime setup
+
+The python runtime requirements are included in the master requirements
+list, that is
+
+`(sudo) pip install -r requirements.txt`
+
+You also must have a copy of [node](https://nodejs.org) >= version 0.11
+installed. If needed, [nvm](github.com/creationix/nvm) is a tool that helps
+to manage multiple node installations.
+
+Finally, you need the node package harmony-reflect:
+
+`(sudo) npm install (-g) harmony-reflect`
+
 ### Accessor Java Runtime
+
+The Java runtime uses [nashorn][nashorn] (built into JDK8+) to run accessors.
+
+Each accessor is instantiated as a `new AccessorRuntime(...)` object that
+has methods to get, set, and fire ports in the accessor. There are several
+examples in `runtimes/java` that show how to use an accessor in Java.
+
+#### Java runtime setup
+
+Your Java environment must support [ScriptEngine][ScriptEngine] (JDK7+) and
+the ScriptEngine must have support for [nashorn][nashorn] (JDK8+).
+
+You need to run `bower install` in the `runtimes/java` directory once first.
+The `runtimes/java/test.sh` script will handle this automatically for you.
+
+[ScriptEngine]: https://docs.oracle.com/javase/7/docs/api/javax/script/ScriptEngine.html
+[nashorn]: http://openjdk.java.net/projects/nashorn/
