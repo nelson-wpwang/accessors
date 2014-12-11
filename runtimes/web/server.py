@@ -10,7 +10,14 @@ import string
 import flask
 import markdown
 import requests
-import rjsmin
+
+try:
+	import rjsmin
+except:
+	class rjsminc ():
+		def jsmin (self, a):
+			return a
+	rjsmin = rjsminc()
 
 import sh
 try:
@@ -77,24 +84,39 @@ def markd(s):
 def nsp(s):
 	return s.replace(' ', '')
 
-def clean(s):
+# Take accessor names and make them nice unique strings so we can have multiple
+# loaded at the same time.
+def clean_name(s):
 	# TODO: make this better
 	#return s.replace(' ', '').replace('-', '')
 	return s.replace(' ', '_SPACE').replace('-', '_DASH')
 
-def create_accessor_javascript (accessor, meta=False):
-	js_module_wrapping = string.Template('''
-	var ${accessorname} = (function () {
+def create_accessor_javascript (accessor,
+                                chained_name,
+                                dependency_code,
+                                toplevel=False):
 
-		ws_server_address = '${websocket_server}';
+	# Setup the main wrapping javascript.
+	# The main goal of this is to wrap the JS in the accessor in a class-like
+	# object that scopes the accessor functions within the browser run time.
+	# This helps prevent conflicts between accessors.
+	# This wrapper also handles calling generator functions correctly and
+	# providing the get, set, etc functions.
+	js_module_wrapping = string.Template('''
+	${accessorvariable} = (function () {
+
+		var _inited = false;
 
 		function get (field) {
-			return accessor_get('${accessorname}', field);
-		};
-
-		function set (field, value) {
-			accessor_set('${accessorname}', field, value);
-		};
+			if (!_inited) {
+				run_accessor_fn(init);
+			}
+			if (inited) {
+				return accessor_get('${accessorname}', field);
+			} else {
+				return null;
+			}
+		}
 
 		function get_parameter (parameter_name) {
 			var parameters = {${parameterlist}};
@@ -104,91 +126,104 @@ def create_accessor_javascript (accessor, meta=False):
 			return parameters[parameter_name];
 		};
 
-		${accessorjs}
-
-		function* run_accessor (accessor_fn, accessor_name) {
-			accessor_function_start(accessor_name);
-			try {
-				var r = accessor_fn();
-				if (r && typeof r.next == 'function') {
-					yield* r;
-				}
-			} catch(err) {
-				console.log(err);
-			} finally {
-				accessor_function_stop(accessor_name);
+		function get_dependency (dependency_name) {
+			if (dependency_name in _dependencies) {
+				return _dependencies[dependency_name];
+			} else {
+				return null;
 			}
 		}
 
+		function* run_accessor_fn (accessor_fn) {
+			if (typeof accessor_fn != 'undefined') {
+				accessor_function_start('${accessorname}');
+				try {
+					if (accessor_fn != init && !_inited) {
+						run_accessor_fn(init);
+					}
+					if (accessor_fn == init || _inited) {
+						var r = accessor_fn();
+						if (accessor_fun == init) {
+							_inited = true;
+						}
+						if (r && typeof r.next == 'function') {
+							yield* r;
+						}
+					}
+				} catch(err) {
+					accessor_function_stop('${accessorname}');
+					console.log(err);
+					throw err;
+				} finally {
+					accessor_function_stop('${accessorname}');
+				}
+			} else {
+				log.warn('Accessor did not define an '+accessor_fn+' method.');
+			}
+		}
+
+		var _dependencies = Object();
+		${dependencies}
+
+		${accessorjs}
+
 		return {
 			'get': get,
-			'set': set,
+			'set': function (field, value) { accessor_set('${accessorname}', field, value); },
 			'get_parameter': get_parameter,
-			'init': function* () {
-						if (typeof init != 'undefined') {
-							yield* run_accessor(init, '${accessorname}');
-						} else {
-							log.warn("Accessor did not define an init() method");
-						}
-					},
-			'fire': function* () {
-						if (typeof fire != 'undefined') {
-							yield* run_accessor(fire, '${accessorname}');
-						} else {
-							log.warn("Accessor did not define an fire() method");
-						}
-					},
-			'wrapup': function* () {
-						if (typeof wrapup != 'undefined') {
-							yield* run_accessor(wrapup, '${accessorname}');
-						} else {
-							log.warn("Accessor did not define an wrapup() method");
-						}
-					},
+			'get_dependency': get_dependency,
+			'init': run_accessor_fn(init),
+			'fire': run_accessor_fn(fire),
+			'wrapup': run_accessor_fn(wrapup),
 			${functionlist}
 		}
 	})();
 	''')
 
+	# Each port can have a function, make them public here.
 	function_list = ''
 	for port in accessor['ports']:
-		port['clean_name'] = clean(port['name'])
-		function_list += \
-''''{portname}': function* () {{
-	if (typeof {portname} != 'undefined') {{
-		accessor_function_start('{accessorname}');
-		try {{
-			var r = {portname}.apply(this, arguments);
-			if (r && typeof r.next == 'function') {{
-				yield* r;
-			}}
-		}} catch (err) {{
-			console.log(err);
-		}} finally {{
-			accessor_function_stop('{accessorname}');
-		}}
-	}} else {{
-		if (typeof fire != 'undefined') {{
-			yield* run_accessor(fire, '{accessorname}');
-		}} else {{
-			log.warn("Accessor did not define an fire() method");
-		}}
-	}}
-}},\n'''.format(accessorname=accessor['clean_name'], portname=port['clean_name'])
+		function_list += string.Template('''
+'${portname}': function* () { yield* run_accessor_fn(${portname}); },
+''').substitute(portname=port['name'])
 
+	# Parameters end up being implemented as a pre-constructed object that
+	# is referenced at runtime.
 	parameter_list = ''
 	if 'parameters' in accessor:
 		for parameter in accessor['parameters']:
 			parameter_list += "'{parametername}':'{parametervalue}',"\
 				.format(parametername=parameter['name'], parametervalue=parameter['value'])
 
-	js = js_module_wrapping.substitute(websocket_server=args.websocket_server,
-	                                   accessorname=accessor['clean_name'],
+	# Make the correct variable instantation based on if this is the top level
+	# accessor or a dependency
+	if toplevel:
+		accessor_variable = 'var {}'.format(accessor['clean_name'])
+	else:
+		accessor_variable = '_dependencies.{}'.format(accessor['name'])
+
+
+	js = js_module_wrapping.substitute(accessorname=chained_name,
+	                                   accessorvariable=accessor_variable,
 	                                   accessorjs=accessor['code'],
+	                                   dependencies=dependency_code,
 	                                   functionlist=function_list,
 	                                   parameterlist=parameter_list)
-	accessor['code'] = rjsmin.jsmin(js)
+	return rjsmin.jsmin(js)
 
+
+# This is a recursive function that loops through accessors and dependencies
+# to generate all of the needed JS.
+def create_javascript (accessor, chained_name='', toplevel=True):
+	chained_name += accessor['clean_name']
+
+	dep_code = ''
+	if 'dependencies' in accessor:
+		for dependency in accessor['dependencies']:
+			dependency['clean_name'] = clean_name(dependency['name'])
+			dep_code += create_javascript(dependency, chained_name, False)
+
+	return create_accessor_javascript(accessor, chained_name, dep_code, toplevel)
 
 
 
@@ -215,16 +250,19 @@ def get_accessors (url):
 		r2 = requests.get(get_url)
 		if r2.status_code == 200:
 			accessor = r2.json()
-			accessor['clean_name'] = clean(accessor['name'])
+			accessor['clean_name'] = clean_name(accessor['name'])
+
+			# Make sure the 'display_name' key exists to make the JS frontend
+			# easier.
+			for port in accessor['ports']:
+				if 'display_name' not in port:
+					port['display_name'] = port['name']
 
 			# Do the code
-			create_accessor_javascript(accessor)
+			accessor['code'] = create_javascript(accessor)
 
-			if 'dependencies' in accessor:
-				for dependency in accessor['dependencies']:
-					dependency['clean_name'] = clean(dependency['name'])
-					create_accessor_javascript(dependency)
-
+			if accessor['name'] == "Brad-Pat Hue":
+				print(accessor['code'])
 
 			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
 			accessors['accessors'].append(accessor)
@@ -256,7 +294,9 @@ def accessor():
 	locations.append({'name': 'Anywhere',
 	                  'path': '/'})
 
-	return flask.render_template('accessors.jinja', locations=locations)
+	return flask.render_template('accessors.jinja',
+	                             locations=locations,
+	                             ws_server_address=args.websocket_server)
 
 
 # This is some nonsense to bypass the cross-origin policy nonsense

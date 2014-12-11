@@ -25,6 +25,11 @@
 
 <body>
 
+	{# Need a runtime setting for the websocket connection #}
+	<script type="text/javascript">
+	ws_server_address = '{{ ws_server_address }}';
+	</script>
+
 	{# Include the top navbar #}
 	<div class="navbar navbar-default navbar-fixed-top navbar-inverse" role="navigation">
 		<div class="container">

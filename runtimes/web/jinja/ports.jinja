@@ -9,9 +9,9 @@
         <legend>Controls</legend>
 
         {% for port in accessor.ports %}
-        {% set fieldname = 'port-' ~ accessor.clean_name ~ port.clean_name %}
+        {% set fieldname = 'port-' ~ accessor.clean_name ~ port.name %}
         <div class="form-group">
-          <label for="{{ fieldname }}" class="col-lg-2 control-label">{{ port.name }}</label>
+          <label for="{{ fieldname }}" class="col-lg-2 control-label">{{ port.display_name }}</label>
 
 
           {% if port.direction == "output" %}
@@ -22,7 +22,7 @@
           {% elif port.type == "bool" %}
           <div class="col-lg-10">
             <div class="checkbox"><label>
-              <input type="checkbox" name="{{ fieldname }}" id="{{ fieldname }}" class="form-control accessor-checkbox" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.clean_name }}" data-portdirection="{{ port.direction }}">
+              <input type="checkbox" name="{{ fieldname }}" id="{{ fieldname }}" class="form-control accessor-checkbox" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}" data-portdirection="{{ port.direction }}">
               </label>
             </div>
           </div>
@@ -32,7 +32,7 @@
           {% if 'min' in port and 'max' in port %}
           {# Do a slider #}
           <div class="col-lg-10">
-            <input type="text" name="{{ fieldname }}" id="{{ fieldname }}" class="slider" data-slider-id='{{ fieldname }}-slider' data-slider-min="{{ port.min }}" data-slider-max="{{ port.max }}" data-slider-step="1" data-slider-value="{{ port.min }}" data-accessorname="{{ accessor.clean_name }}" data-function="{{ port.clean_name }}"/>
+            <input type="text" name="{{ fieldname }}" id="{{ fieldname }}" class="slider" data-slider-id='{{ fieldname }}-slider' data-slider-min="{{ port.min }}" data-slider-max="{{ port.max }}" data-slider-step="1" data-slider-value="{{ port.min }}" data-accessorname="{{ accessor.clean_name }}" data-function="{{ port.name }}"/>
           </div>
           {% else %}
           {# Do a text box #}
@@ -40,7 +40,7 @@
             <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %} data-portdirection="{{ port.direction }}"></input>
           </div>
           <div class="col-lg-3">
-            <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.clean_name }}">Update</button>
+            <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
           </div>
           {% endif %}
 
@@ -49,7 +49,7 @@
             <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %} data-portdirection="{{ port.direction }}"></input>
           </div>
           <div class="col-lg-3">
-            <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.clean_name }}">Update</button>
+            <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
           </div>
 
           {% elif port.type == "select" %}
@@ -63,13 +63,13 @@
 
           {% elif port.type == "button" %}
           <div class="col-lg-3">
-            <button type="button" class="form-control accessor-button" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.clean_name }}" data-portdirection="{{ port.direction }}">Execute</button>
+            <button type="button" class="form-control accessor-button" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}" data-portdirection="{{ port.direction }}">Execute</button>
           </div>
 
           {% elif port.type == "color" %}
           {# color picker #}
           <div class="col-lg-10">
-            <div class="colorpicker" name="{{ fieldname }}" id="{{ fieldname }}" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.clean_name }}" data-portdirection="{{ port.direction }}"></div>
+            <div class="colorpicker" name="{{ fieldname }}" id="{{ fieldname }}" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}" data-portdirection="{{ port.direction }}"></div>
           </div>
 
           {% else %}
@@ -90,13 +90,29 @@
 
 </div>
 
+
+{# Put in hidden ports for all dependencies.
+   We allow for dependent accessors to have dependencies
+   so we make sure to create hidden ports for all
+   sub dependencies.
+ #}
+
+{% macro dependency_html(dep, name_so_far) %}
+  <div id="accessor-{{ name_so_far ~ dep.clean_name }}" style="display:none;">
+    {% for port in dep.ports %}
+    {% set fieldname = 'port-' ~ name_so_far ~ dep.clean_name ~ port.name %}
+    <input type="hidden" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}" data-porttype="{{ port.type }}"></input>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
 {% if 'dependencies' in accessor %}
-{% for dependency in accessor.dependencies %}
-<div id="accessor-{{ dependency.clean_name }}" style="display:none;">
-  {% for port in dependency.ports %}
-  {% set fieldname = 'port-' ~ dependency.clean_name ~ port.clean_name %}
-  <input type="hidden" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}" data-porttype="{{ port.type }}"></input>
+  {% set chained_nameb = accessor.clean_name %}
+  {% for dependency in accessor.dependencies recursive %}
+    {% set chained_name = chained_nameb ~ dependency.clean_name %}
+    {{ dependency_html(dependency, chained_name) }}
+    {% if dependency.dependencies %}
+      {{ loop(dependency.dependencies) }}
+    {% endif %}
   {% endfor %}
-</div>
-{% endfor %}
 {% endif %}

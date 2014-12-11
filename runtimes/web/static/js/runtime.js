@@ -7,34 +7,6 @@ function version(set_to) {
 	return "0.1.0";
 }
 
-function* subinit (sub_accessor, port_values) {
-	var dep = null;
-	for (var i=0; i<accessor.dependencies.length; i++) {
-		var dependency = accessor.dependencies[i];
-		if (dependency['name'] == sub_accessor) {
-			dep = dependency;
-			break;
-		}
-	}
-	if (dep == null) {
-		log.critical("Missing Dependency: " + sub_accessor);
-	}
-
-	$.globalEval(dep.code);
-
-	console.log(port_values);
-	for (var prop in port_values) {
-		if (port_values.hasOwnProperty(prop)) {
-			log.debug("Set " + prop + " to " + port_values[prop]);
-			window[dep.name].set(prop, port_values[prop]);
-		}
-	}
-
-	yield* window[dep.name].init();
-
-	return window[dep.name];
-}
-
 log = Object();
 log.log = function _log_log (message) {
 	console.log(message);

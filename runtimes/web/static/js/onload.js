@@ -35,7 +35,7 @@ $("#accessor-select").change(function () {
 		// functions and won't work because of the conflict.
 		for (var i=0; i<accessor.ports.length; i++) {
 			var port = accessor.ports[i];
-			if (typeof window[port.clean_name] == 'function') {
+			if (typeof window[port.name] == 'function') {
 				alert_error('Port name "'+port.clean_name+'" conflicts with an \
 existing JavaScript function. The name of the port will need to be changed \
 in order for the accessor to work.');
@@ -54,7 +54,7 @@ in order for the accessor to work.');
 			});
 		});
 
-		// // Activate all color pickers
+		// Activate all color pickers
 		$('#accessor-'+accessor.clean_name+' .colorpicker').colpick({
 			flat: true,
 			layout: 'hex',
@@ -62,6 +62,21 @@ in order for the accessor to work.');
 			onChange: function (hsb, hex, rgb, el, bySetColor) {
 				call_accessor($(this), hex);
 			}
+		});
+
+		// Setup callbacks for buttons and check boxes
+		$('#accessor-'+accessor.clean_name).on('click', '.accessor-arbitrary-input-button', function () {
+			var accessor_port = $(this).attr('data-port');
+			call_accessor($(this), $('#'+accessor_port).val());
+		});
+
+		$('#accessor-'+accessor.clean_name).on('click', '.accessor-checkbox', function () {
+			var accessor_port = $(this).attr('data-port');
+			call_accessor($(this), $('#'+accessor_port).is(':checked'));
+		});
+
+		$('#accessor-'+accessor.clean_name).on('click', '.accessor-button', function () {
+			call_accessor($(this), null);
 		});
 
 		// Call init now.
@@ -79,19 +94,3 @@ function call_accessor (element, arg) {
 		yield* window[accessor_name][accessor_func](arg);
 	});
 }
-
-// Call the correct method in the object loaded for the accessor
-$('#accessor-interface').on('click', '.accessor-arbitrary-input-button', function () {
-	var accessor_port = $(this).attr('data-port');
-	call_accessor($(this), $('#'+accessor_port).val());
-});
-
-$('#accessor-interface').on('click', '.accessor-checkbox', function () {
-	var accessor_port = $(this).attr('data-port');
-	call_accessor($(this), $('#'+accessor_port).is(':checked'));
-});
-
-$('#accessor-interface').on('click', '.accessor-button', function () {
-	var accessor_port = $(this).attr('data-port');
-	call_accessor($(this), null);
-});
