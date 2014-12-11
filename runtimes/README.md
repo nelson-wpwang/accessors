@@ -199,3 +199,12 @@ string (like "0000FF") to an HSV object (like
 
 - `<string> rt.color.hsv_to_hex(<hsv object> hsv_color)`: Convert an HSV object
 to an RGB hex string.
+
+### Encoding Functions
+
+Various devices may need data in a variety of encodings. These functions help
+convert between them.
+
+- `<string> rt.encode.atob(<base64> str)`: Decode a base64 encoded string.
+
+- `<base64> rt.encode.btoa(<string> str)`: Encode a string in the base64 format.

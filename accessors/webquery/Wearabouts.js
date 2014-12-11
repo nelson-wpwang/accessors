@@ -5,7 +5,7 @@ function* init () {
 function* Update () {
 	var pid = get_parameter('profile_id');
 	var gatd = get_parameter('gatd_url');
-	var query = btoa(JSON.stringify({'location_str':get_parameter('location')}));
+	var query = rt.encode.btoa(JSON.stringify({'location_str':get_parameter('location')}));
 	var url = gatd + '/viewer/recent/'+pid+'?limit=1&query='+query;
 
 	data = JSON.parse(yield* rt.http.readURL(url));

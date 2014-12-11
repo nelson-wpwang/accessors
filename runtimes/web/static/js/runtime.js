@@ -214,6 +214,8 @@ rt.http.readURL = function* readURL(url) {
 	}
 }
 
+/*** COLOR FUNCTIONS ***/
+
 rt.color = Object();
 
 rt.color.hex_to_hsv = function hex_to_hsv (hex_code) {
@@ -224,6 +226,16 @@ rt.color.hex_to_hsv = function hex_to_hsv (hex_code) {
 rt.color.hsv_to_hex = function hsv_to_hex (hsv) {
 	c = tinycolor(hsv);
 	return c.toHex();
+}
+
+/*** ENCODING FUNCTIONS ***/
+
+rt.encode.atob = function atob (b64) {
+	return atob(b64);
+}
+
+rt.encode.btoa = function btoa (str) {
+	return btoa(str);
 }
 
 
