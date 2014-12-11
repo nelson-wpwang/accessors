@@ -148,7 +148,7 @@ def create_accessor_javascript (accessor,
 						run_accessor_fn(init);
 					}
 					if (accessor_fn == init || _inited) {
-						var r = accessor_fn();
+						var r = accessor_fn.apply(this, arguments[1:arguments.length]);
 						if (accessor_fun == init) {
 							_inited = true;
 						}
@@ -190,16 +190,21 @@ def create_accessor_javascript (accessor,
 	function_list = ''
 	for port in accessor['ports']:
 		function_list += string.Template('''
-'${portname}': function* () { yield* run_accessor_fn(${portname}); },
+'${portname}': function* () {
+	yield* run_accessor_fn(${portname}, arguments);
+},
 ''').substitute(portname=port['name'])
 
 	# Parameters end up being implemented as a pre-constructed object that
 	# is referenced at runtime.
 	parameter_list = ''
-	if 'parameters' in accessor:
-		for parameter in accessor['parameters']:
+	for parameter in accessor['parameters']:
+		if parameter['value']:
 			parameter_list += "'{parametername}':'{parametervalue}',"\
-				.format(parametername=parameter['name'], parametervalue=parameter['value'])
+				.format(parametername=parameter['name'],
+				        parametervalue=parameter['value'])
+		else:
+			parameter_list += "'{parametername}':null,".format(paramter['name'])
 
 	# Make the correct variable instantation based on if this is the top level
 	# accessor or a dependency
@@ -233,18 +238,18 @@ def create_javascript (accessor, chained_name='', toplevel=True):
 
 
 def set_accessor_parameters (parameters, accessor, chained_name=''):
-	if 'parameters' in accessor:
-		for parameter in accessor['parameters']:
-			name = chained_name + parameter['name']
+	for parameter in accessor['parameters']:
+		name = chained_name + parameter['name']
 
-			if name in parameters:
-				parameter['value'] = parameters[name]
-			elif 'default' in parameter:
-				parameter['value'] = parameter['default']
-			else:
-				print('ERROR: parameter {} in accessor {} not set!'\
-					.format(name, accessor['name']))
-				parameter['value'] = ''
+		if name in parameters:
+			parameter['value'] = parameters[name]
+			del parameters[name]
+		elif 'default' in parameter:
+			parameter['value'] = parameter['default']
+		else:
+			print('ERROR: parameter {} in accessor {} not set!'\
+				.format(name, accessor['name']))
+			parameter['value'] = ''
 
 	if 'dependencies' in accessor:
 		for dep in accessor['dependencies']:
@@ -276,6 +281,20 @@ def get_accessors (url):
 
 			# Set the parameters
 			set_accessor_parameters(accessor_item['parameters'], accessor)
+			# Display errors if parameters are set that don't exist
+			for name,value in accessor_item['parameters'].items():
+				print('ERROR: parameter "{}" was specified as "{}" but that \
+parameter does not exist in the accessor {}'.format(name, value, accessor['name']))
+			# Validate that all required paramters have values
+			for parameter in accessor['parameters']:
+				if parameter.get_default('required', True) == False:
+					# This is the only case where a parameter doesn't have
+					# to have a value
+					if 'value' not in parameter:
+						parameter['value'] = None
+				elif 'value' not in parameter:
+					print('ERROR: parameter "{}" was not set'.format(parameter['name']))
+
 
 			# Make sure the 'display_name' key exists to make the JS frontend
 			# easier.

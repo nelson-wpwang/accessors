@@ -106,7 +106,7 @@ keys in an accessor parameter object:
 | ---            | -------- | ------        | ----------- |
 | `name`         | yes      | string        | Name of the parameter. |
 | `default`      | no       | string        | Value of the parameter if it is not otherwise specified when the accessor is requested. Has no effect if `required` is set to `true`. |
-| `required`     | no       | bool          | Defaults to `false`. Specifies whether the parameter must be set when the accessor is requested. If the parameter is not specified in the request an error will be returned. |
+| `required`     | no       | bool          | Defaults to `true`. Specifies whether the parameter must be set when the accessor is requested. If the parameter is not specified in the request an error will be returned. |
 
 #### Parameters Example
 

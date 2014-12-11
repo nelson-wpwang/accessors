@@ -53,6 +53,17 @@ def _serialize_xml(write, elem, *args, **kwargs):
 	return ET._original_serialize_xml(write, elem, *args, **kwargs)
 ET._serialize_xml = ET._serialize['xml'] = _serialize_xml
 
+def aerr (accessor, error_type, error_msg):
+	print('ERROR! [{}]'.format(error_type))
+	print('\tAccessor: {}'.format(accessor['name']))
+	print('\tMessage:  {}'.format(error_message))
+	sys.exit(1)
+
+def anote (accessor, note_type, note):
+	print('NOTICE! [{}]'.format(note_type))
+	print('\tAccessor: {}'.format(accessor['name']))
+	print('\tMessage:  {}'.format(note))
+
 # These classes are used when building the tree of accessors based on their
 # path. They are only used when the server is started or an accessor changes and
 # not during the normal operation of the accessor host server. Their purpose
@@ -275,6 +286,7 @@ class ServeAccessorXML (ServeAccessor):
 
 def create_accessor (structure, accessor, path):
 	validate_accessor_ports(accessor)
+	validate_accessor_parameters(accessor)
 
 	# Handle any code include directives
 	if 'code' in accessor:
@@ -371,6 +383,40 @@ def validate_accessor_ports(accessor):
 			print("Found parsing", accessor)
 			sys.exit(1)
 
+def validate_accessor_parameters(accessor):
+	INVALID_CHARACTERS = '.'
+
+	if 'parameters' in accessor:
+		if type(accessor['parameters']) != list:
+			aerr(accessor, 'parameter', 'accessor["parameters"] must be iterable')
+		for parameter in accessor['parameters']:
+			if type(parameter) != dict:
+				aerr(accessor, 'parameter', 'Parameter items must be a key:value object')
+			if 'name' not in paramter:
+				aerr(accessor, 'parameter', 'All parameters must have a name')
+			try:
+				parameter['name'] = str(parameter['name'])
+			except:
+				aerr(accessor, 'parameter', 'Parameter names must be strings')
+			if 'default' in parameter:
+				try:
+					parameter['default'] == str(parameter['default'])
+				except:
+					aerr(accessor, 'parameter', 'Parameter defaults must be strings')
+			for c in INVALID_CHARACTERS:
+				if c in parameter['name']:
+					aerr(accessor, 'parameter', 'Parameter "{}" cannot have a "{}" \
+in the name'.format(parameter['name'], c))
+			if 'required' in parameter:
+				parameter['required'] = bool(parameter['required'])
+			if !parameter.get_default('required', True) and 'default' in parameter:
+				anote(accessor, 'parameter', 'In parameter "{}", setting \
+required=false with a default has no effect'.format(parameter['name']))
+	else:
+		# Provide every accessor with at least a blank list to simplify
+		# accessor handling code
+		accessor['parameters'] = []
+
 # Build accessors going down the tree
 def create_accessors_recurse (accessor_tree, current_accessor, structure):
 	structure.append(accessor_tree.name)
@@ -402,7 +448,7 @@ def create_accessors_recurse (accessor_tree, current_accessor, structure):
 			create_accessors_recurse(atn, accessor_tree.accessor, copy.deepcopy(structure))
 
 # Loads all dependencies and recurses in the case of nested dependencies
-def create_accessors_dependencies_recurse (accessor, children):
+def create_accessors_dependencies_recurse (accessor, parameters, children):
 
 	if 'dependencies' in accessor:
 		for i,dep in enumerate(accessor['dependencies']):
@@ -410,17 +456,26 @@ def create_accessors_dependencies_recurse (accessor, children):
 			# Substitute in the given values of the parameters if they exist.
 			if 'parameters' in dep:
 				dep_accessor = children[i].accessor
-				if 'parameters' in dep_accessor:
-					for parameter in dep_accessor['parameters']:
-						if parameter['name'] in dep['parameters']:
-							parameter['value'] = dep['parameters'][parameter['name']]
+				dep_accessor['parameters'].update(parameters)
+				for parameter in dep_accessor['parameters']:
+					if parameter['name'] in dep['parameters']:
+						parameter['value'] = dep['parameters'][parameter['name']]
+						del dep['parameters'][parameter['name']]
+
+			# There may be some leftover parameters for further sub dependencies
+			parameters_passdown = {}
+			for pname,pvalue in dep['parameters'].items():
+				if '.' in pname:
+					parameters_passdown['.'.join(pname.split('.')[1:])] = pvalue
 
 			# Insert all of the fields of the accessor into the parent accessor
 			# to form the full accessor with dependencies
 			dep.update(children[i].accessor)
 
 			# Recurse to fill in sub-accessors
-			create_accessors_dependencies_recurse(dep, children[i].children)
+			create_accessors_dependencies_recurse(dep,
+			                                      parameters_passdown,
+			                                      children[i].children)
 
 
 
@@ -469,7 +524,7 @@ def create_accessors (accessor_tree):
 	# dependencies.
 	for path,dep_tree_node in accessor_path_to_dep_tree.items():
 	#for path,accessor_obj in accessors_by_path.items():
-		create_accessors_dependencies_recurse(dep_tree_node.accessor, dep_tree_node.children)
+		create_accessors_dependencies_recurse(dep_tree_node.accessor, {}, dep_tree_node.children)
 		
 
 def find_accessors (path, tree_node):
