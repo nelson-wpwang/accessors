@@ -10,9 +10,9 @@ function* Lock (lock) {
 	if (lock) return;
 
 	try {
-		var s = yield* socket.socket('AF_INET6', 'SOCK_DGRAM');
+		var s = yield* rt.socket.socket('AF_INET6', 'SOCK_DGRAM');
 	} catch (err) {
-		log.error("Failed to connect to socket: " + err);
+		rt.log.error("Failed to connect to socket: " + err);
 		set_to_locked();
 		return;
 	}
@@ -22,13 +22,13 @@ function* Lock (lock) {
 	try {
 		yield* s.sendto(pass, [host, port]);
 	} catch (err) {
-		log.error("Failed to send open pacekt: " + err);
+		rt.log.error("Failed to send open pacekt: " + err);
 		set_to_locked();
 		return;
 	}
 	set('Lock', false);
 
-	time.run_later(2000, set_to_locked);
+	rt.time.run_later(2000, set_to_locked);
 }
 
 function wrapup () {

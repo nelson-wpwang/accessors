@@ -18,7 +18,7 @@ function* init () {
   var url = get_parameter('device_url') + '/PJState.xml';
 
   /* Get the XML status from the receiver */
-  var xml = yield* http.request(url, 'GET', null, '', 3000);
+  var xml = yield* rt.http.request(url, 'GET', null, '', 3000);
 
   val = getXMLValue(xml, 'pjPowermd');
   if ((val == POWER_STATES['off']) || (val == POWER_STATES['turning_off'])) {
@@ -36,14 +36,14 @@ function* Power (power_setting) {
   } else {
     url = get_parameter('device_url') + '/dpjset.cgi?PJ_PowerMode=0';
   }
-  yield* http.request(url, 'GET', null, '', 3000);
+  yield* rt.http.request(url, 'GET', null, '', 3000);
 }
 
 function* Input (input_setting_choice) {
   if (SOURCES[input_setting_choice] === undefined) return;
 
   var url = get_parameter('device_url') + '/dpjset.cgi?PJ_SRCINPUT=' + SOURCES[input_setting_choice];
-  yield* http.request(url, 'GET', null, '', 3000);
+  yield* rt.http.request(url, 'GET', null, '', 3000);
 }
 
 function* fire () {

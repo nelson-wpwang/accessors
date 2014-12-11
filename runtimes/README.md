@@ -108,9 +108,14 @@ The accessor runtime provides a small library of functions for accessors.
 There are primarily I/O functions and serve to abstract the runtime
 environment from the accessor.
 
+All accessor functions are namespaced in the `rt` namespace. This should make
+accessors easier to read by clearly identifying which functions are provided
+by the accessor runtime and not native javascript or defined in the accessor
+itself.
+
 ### General Utility
 
-- `<string> version(<string> set_to=null)`: The version function returns the
+- `<string> rt.version(<string> set_to=null)`: The version function returns the
 version of the accessor runtime environment running when the call to version
 returns.  The optional argument `set_to` will request a change to the accessor
 version environment. The version request may include range specifiers (e.g.
@@ -118,25 +123,19 @@ version environment. The version request may include range specifiers (e.g.
 is unchanged and the original version is returned.  The accesor runtime is
 versioned using [semantic versioning](http://semver.org/).
 
-- _Blocking_ `<accessor> subinit(<string> sub_accessor, <dict> port_values`:
-Calls the `init()` method of a sub accessor, after setting initial values for
-all ports specified in `port_values`.
-   - TODO: Allow multiple subinits of the same sub-accessor? Easy in python,
-     but may be harder in other runtimes.
-
-- `<void> log.[debug,info,warn,error](<string> line)`: The log family
+- `<void> rt.log.[debug,info,warn,error](<string> line)`: The log family
 of functions provides a means for logging messages. These messages are
 generally intended for developers and should not be used to convey runtime
 information.
 
-- `<void> log.critical(<string> line)`: A critical error will throw a runtime
+- `<void> rt.log.critical(<string> line)`: A critical error will throw a runtime
 exception, terminating the current execution. Do not use critical for transient
 errors (e.g. a 503).
 
-- _Blocking_ `<null> time.sleep(<int> time_in_ms)`: Suspends execution for at
+- _Blocking_ `<null> rt.time.sleep(<int> time_in_ms)`: Suspends execution for at
 least the amount of time requested.
 
-- `<null> time.run_later(<float> delay_in_ms, <fn> fn_to_run, <T> args)`:
+- `<null> rt.time.run_later(<float> delay_in_ms, <fn> fn_to_run, <T> args)`:
 Schedules `fn_to_run` for execution in the future.
 
 
@@ -151,6 +150,9 @@ port.
 - `<string> get_parameter(<string> parameter_name)`: Get the value of a
 configured parameter.
 
+- `<accessor> get_dependency(<string> dependency_name)`: Get a handle for a
+dependency of this accessor.
+
 ### Sockets
 
 All socket related functions are scoped under the `socket` object. The socket
@@ -160,7 +162,7 @@ that __all__ socket operations are blocking.  This is due to the fact that some
 runtimes (e.g. a web browser) do not have native socket support and may need to
 perform complex operations (e.g. tunnel to a support server).
 
-- _Blocking_ `<socket> socket.socket(<string> family, <string> sock_type)`:
+- _Blocking_ `<socket> rt.socket.socket(<string> family, <string> sock_type)`:
 This function creates a new socket object. The `family` must be one of the
 standard family names (e.g. `AF_INET` or `AF_INET6`) and the `sock_type` must
 be a standard socket name (e.g. `SOCK_DGRAM` or `SOCK_STREAM`).
@@ -177,12 +179,12 @@ specified host.
 
 All HTTP related functions are scoped under the `http` object.
 
-- _Blocking_ `<string> http.request(<string> url, <string> method, <string>
+- _Blocking_ `<string> rt.http.request(<string> url, <string> method, <string>
 properties=null, <string> body=null, <int> timeout=null)`: Currently a wrapper
 around XMLHTTPRequest, needs to be revisited, especially for non-browser
 runtimes.
 
-- _Blocking_ `<string> http.readURL(<string> url)`: A convenience function for
+- _Blocking_ `<string> rt.http.readURL(<string> url)`: A convenience function for
 `GET`-ing a URL that wraps `http.request`.
 
 ### Color Functions
@@ -191,9 +193,9 @@ When writing accessors that use colors (such as lighting) it may be useful
 to change colors between various color representations. The `color` object
 makes this easier.
 
-- `<hsv object> color.hex_to_hsv(<string> hex_color)`: Convert a hex color
+- `<hsv object> rt.color.hex_to_hsv(<string> hex_color)`: Convert a hex color
 string (like "0000FF") to an HSV object (like
 `{h: [hue (0-360)], s: [saturation (0-1)], v: [value (0-1)]}`).
 
-- `<string> color.hsv_to_hex(<hsv object> hsv_color)`: Convert an HSV object
+- `<string> rt.color.hsv_to_hex(<hsv object> hsv_color)`: Convert an HSV object
 to an RGB hex string.

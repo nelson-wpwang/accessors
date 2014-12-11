@@ -1,46 +1,53 @@
 /* This runtime conforms to accessor runtime v0.1.0 */
 /* vim: set noet ts=2 sts=2 sw=2: */
 
+/*
+ * Create the over-arching runtime object that lets us scope all of this
+ * accessor runtime code nicely.
+ */
+
+rt = Object();
+
 /*** GENERAL UTILITY ***/
 
-function version(set_to) {
+rt.version = function version (set_to) {
 	return "0.1.0";
 }
 
-log = Object();
-log.log = function _log_log (message) {
+rt.log = Object();
+rt.log.log = function _log_log (message) {
 	console.log(message);
 }
 
-log.debug = function _log_debug (message) {
+rt.log.debug = function _log_debug (message) {
 	log.log("DEBUG: " + message);
 }
 
-log.info = function _log_info (message) {
+rt.log.info = function _log_info (message) {
 	log.log(" INFO: " + message);
 }
 
-log.warn = function _log_warn (message) {
+rt.log.warn = function _log_warn (message) {
 	log.log(" WARN: " + message);
 }
 
-log.error = function _log_error (message) {
+rt.log.error = function _log_error (message) {
 	log.log("ERROR: " + message);
 }
 
-log.critical = function _log_critical (message) {
+rt.log.critical = function _log_critical (message) {
 	log.log(" CRIT: " + message);
 	throw new AccessorRuntimeException(message);
 }
 
 
-time = Object();
-time.sleep = function* (time_in_ms) {
+rt.time = Object();
+rt.time.sleep = function* (time_in_ms) {
 	var deferred = Q.defer();
 	setTimeout(deferred.resolve, time_in_ms);
 	yield deferred.promise;
 }
-time.run_later = function (time_in_ms, fn_to_run, args) {
+rt.time.run_later = function (time_in_ms, fn_to_run, args) {
 	if (args != null) {
 		throw new AccessorRuntimeException("runtime doesn't support arguments yet");
 	}
@@ -55,9 +62,9 @@ time.run_later = function (time_in_ms, fn_to_run, args) {
 
 /*** SOCKETS ***/
 
-socket = Object();
+rt.socket = Object();
 
-socket.socket = function* (family, sock_type) {
+rt.socket.socket = function* (family, sock_type) {
 	var s = new Object();
 	s._packet_id = 0;
 
@@ -144,9 +151,9 @@ socket.socket = function* (family, sock_type) {
 
 /*** HTTP REQUESTS ***/
 
-http = Object();
+rt.http = Object();
 
-http.request = function* request(url, method, properties, body, timeout) {
+rt.http.request = function* request(url, method, properties, body, timeout) {
 	log.debug("httpRequest("
 				+ (function(obj) {
 					result=[];
@@ -180,7 +187,7 @@ http.request = function* request(url, method, properties, body, timeout) {
 	}
 }
 
-http.readURL = function* readURL(url) {
+rt.http.readURL = function* readURL(url) {
 	log.debug("readURL(" + url + ")");
 
 	var request_defer = Q.defer();
@@ -207,14 +214,14 @@ http.readURL = function* readURL(url) {
 	}
 }
 
-var color = Object();
+rt.color = Object();
 
-color.hex_to_hsv = function hex_to_hsv (hex_code) {
+rt.color.hex_to_hsv = function hex_to_hsv (hex_code) {
 	c = tinycolor(hex_code);
 	return c.toHsv();
 }
 
-color.hsv_to_hex = function hsv_to_hex (hsv) {
+rt.color.hsv_to_hex = function hsv_to_hex (hsv) {
 	c = tinycolor(hsv);
 	return c.toHex();
 }

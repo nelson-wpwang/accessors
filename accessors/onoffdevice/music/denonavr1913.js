@@ -9,7 +9,7 @@ function* init () {
   receiver_url = get_parameter('device_url') + '/goform/formMainZone_MainZoneXml.xml?_=1416011630214';
 
   /* Get the XML from the receiver via the proxy running on the webserver */
-  receiver_xml = yield* http.readURL(receiver_url);
+  receiver_xml = yield* rt.http.readURL(receiver_url);
 
   name = receiver_get_key(receiver_xml, 'FriendlyName');
   set('Name', name);
@@ -33,15 +33,15 @@ function* init () {
 
 function Power (on) {
   var cmd_url = get_parameter('device_url') + '/MainZone/index.put.asp';
-  httpRequest(cmd_url, 'POST', null, 'cmd0=PutZone_OnOff/'+(on?'ON':'OFF'), 3000);
-  log.debug(on);
+  yield* rt.http.request(cmd_url, 'POST', null, 'cmd0=PutZone_OnOff/'+(on?'ON':'OFF'), 3000);
+  rt.log.debug(on);
 }
 
 function Volume (volume) {
 	var set_volume = parseFloat(volume) - 80;
 	var cmd_url = get_parameter('device_url') + '/MainZone/index.put.asp';
-	httpRequest(cmd_url, 'POST', null, 'cmd0=PutMasterVolumeSet/'+set_volume, 3000);
-	log.debug(volume);
+	yield* rt.http.request(cmd_url, 'POST', null, 'cmd0=PutMasterVolumeSet/'+set_volume, 3000);
+	rt.log.debug(volume);
 }
 
 function Input (input_setting_choice) {

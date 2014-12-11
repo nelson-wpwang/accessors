@@ -8,7 +8,7 @@ function* Update () {
 	var query = btoa(JSON.stringify({'location_str':get_parameter('location')}));
 	var url = gatd + '/viewer/recent/'+pid+'?limit=1&query='+query;
 
-	data = JSON.parse(yield* http.readURL(url));
+	data = JSON.parse(yield* rt.http.readURL(url));
 
 	if (data.length == 0) {
 		set('People', 'Nobody in the room');

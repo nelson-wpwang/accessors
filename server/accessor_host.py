@@ -318,7 +318,7 @@ def create_accessor (structure, accessor, path):
 
 def validate_accessor_ports(accessor):
 	RESERVED_PORTS = ('init', 'fire', 'wrapup')
-	RUNTIME_KEYWORDS = ('version', 'subinit', 'log', 'time', 'get', 'set', 'get_parameter', 'socket', 'http')
+	RUNTIME_KEYWORDS = ('get', 'set', 'get_parameter', 'get_dependency', 'rt')
 
 	for port in accessor['ports']:
 		name = port['name']
