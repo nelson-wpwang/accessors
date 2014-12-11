@@ -159,8 +159,12 @@ class ServerAccessorList (tornado.web.StaticFileHandler):
 
 			root = ET.Element('accessors')
 			for accessor in j['accessors']:
-				child = ET.Element("accessor")
-				child.text = accessor
+				child = ET.Element("accessor", attrib={'path': accessor['path']})
+
+				if 'parameters' in accessor:
+					for name,value in accessor['parameters'].items():
+						ET.SubElement(child, 'parameter', attrib={'name':name, 'value': value})
+
 				root.append(child)
 
 			return ET.tostring(root)
