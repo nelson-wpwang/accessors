@@ -1,6 +1,18 @@
 {
 	"accessors": [
-		"/onoffdevice/light/hue/allbridgehues?bridge_url=http://141.212.106.242&username=lab11in2909",
-		"/webquery/Wearabouts?gatd_url=http://memristor-v1.eecs.umich.edu:8086&profile_id=hsYQx8blbd&location=University of Michigan|BBB|2909"
+		{
+			"path": "/onoffdevice/light/hue/allbridgehues",
+			"parameters": {
+				"bridge_url": "http://141.212.106.242&username=lab11in2909"
+			}
+		},
+		{
+			"path": "/webquery/Wearabouts",
+			"parameters": {
+				"gatd_url": "http://memristor-v1.eecs.umich.edu:8086",
+				"profile_id": "hsYQx8blbd",
+				"location": "University of Michigan|BBB|2909"
+			}
+		}
 	]
 }

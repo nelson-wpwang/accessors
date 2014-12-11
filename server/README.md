@@ -10,17 +10,6 @@ For example, a URL might look like:
     http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.json
 
 
-### Parameters
-
-Certain accessors may need configuration parameters for different locations
-and devices. These parameters are passed in the URL. For example, different
-Hue light bulbs may have different IP addresses. To avoid hard-coding
-the IP addresses in the accessor, the request can look like:
-
-    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.json?ipaddress=123.45.67.1
-    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.json?ipaddress=123.45.67.2
-
-
 ### XML
 
 Accessors can also be requested in XML format. To do so simply replace '.json'
@@ -28,18 +17,18 @@ with '.xml':
 
     http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.xml
 
-### Other Options
+### Options
 
-The accessor server can do other transformations on accessors before
-they are sent to the client. These are, like parameters, specified by URL
+The accessor server can do transformations on accessors before
+they are sent to the client. These are specified by URL
 parameters. Example:
 
-    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.json?_language=traceur
+    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.json?language=traceur
 
 
 | Option Name | Valid Values             | Default | Description |
 | ----------- | ------------             | ------- | ----------- |
-| _language   | traceur, es6, javascript | es6     | Choose the language of the accessor code. By default the code is in the latest version of javascript. |
+| language    | traceur, es6, javascript | es6     | Choose the language of the accessor code. By default the code is in the latest version of javascript. |
 
 
 
@@ -54,9 +43,14 @@ Location files look like:
 
 
     {
-    	"accessors": [
-    		"/webquery/StockTick"
-    	]
+      "accessors": [
+        {
+          "path": "/webquery/StockTick",
+          "parameters": {
+            "parameter1": "param value"
+          }
+        }
+      ]
     }
 
 Again, their URLs are based on the hierarchy of their location. For example:

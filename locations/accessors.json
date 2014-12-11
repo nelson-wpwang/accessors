@@ -1,5 +1,7 @@
 {
 	"accessors": [
-		"/webquery/StockTick"
+		{
+			"path": "/webquery/StockTick"
+		}
 	]
 }

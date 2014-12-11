@@ -151,25 +151,8 @@ class ServeAccessor (tornado.web.RequestHandler):
 		# Create a local copy of the accessor to serve so we can configure it
 		accessor = copy.deepcopy(self.accessor)
 
-		# See if any of the parameters should be configured
-		if 'parameters' in accessor:
-			for p in accessor['parameters']:
-				if 'required' in p and p['required']:
-					p['value'] = self.get_argument(p['name'])
-				else:
-					p['value'] = self.get_argument(p['name'], p['default'])
-		if 'dependencies' in accessor:
-			for dependency in accessor['dependencies']:
-				if 'parameters' in dependency:
-					for p in dependency['parameters']:
-						if 'required' in p and p['required']:
-							p['value'] = self.get_argument('{}.{}'.format(dependency['name'], p['name']))
-						else:
-							p['value'] = self.get_argument('{}.{}'.format(dependency['name'], p['name']), p['default'])
-
-
-		# Look for any other parameters that change how we will respond
-		language = self.get_argument('_language', 'es6')
+		# Look for any parameters that change how we will respond
+		language = self.get_argument('language', 'es6')
 		if language == 'traceur':
 			accessor['code'] = accessor['code_alternates']['traceur']
 			if 'dependencies' in accessor:

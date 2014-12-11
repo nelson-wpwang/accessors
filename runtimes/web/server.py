@@ -86,10 +86,16 @@ def nsp(s):
 
 # Take accessor names and make them nice unique strings so we can have multiple
 # loaded at the same time.
-def clean_name(s):
-	# TODO: make this better
-	#return s.replace(' ', '').replace('-', '')
+def clean_name (s):
 	return s.replace(' ', '_SPACE').replace('-', '_DASH')
+
+def clean_names (accessor):
+	accessor['clean_name'] = clean_name(accessor['name'])
+
+	if 'dependencies' in accessor:
+		for dep in accessor['dependencies']:
+			clean_names(dep)
+
 
 def create_accessor_javascript (accessor,
                                 chained_name,
@@ -212,6 +218,7 @@ def create_accessor_javascript (accessor,
 	return rjsmin.jsmin(js)
 
 
+
 # This is a recursive function that loops through accessors and dependencies
 # to generate all of the needed JS.
 def create_javascript (accessor, chained_name='', toplevel=True):
@@ -220,12 +227,29 @@ def create_javascript (accessor, chained_name='', toplevel=True):
 	dep_code = ''
 	if 'dependencies' in accessor:
 		for dependency in accessor['dependencies']:
-			dependency['clean_name'] = clean_name(dependency['name'])
 			dep_code += create_javascript(dependency, chained_name, False)
 
 	return create_accessor_javascript(accessor, chained_name, dep_code, toplevel)
 
 
+def set_accessor_parameters (parameters, accessor, chained_name=''):
+	if 'parameters' in accessor:
+		for parameter in accessor['parameters']:
+			name = chained_name + parameter['name']
+
+			if name in parameters:
+				parameter['value'] = parameters[name]
+			elif 'default' in parameter:
+				parameter['value'] = parameter['default']
+			else:
+				print('ERROR: parameter {} in accessor {} not set!'\
+					.format(name, accessor['name']))
+				parameter['value'] = ''
+
+	if 'dependencies' in accessor:
+		for dep in accessor['dependencies']:
+			next_name = chained_name + dep['name'] + '.'
+			set_accessor_parameters(parameters, dep, next_name)
 
 # This function adds a bunch of javascript to the code section of the accessor
 # to make the browser runtime work.
@@ -239,18 +263,19 @@ def get_accessors (url):
 
 	accessors = {'accessors': []}
 
-	for accessor_url in accessor_list['accessors']:
-		if '?' in accessor_url:
-			i = accessor_url.index('?')
-			accessor_url = accessor_url[:i] + '.json' + accessor_url[i:]
-		else:
-			accessor_url += '.json'
-		get_url = '{}/accessor{}'.format(args.accessor_server, accessor_url)
+	for accessor_item in accessor_list['accessors']:
+		get_url = '{}/accessor{}.json'.format(args.accessor_server, accessor_item['path'])
 		print("GET {}".format(get_url))
 		r2 = requests.get(get_url)
 		if r2.status_code == 200:
 			accessor = r2.json()
-			accessor['clean_name'] = clean_name(accessor['name'])
+
+			# Create unique names without spaces or symbols that can be used as
+			# javascript objects.
+			clean_names(accessor)
+
+			# Set the parameters
+			set_accessor_parameters(accessor_item['parameters'], accessor)
 
 			# Make sure the 'display_name' key exists to make the JS frontend
 			# easier.
