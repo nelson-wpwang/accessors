@@ -1,0 +1,7 @@
+{
+	"path": "/tests/ParameterTest001",
+	"parameters": {
+		"test_server": "$TEST_SERVER"
+	},
+	"result": "Just Parameter one default."
+}

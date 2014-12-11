@@ -1,0 +1,14 @@
+{
+	"path": "/tests/ParameterDepTest000",
+	"parameters": {
+		"test_server": "$TEST_SERVER",
+		"param1": "Top Level",
+		"PTest1.test_server": "$TEST_SERVER",
+		"PTest2.test_server": "$TEST_SERVER",
+		"PTest1.param1": "First dep param",
+		"PTest2.param1": "Second dep param"
+	},
+	"result": "Top Level
+First dep param
+Second dep param"
+}

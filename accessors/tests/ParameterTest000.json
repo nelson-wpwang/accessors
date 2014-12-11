@@ -1,0 +1,23 @@
+{
+	"name": "Parameter Test000",
+	"author": {"name": "Brad Campbell"},
+	"version": "1.0",
+	"description": "Test parameters.",
+	"parameters": [
+		{
+			"name": "param1"
+		},
+		{
+			"name": "test_server"
+		}
+	],
+	"code": {
+		"javascript": {
+			"code": "
+function* init (v) {
+	yield* rt.http.put(get_parameter('test_server'), get_parameter('param1'));
+}
+"
+		}
+	}
+}

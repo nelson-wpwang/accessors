@@ -1,0 +1,11 @@
+{
+	"path": "/tests/ParameterDepTest001",
+	"parameters": {
+		"PTestNest1.test_server": "$TEST_SERVER",
+		"PTestNest1.PTest1.test_server": "$TEST_SERVER",
+		"PTestNest1.PTest2.test_server": "$TEST_SERVER"
+	},
+	"result": "first param
+do this next
+lasssst"
+}

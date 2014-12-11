@@ -1,0 +1,14 @@
+{
+	"path": "/tests/NestedDepTest0",
+	"parameters": {
+		"SimpleInputA.test_server": "$TEST_SERVER",
+		"DepA.SimpleInputA.test_server": "$TEST_SERVER",
+		"DepA.SimpleInputB.test_server": "$TEST_SERVER",
+		"DepA.SimpleInputC.test_server": "$TEST_SERVER"
+	},
+	"result": "B
+SetSecondFirstCall
+SetThirdMiddleCall
+SetFirstLastCall
+OhInput2Too"
+}

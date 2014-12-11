@@ -1,0 +1,34 @@
+{
+	"name": "Nested Dependency Test0",
+	"author": {"name": "Brad Campbell"},
+	"version": "1.0",
+	"description": "Test dependencies.",
+	"dependencies": [
+		{
+			"name": "DepA",
+			"path": "/tests/SimpleDepTest0"
+		},
+		{
+			"name": "SimpleInputA",
+			"path": "/tests/SimpleInputTest0"
+		}
+	],
+	"code": {
+		"javascript": {
+			"code": "
+var depa;
+var inpa;
+function* init (v) {
+	var depa = get_dependency('DepA');
+	var inpa = get_dependency('SimpleInputA');
+
+	inpa.set('Input1', 'A');
+	inpa.set('Input2', 'B');
+	yield* inpa.Input2('B');
+
+	yield* depa.init();
+}
+"
+		}
+	}
+}

@@ -1,0 +1,41 @@
+{
+	"name": "Simple Dependency Test0",
+	"author": {"name": "Brad Campbell"},
+	"version": "1.0",
+	"description": "Test dependencies.",
+	"dependencies": [
+		{
+			"name": "SimpleInputA",
+			"path": "/tests/SimpleInputTest"
+		},
+		{
+			"name": "SimpleInputB",
+			"path": "/tests/SimpleInputTest"
+		},
+		{
+			"name": "SimpleInputC",
+			"path": "/tests/SimpleInputTest"
+		}
+	],
+	"code": {
+		"javascript": {
+			"code": "
+function* init (v) {
+	var a = get_dependency('SimpleInputA');
+	var b = get_dependency('SimpleInputB');
+	var c = get_dependency('SimpleInputC');
+
+	a.set('Input1', 'SetFirstLastCall');
+	b.set('Input1', 'SetSecondFirstCall');
+	c.set('Input1', 'SetThirdMiddleCall');
+	c.set('Input2', 'OhInput2Too');
+
+	yield* b.Input1('SetSecondFirstCall');
+	yield* c.Input1();
+	yield* a.Input1('SetFirstLastCall');
+	yield* c.Input2('OhInput2Too');
+}
+"
+		}
+	}
+}

@@ -1,0 +1,43 @@
+{
+	"name": "Parameter Dep Test000",
+	"author": {"name": "Brad Campbell"},
+	"version": "1.0",
+	"description": "Test parameters and dependencies.",
+	"dependencies": [
+		{
+			"name": "PTest1",
+			"path": "/tests/ParameterTest000"
+		},
+		{
+			"name": "PTest2",
+			"path": "/tests/ParameterTest000",
+			"parameters": {
+				"param1": "Good p test 2"
+			}
+		}
+	],
+	"parameters": [
+		{
+			"name": "param1"
+		},
+		{
+			"name": "test_server"
+		}
+	],
+	"code": {
+		"javascript": {
+			"code": "
+var dep1, dep2;
+function* init (v) {
+	yield* rt.http.put(get_parameter('test_server'), get_parameter('param1'));
+
+	dep1 = get_dependency('PTest1');
+	dep2 = get_dependency('PTest2');
+
+	yield* dep1.init();
+	yield* dep2.init();
+}
+"
+		}
+	}
+}

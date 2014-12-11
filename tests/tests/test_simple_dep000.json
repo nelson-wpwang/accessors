@@ -1,0 +1,12 @@
+{
+	"path": "/tests/SimpleDepTest0",
+	"parameters": {
+		"SimpleInputA.test_server": "$TEST_SERVER",
+		"SimpleInputB.test_server": "$TEST_SERVER",
+		"SimpleInputC.test_server": "$TEST_SERVER"
+	},
+	"result": "SetSecondFirstCall
+SetThirdMiddleCall
+SetFirstLastCall
+OhInput2Too"
+}
