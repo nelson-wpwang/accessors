@@ -25,7 +25,7 @@ Any other keys will be ignored.
 | ---            | -------- | ------        | ----------- |
 | `name`         | yes      | string        | The name of the accessor. |
 | `version`      | yes      | string        | The version number of the accessor. |
-| `author`       | yes      | string/object | Information about the author. Can be just a string (the author's name) or an object with the keys: `name`, `email`, `website`. |
+| `author`       | yes      | object        | Information about the author. Must be an object with the keys: `name`, `email`, `website`. |
 | `description`  | no       | string        | Description of the accessor written in Markdown syntax. |
 | `ports`        | no       | array         | Input and output fields for this accessor. See the "Ports" section below. |
 | `parameters`   | no       | array         | Values which must be specified for a particular instantiation of this accessor. These are set when the accessor is retrieved from the accessor host server. |
@@ -42,8 +42,8 @@ are valid in the port object:
 | KEY            | Required | Type          | Description |
 | ---            | -------- | ------        | ----------- |
 | `direction`    | yes      | string        | Specifies if this port takes data from the user, displays data to the user, or both. Valid choices are: `input`, `output`, and `inout`. |
-| `name`         | yes      | string        | Accessor name. Valid characters are "A-Z", "a-z", "0-9", and "_". |
-| `type`         | yes      | string        | Specifies the data type of the port. See "Port Types" below for more information. |
+| `name`         | yes      | string        | Port name. Valid characters are "A-Z", "a-z", "0-9", and "_". |
+| `type`         | no       | string        | Specifies the data type of the port. Defaults to "string". See "Port Types" below for more information. |
 | `default`      | no       | `<type>`      | Specify a default value for the port |
 | `options`      | no       | array         | Only valid when `type` == "select". Specifies the list of valid options the user can select from. |
 | `min`          | no       | number        | Only valid when `type` == "integer" or "numeric". Allows the accessor runtime to limit input values. |
@@ -136,7 +136,7 @@ object as its value. The valid keys in the second object are:
 
 | KEY            | Required | Type          | Description |
 | ---            | -------- | ------        | ----------- |
-| `code`         | no       | string        | A string of code. Will be included first in the generated accessor by the accessor host server. |
+| `code`         | no       | string        | A string of code. Will be included last in the generated accessor by the accessor host server. |
 | `include`      | no       | array         | A list of files that should be included when the final code blob is created by the accessor host server. The files will be appended in order. Using `include` makes writing the accessor code easier than including it in this file. |
 
 #### Code Example
