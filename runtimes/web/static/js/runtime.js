@@ -214,6 +214,10 @@ rt.http.readURL = function* readURL(url) {
 	}
 }
 
+rt.http.put = function* put(url, body) {
+	yield* rt.http.request(url, 'PUT', null, body, 0);
+}
+
 /*** COLOR FUNCTIONS ***/
 
 rt.color = Object();
