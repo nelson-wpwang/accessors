@@ -170,6 +170,7 @@ objects:
 | ---            | -------- | ------        | ----------- |
 | `name`         | yes      | string        | Name to map the sub-accessor to. This name will be used when creating the object for the sub-accessor. |
 | `path`         | yes      | string        | Path to the sub-accessor. Can point to an accessor on the local accessor host server or a remote one. Parameters can also be passed if needed. |
+| `parameters`   | no       | object        | Object of <parameter_name:parameter_value> pairs. Use this to set the parameters of the sub-accessor to a constant value. |
 
 #### Dependencies Example
 

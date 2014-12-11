@@ -53,6 +53,10 @@ def _serialize_xml(write, elem, *args, **kwargs):
 	return ET._original_serialize_xml(write, elem, *args, **kwargs)
 ET._serialize_xml = ET._serialize['xml'] = _serialize_xml
 
+# These classes are used when building the tree of accessors based on their
+# path. They are only used when the server is started or an accessor changes and
+# not during the normal operation of the accessor host server. Their purpose
+# is to aid in getting inherited ports setup correctly. 
 class accessor_tree_node ():
 	def __init__ (self, name, accessor):
 		self.name = name
@@ -72,8 +76,6 @@ class accessor_tree_node ():
 			s += c.to_string(indent+2)
 		return s
 
-
-
 class accessor_tree_leaf ():
 	def __init__ (self, name, accessor, path):
 		self.name = name
@@ -84,6 +86,18 @@ class accessor_tree_leaf ():
 		s =  '{indent}ATL: {name}\n'.format(indent=' '*indent, name=self.name)
 		return s
 
+# These objects form the tree of accessor dependencies. Again they are used
+# at initialization or when an accessor changes. Their purpose is to make sure
+# that accessors include their dependencies correctly.
+class accessor_dep_tree_node ():
+	def __init__ (self, accessor):
+		self.accessor = accessor
+		self.children = []
+
+	def add_child (self, child):
+		self.children.append(child)
+
+accessor_path_to_dep_tree = {}
 
 
 # Avoid this Cross-Origin nonsense
@@ -387,20 +401,76 @@ def create_accessors_recurse (accessor_tree, current_accessor, structure):
 		for atn in accessor_tree.children:
 			create_accessors_recurse(atn, accessor_tree.accessor, copy.deepcopy(structure))
 
+# Loads all dependencies and recurses in the case of nested dependencies
+def create_accessors_dependencies_recurse (accessor, children):
+
+	if 'dependencies' in accessor:
+		for i,dep in enumerate(accessor['dependencies']):
+
+			# Substitute in the given values of the parameters if they exist.
+			if 'parameters' in dep:
+				dep_accessor = children[i].accessor
+				if 'parameters' in dep_accessor:
+					for parameter in dep_accessor['parameters']:
+						if parameter['name'] in dep['parameters']:
+							parameter['value'] = dep['parameters'][parameter['name']]
+
+			# Insert all of the fields of the accessor into the parent accessor
+			# to form the full accessor with dependencies
+			dep.update(children[i].accessor)
+
+			# Recurse to fill in sub-accessors
+			create_accessors_dependencies_recurse(dep, children[i].children)
+
+
+
+	# for child in dep_tree_node.children:
+	# 	create_accessors_dependencies_recurse(child)
+
+
+
+
+	# if 'dependencies' in accessor:
+	# 	for dependency in accessor['dependencies']:
+	# 		path = '/accessor{}'.format(dependency['path'])
+	# 		dep_accessor = copy.deepcopy(accessors_by_path[path])
+
+	# 		# Load any preset parameters into the 
+
+	# 		dependency['version'] = copy.deepcopy(accessors_by_path[path].accessor['version'])
+	# 		dependency['code_alternates'] = copy.deepcopy(accessors_by_path[path].accessor['code_alternates'])
+	# 		dependency['ports'] = copy.deepcopy(accessors_by_path[path].accessor['ports'])
+	# 		dependency['parameters'] = copy.deepcopy(accessors_by_path[path].accessor['parameters'])
+
+
+# Instantiate the dependency tree.
+# The key here is to deep copy everything when making the tree. Rather than
+# having a messy graph this gives us a nice directed acyclic graph that will
+# make things work with preset parameters.
+def create_dependency_tree_recurse (accessor_dep_tree_node):
+	if 'dependencies' in accessor_dep_tree_node.accessor:
+		for dep in accessor_dep_tree_node.accessor['dependencies']:
+			# TODO: check path exists
+			sub_node = copy.deepcopy(accessor_path_to_dep_tree[dep['path']])
+			accessor_dep_tree_node.add_child(sub_node)
+
+			create_dependency_tree_recurse(sub_node)
+
 def create_accessors (accessor_tree):
+	# This does the first pass on making complete accessors by resolving ports
+	# and updating the code sections
 	create_accessors_recurse(accessor_tree, None, [])
 
-	# Do the second pass to determine any dependencies we need to include
-	for path,accessor in accessors_by_path.items():
-		if 'dependencies' in accessor.accessor:
-			for dependency in accessor.accessor['dependencies']:
-				path = '/accessor{}'.format(dependency['path'])
-				dependency['version'] = copy.deepcopy(accessors_by_path[path].accessor['version'])
-				dependency['code_alternates'] = copy.deepcopy(accessors_by_path[path].accessor['code_alternates'])
-				dependency['ports'] = copy.deepcopy(accessors_by_path[path].accessor['ports'])
-				dependency['parameters'] = copy.deepcopy(accessors_by_path[path].accessor['parameters'])
+	# Next up: create the dependency tree
+	for path,dep_tree_node in accessor_path_to_dep_tree.items():
+		create_dependency_tree_recurse(dep_tree_node)
 
-
+	# After we have the tree, build complete accessors based on all of their
+	# dependencies.
+	for path,dep_tree_node in accessor_path_to_dep_tree.items():
+	#for path,accessor_obj in accessors_by_path.items():
+		create_accessors_dependencies_recurse(dep_tree_node.accessor, dep_tree_node.children)
+		
 
 def find_accessors (path, tree_node):
 
@@ -443,6 +513,11 @@ def find_accessors (path, tree_node):
 					atl = accessor_tree_leaf(filename, j, path)
 					atn.add_child(atl)
 					#create_accessor(path, sub_structure+[filename], sub_ports, j)
+
+					# We make the node now with the current accessor. This pointer
+					# will get updated later with the fully expanded ports.
+					adtn = accessor_dep_tree_node(j)
+					accessor_path_to_dep_tree[path] = adtn
 
 
 	# Do the directories
