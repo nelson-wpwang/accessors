@@ -78,11 +78,6 @@ in order for the accessor to work.');
 		$('#accessor-'+accessor.clean_name).on('click', '.accessor-button', function () {
 			call_accessor($(this), null);
 		});
-
-		// Call init now.
-		Q.spawn(function* () {
-			yield* window[accessor.clean_name].init();
-		});
 	}
 });
 
