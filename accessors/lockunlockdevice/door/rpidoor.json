@@ -1,7 +1,7 @@
 {
   "name":    "Raspberry Pi Door",
   "version": "0.1",
-  "author":  "Pat Pannuto",
+  "author":  {"name": "Pat Pannuto", "email": "ppannuto@umich.edu"},
   "description": "
 Accessor for a Door Controller by a Raspberry Pi
 ================================================

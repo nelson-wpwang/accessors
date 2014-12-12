@@ -1,7 +1,7 @@
 {
   "name": "StockTick",
   "version": "0.1",
-  "author": "Edward A. Lee",
+  "author": {"name": "Edward A. Lee", "email": "eal@eecs.berkeley.edu"},
   "description": "
 Stock Price Lookup Accessor
 ===========================

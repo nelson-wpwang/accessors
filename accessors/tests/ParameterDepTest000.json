@@ -1,6 +1,6 @@
 {
 	"name": "Parameter Dep Test000",
-	"author": {"name": "Brad Campbell"},
+	"author": {"name": "Brad Campbell", "email": "bradjc@umich.edu"},
 	"version": "1.0",
 	"description": "Test parameters and dependencies.",
 	"dependencies": [

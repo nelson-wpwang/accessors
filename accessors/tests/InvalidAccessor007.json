@@ -1,0 +1,24 @@
+{
+	"name": "Invalid Accessor 007",
+	"author": {"name": "Brad Campbell", "email":"bradjc@umich.edu"},
+	"version": "1.0",
+	"description": "Test string inputs.",
+	"ports": [
+		{
+			"name": "port1",
+			"direction": "output",
+			"type": "string"
+		}
+	],
+	"parameters": [
+		{
+			"name": "param1"
+		},
+		{
+			"name": "param2"
+		}
+	],
+	"code": {
+		"javascript": {"code": ["abc", "def"]}
+	}
+}

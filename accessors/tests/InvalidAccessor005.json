@@ -1,0 +1,14 @@
+{
+	"name": "Invalid Accessor 005",
+	"author": {"name": "Brad Campbell", "email":"bradjc@umich.edu"},
+	"version": "1.0",
+	"description": "Test string inputs.",
+	"ports": [
+		{
+			"name": "port1",
+			"direction": "output",
+			"type": "string"
+		},
+		"what happens"
+	]
+}

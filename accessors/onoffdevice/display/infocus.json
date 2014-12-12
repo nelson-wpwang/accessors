@@ -1,7 +1,7 @@
 {
   "name":    "InFocus",
   "version": "0.1",
-  "author":  "Pat Pannuto",
+  "author":  {"name": "Pat Pannuto", "email": "ppannuto@umich.edu"},
   "description": "
 InFocus Projector Accessor
 ==========================

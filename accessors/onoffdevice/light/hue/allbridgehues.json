@@ -1,7 +1,7 @@
 {
 	"name": "All Hues on a Bridge",
 	"version": "0.1",
-	"author": "Brad Campbell",
+	"author": {"name": "Brad Campbell", "email": "bradjc@umich.edu"},
 	"description": "
 Hue Light Bulbs
 ===============

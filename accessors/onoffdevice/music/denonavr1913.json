@@ -1,7 +1,7 @@
 {
   "name":    "Denon AVR-1913",
   "version": "0.1",
-  "author":  "Brad Campbell",
+  "author":  {"name": "Brad Campbell", "email": "bradjc@umich.edu"},
   "description": "
 Denon AVR-1913 Accessor
 =======================

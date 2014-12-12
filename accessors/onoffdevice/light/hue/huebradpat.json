@@ -1,7 +1,7 @@
 {
 	"name": "Brad-Pat Hue",
 	"version": "0.1",
-	"author": "Brad Campbell",
+	"author": {"name": "Brad Campbell", "email": "bradjc@umich.edu"},
 	"description": "
 Hue Bulbs for Brad and Pat
 ================================
@@ -15,11 +15,11 @@ This is an example of a meta-accessor.
 	},
 	"dependencies": [
 		{
-			"path": "/onoffdevice/light/hue/huesingle.json",
+			"path": "/onoffdevice/light/hue/huesingle",
 			"name": "BradHue"
 		},
 		{
-			"path": "/onoffdevice/light/hue/huesingle.json",
+			"path": "/onoffdevice/light/hue/huesingle",
 			"name": "PatHue"
 		}
 	]

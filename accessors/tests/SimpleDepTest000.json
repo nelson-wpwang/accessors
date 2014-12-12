@@ -1,20 +1,20 @@
 {
 	"name": "Simple Dependency Test0",
-	"author": {"name": "Brad Campbell"},
+	"author": {"name": "Brad Campbell", "email": "bradjc@umich.edu"},
 	"version": "1.0",
 	"description": "Test dependencies.",
 	"dependencies": [
 		{
 			"name": "SimpleInputA",
-			"path": "/tests/SimpleInputTest"
+			"path": "/tests/SimpleInputTest000"
 		},
 		{
 			"name": "SimpleInputB",
-			"path": "/tests/SimpleInputTest"
+			"path": "/tests/SimpleInputTest000"
 		},
 		{
 			"name": "SimpleInputC",
-			"path": "/tests/SimpleInputTest"
+			"path": "/tests/SimpleInputTest000"
 		}
 	],
 	"code": {

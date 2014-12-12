@@ -20,6 +20,9 @@ if not semver.match(tornado.version, ">=3.1.0"):
 import watchdog.events
 import watchdog.observers
 
+sys.path.append(os.path.abspath('../tools'))
+import validate_accessor
+
 import sh
 from sh import rm
 try:
@@ -182,27 +185,33 @@ class ServeAccessor (tornado.web.RequestHandler):
 
 		# Look for any parameters that change how we will respond
 		language = self.get_argument('language', 'es6')
+
+		def set_dependency_js (accessor, language):
+			for dep in accessor['dependencies']:
+				dep['code'] = dep['code_alternates'][language]
+				set_dependency_js(dep, language)
+
 		if language == 'traceur':
 			accessor['code'] = accessor['code_alternates']['traceur']
-			for dependency in accessor['dependencies']:
-				dependency['code'] = dependency['code_alternates']['traceur']
+			set_dependency_js(accessor, 'traceur')
 		elif language == 'es6' or language == 'javascript':
 			accessor['code'] = accessor['code_alternates']['javascript']
-			for dependency in accessor['dependencies']:
-				dependency['code'] = dependency['code_alternates']['javascript']
+			set_dependency_js(accessor, 'javascript')
 		else:
 			if language in accessor['code_alternates']:
 				accessor['code'] = accessor['code_alternates'][language]
-			for dependency in accessor['dependencies']:
-				dependency['code'] = dependency['code_alternates'][language]
+				set_dependency_js(accessor, language)
 			else:
 				raise NotImplementedError("Unknown language: {}".format(language))
 
 		if 'code_alternates' in accessor:
 			del accessor['code_alternates']
-		for dependency in accessor['dependencies']:
-			if 'code_alternates' in dependency:
-				del dependency['code_alternates']
+		def remove_dependency_code_alts (accessor):
+			for dependency in accessor['dependencies']:
+				if 'code_alternates' in dependency:
+					del dependency['code_alternates']
+				remove_dependency_code_alts(dependency)
+		remove_dependency_code_alts(accessor)
 
 		self.set_content_type()
 		self.write_accessor(accessor)
@@ -285,11 +294,22 @@ class ServeAccessorXML (ServeAccessor):
 
 
 def create_accessor (structure, accessor, path):
-	validate_accessor_base(accessor)
-	validate_accessor_ports(accessor)
-	validate_accessor_parameters(accessor)
-	validate_accessor_code(accessor)
-	validate_accessor_dependencies(accessor)
+	err = validate_accessor.check(accessor)
+	if err:
+		print('ERROR: Invalid accessor format.')
+		accessor['valid'] = False
+		return
+
+	# Make sure that we have at least empty fields for all of the various
+	# keys in the accessor. This simplifies logic down the line.
+	if 'ports' not in accessor:
+		accessor['ports'] = []
+	if 'parameters' not in accessor:
+		accessor['parameters'] = []
+	if 'code' not in accessor:
+		accessor['code'] = {}
+	if 'dependencies' not in accessor:
+		accessor['dependencies'] = []
 
 	# Handle any code include directives
 	if 'code' in accessor:
@@ -345,215 +365,6 @@ def create_accessor (structure, accessor, path):
 		print('Adding accessor {}'.format(json_path))
 		print('Adding accessor {}'.format(xml_path))
 
-def validate_accessor_base(accessor):
-	run_checks(accessor=accessor,
-	           obj=accessor,
-	           obj_key='',
-	           obj_type=dict,
-	           sub_obj_type=None,
-	           req_keys=['name', 'version', 'author'],
-	           uniq_keys=None,
-	           key_types={'name':str,
-	                      'version':str,
-	                      'author':dict,
-	                      'description':str}
-	          )
-
-def validate_accessor_ports(accessor):
-	RESERVED_PORTS = ('init', 'fire', 'wrapup')
-	RUNTIME_KEYWORDS = ('get', 'set', 'get_parameter', 'get_dependency', 'rt')
-
-	if port in accessor:
-
-		run_checks(accessor=accessor,
-		           obj=accessor['ports'],
-		           obj_key='ports',
-		           obj_type=list,
-		           sub_obj_type=dict,
-		           req_keys=['direction', 'name'],
-		           uniq_keys=['name'],
-		           key_types={'direction':str,
-		                      'name':str,
-		                      'type':['button', 'bool', 'string', 'numeric', 'integer', 'select', 'color'],
-		                      'options':list,
-		                      'min':'number',
-		                      'max':'number'}
-		          )
-
-		for port in accessor['ports']:
-			name = port['name']
-			if name.lower() in RESERVED_PORTS:
-				print("Illegal port name", name)
-				print("{} are reserved".format(RESERVED_PORTS))
-				print("Found parsing", accessor)
-				sys.exit(1)
-			if name.lower() in RUNTIME_KEYWORDS:
-				print("Illegal port name", name)
-				print("{} are runtime keywords".format(RUNTIME_KEYWORDS))
-				print("Found parsing", accessor)
-				sys.exit(1)
-			if ' ' in name:
-				print("Illegal character 'SPACE' in port", name)
-				print("Found parsing", accessor)
-				sys.exit(1)
-			if '-' in name:
-				print("Illegal character 'DASH' in port", name)
-				print("Consider using an underscore instead.")
-				print("Found parsing", accessor)
-				sys.exit(1)
-			if ord(name[0].upper()) not in range(65,91):
-				print("Ports must start with a letter")
-				print("Illegal port", name)
-				print("Found parsing", accessor)
-				sys.exit(1)
-
-	else:
-		accessor['ports'] = []
-
-def validate_accessor_parameters(accessor):
-	INVALID_CHARACTERS = '.'
-
-
-	if 'parameters' in accessor:
-
-		run_checks(accessor=accessor,
-		           obj=accessor['parameters'],
-		           obj_key='parameters',
-		           obj_type=list,
-		           sub_obj_type=dict,
-		           req_keys=['name'],
-		           uniq_keys=['name'],
-		           key_types={'name':str, 'default':str, 'required': bool}
-		          )
-
-		for parameter in accessor['parameters']:
-			for c in INVALID_CHARACTERS:
-				if c in parameter['name']:
-					aerr(accessor, 'parameter', 'Parameter "{}" cannot have a "{}" \
-in the name'.format(parameter['name'], c))
-			if !parameter.get_default('required', True) and 'default' in parameter:
-				anote(accessor, 'parameter', 'In parameter "{}", setting \
-required=false with a default has no effect'.format(parameter['name']))
-	else:
-		# Provide every accessor with at least a blank list to simplify
-		# accessor handling code
-		accessor['parameters'] = []
-
-def validate_accessor_code(accessor):
-	if 'code' in accessor:
-
-		run_checks(accessor=accessor,
-		           obj=accessor['code'],
-		           obj_key='code',
-		           obj_type=dict,
-		           sub_obj_type=dict,
-		           req_keys=[],
-		           uniq_keys=[],
-		           key_types={'code':str, 'include':list}
-		          )		
-
-def validate_accessor_dependencies(accessor):
-
-	if 'dependencies' in accessor:
-		run_checks(accessor=accessor,
-		           obj=accessor['dependencies'],
-		           obj_key='dependencies',
-		           obj_type=list,
-		           sub_obj_type=dict,
-		           req_keys=['name', 'path'],
-		           uniq_keys=['name'],
-		           key_types={'name':str, 'path':str, 'parameters':dict}
-		          )
-
-		# Check on parameters
-		for dep in accessor['dependencies']:
-			if 'parameters' in dep:
-				for name,value in dep['parameters'].items():
-					if type(value) != str:
-						aerr(accessor, 'dependencies:parameters', 'All parameters \
-must be strings.')
-
-	else:
-		accessor['dependencies'] = []
-
-
-def run_checks(accessor,
-               obj,
-               obj_key,
-               obj_type,
-               sub_obj_type,
-               req_keys,
-               uniq_keys,
-               key_types):
-
-	def check_dict (item, find_unique=None):
-		# Verify that required keys are present
-		if req_keys:
-			for req_key in req_keys:
-				if req_key not in item:
-					aerr(accessor, obj_key, 'Missing {} key'.format(req_key))
-
-		# Populate uniqueness checking structures
-		if uniq_keys and find_unique:
-			for uniq_key in uniq_keys:
-				find_unique[uniq_key][0].append(item[uniq_key])
-				find_unique[uniq_key][1].append(item[uniq_key])
-
-		# Check types
-		if key_types:
-			for key,typ in key_types.items():
-				if key in item:
-					if type(typ) == type:
-						if type(item[key]) != typ:
-							aerr(accessor, obj_key, 'Incorrect type for \
-key "{}". Must be a {}.'.format(key, typ))
-					elif type(typ) == list:
-						if item[key] not in typ:
-							aerr(accessor, obj_key, 'Incorrect type for \
-key "{}". Must be in {}.'.format(key, typ))
-					elif typ == 'number':
-						try:
-							float(item[key])
-						except:
-							aerr(accessor, obj_key, 'Incorrect type for \
-key "{}". Must be numeric.'.format(key))
-
-		if args.strict_parse:
-			for k,v in item.items():
-				if k not in key_types:
-					aerr(accessor, obj_key, 'Key "{}" not allowed.'.format(k))
-
-	if type(obj) != obj_type:
-		aerr(accessor, obj_key, 'accessor["{}"] must be a {}'.format(obj_key, obj_type))
-
-	if type(obj) == list:
-		find_unique = {}
-		if uniq_keys:
-			for k in uniq_keys:
-				find_unique[k] = ([], set())
-
-		for item in obj:
-			if type(item) != sub_obj_type:
-				aerr(accessor, obj_key, 'Items must be {}'.format(sub_obj_type))
-
-			if type(item) == dict:
-				check_dict(item, find_unique)
-
-		for uniq_key,setlist in find_unique.items():
-			if lens(setlist[0]) != len(setlist[1]):
-				aerr(accessor, obj_key, 'All "{}" keys must be unique'.format(uniq_key))
-
-	elif type(obj) == dict:
-		if sub_obj_type == None:
-			check_dict(obj)
-
-		elif sub_obj_type == dict:
-			for k,v in obj.items():
-				if type(v) != dict:
-					aerr(accessor, obj_key, 'Values must be of type dict.')
-				check_dict(v)
-		
-
 
 
 # Build accessors going down the tree
@@ -595,7 +406,7 @@ def create_accessors_dependencies_recurse (accessor, parameters, children):
 			# Substitute in the given values of the parameters if they exist.
 			if 'parameters' in dep:
 				dep_accessor = children[i].accessor
-				dep_accessor['parameters'].update(parameters)
+				dep['parameters'].update(parameters)
 				for parameter in dep_accessor['parameters']:
 					if parameter['name'] in dep['parameters']:
 						parameter['value'] = dep['parameters'][parameter['name']]
@@ -603,9 +414,10 @@ def create_accessors_dependencies_recurse (accessor, parameters, children):
 
 			# There may be some leftover parameters for further sub dependencies
 			parameters_passdown = {}
-			for pname,pvalue in dep['parameters'].items():
-				if '.' in pname:
-					parameters_passdown['.'.join(pname.split('.')[1:])] = pvalue
+			if 'parameters' in dep:
+				for pname,pvalue in dep['parameters'].items():
+					if '.' in pname:
+						parameters_passdown['.'.join(pname.split('.')[1:])] = pvalue
 
 			# Insert all of the fields of the accessor into the parent accessor
 			# to form the full accessor with dependencies
@@ -644,7 +456,11 @@ def create_accessors_dependencies_recurse (accessor, parameters, children):
 def create_dependency_tree_recurse (accessor_dep_tree_node):
 	if 'dependencies' in accessor_dep_tree_node.accessor:
 		for dep in accessor_dep_tree_node.accessor['dependencies']:
-			# TODO: check path exists
+			if dep['path'] not in accessor_path_to_dep_tree:
+				print('ERROR: dependency {} not found for accessor {}'\
+					.format(dep['path'], accessor_dep_tree_node.accessor['name']))
+				continue
+
 			sub_node = copy.deepcopy(accessor_path_to_dep_tree[dep['path']])
 			accessor_dep_tree_node.add_child(sub_node)
 
@@ -657,11 +473,15 @@ def create_accessors (accessor_tree):
 
 	# Next up: create the dependency tree
 	for path,dep_tree_node in accessor_path_to_dep_tree.items():
+		if not dep_tree_node.accessor.get('valid', True):
+			continue
 		create_dependency_tree_recurse(dep_tree_node)
 
 	# After we have the tree, build complete accessors based on all of their
 	# dependencies.
 	for path,dep_tree_node in accessor_path_to_dep_tree.items():
+		if not dep_tree_node.accessor.get('valid', True):
+			continue
 	#for path,accessor_obj in accessors_by_path.items():
 		create_accessors_dependencies_recurse(dep_tree_node.accessor, {}, dep_tree_node.children)
 		
@@ -680,7 +500,12 @@ def find_accessors (path, tree_node):
 	interface_path = os.path.join(path, folder) + '.json'
 	if os.path.isfile(interface_path):
 		with open(interface_path) as f:
-			j = json.load(f, strict=False)
+			try:
+				j = json.load(f, strict=False)
+			except ValueError as e:
+				print('ERROR: loading interface json: {}'.format(interface_path))
+				print(e)
+				sys.exit(1)
 			atn = accessor_tree_node(folder, j)
 			# sub_structure += [folder]
 			# if 'ports' in j:
@@ -703,7 +528,12 @@ def find_accessors (path, tree_node):
 			if ext == '.json' and filename != folder:
 				# This must be an accessor file
 				with open(item_path) as f:
-					j = json.load(f, strict=False)
+					try:
+						j = json.load(f, strict=False)
+					except ValueError as e:
+						print('ERROR: loading accessor json: {}'.format(item_path))
+						print(e)
+						continue
 					atl = accessor_tree_leaf(filename, j, path)
 					atn.add_child(atl)
 					#create_accessor(path, sub_structure+[filename], sub_ports, j)
@@ -711,7 +541,10 @@ def find_accessors (path, tree_node):
 					# We make the node now with the current accessor. This pointer
 					# will get updated later with the fully expanded ports.
 					adtn = accessor_dep_tree_node(j)
-					accessor_path_to_dep_tree[path] = adtn
+					accessor_path = os.path.join(path, filename)
+					# TODO: make this not a hack
+					accessor_path = accessor_path[len(args.accessor_path)-1:]
+					accessor_path_to_dep_tree[accessor_path] = adtn
 
 
 	# Do the directories

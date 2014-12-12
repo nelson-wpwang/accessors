@@ -13,12 +13,12 @@ of nested accessors.",
 			"direction": "input",
 			"type": "string",
 			"name": "BulbName"
-		},
+		}
 	],
 	"dependencies": [
 		{
 			"name": "BradPatHues",
-			"path" "/onoffdevice/light/hue/huebradpat"
+			"path": "/onoffdevice/light/hue/huebradpat"
 		},
 		{
 			"name": "OtherHue",

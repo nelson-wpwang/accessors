@@ -1,19 +1,19 @@
 {
 	"name": "Nested Dependency Test001",
-	"author": {"name": "Brad Campbell"},
+	"author": {"name": "Brad Campbell", "email": "bradjc@umich.edu"},
 	"version": "1.0",
 	"description": "Test dependencies.",
 	"dependencies": [
 		{
 			"name": "DepA",
-			"path": "/tests/SimpleDepTest0",
+			"path": "/tests/SimpleDepTest000",
 			"parameters": {
-				"SimpleInputA."
+				"input": "SimpleInputA."
 			}
 		},
 		{
 			"name": "SimpleInputA",
-			"path": "/tests/SimpleInputTest0"
+			"path": "/tests/SimpleInputTest000"
 		}
 	],
 	"code": {
