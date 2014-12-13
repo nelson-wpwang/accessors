@@ -423,6 +423,7 @@ def create_accessors_dependencies_recurse (accessor, parameters, children):
 			# to form the full accessor with dependencies
 			del children[i].accessor['name']
 			dep.update(children[i].accessor)
+			print(dep['parameters'])
 
 			# Recurse to fill in sub-accessors
 			create_accessors_dependencies_recurse(dep,

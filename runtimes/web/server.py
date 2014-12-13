@@ -245,7 +245,7 @@ def set_accessor_parameters (parameters, accessor, chained_name=''):
 			del parameters[name]
 		elif 'default' in parameter:
 			parameter['value'] = parameter['default']
-		else:
+		elif 'value' not in parameter:
 			print('ERROR: parameter {} in accessor {} not set!'\
 				.format(name, accessor['name']))
 			parameter['value'] = ''

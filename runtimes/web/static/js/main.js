@@ -43,6 +43,8 @@ function accessor_get (accessorname, field) {
 function accessor_set (accessorname, field, value) {
 	var port = $('#port-'+accessorname+field);
 
+	console.log('#port-'+accessorname+field);
+
 	if (!port.length) {
 		throw new AccessorRuntimeException('Error calling set(): "'+field+'" is not a valid port name.');
 	}

@@ -6,6 +6,8 @@ function* init () {
 	// Get pointers to the sub-accessors (dependencies)
 	BradPatHue = get_dependency('BradPatHues');
 	OtherHue = get_dependency('OtherHue');
+
+	OtherHue.set('BulbName', 'Spare 1');
 }
 
 function* Power (on) {

@@ -115,12 +115,14 @@
 {% endmacro %}
 
 {% if 'dependencies' in accessor %}
-  {% set chained_nameb = accessor.clean_name %}
+  {% set chained_name = {'n': accessor.clean_name} %}
   {% for dependency in accessor.dependencies recursive %}
-    {% set chained_name = chained_nameb ~ dependency.clean_name %}
-    {{ dependency_html(dependency, chained_name) }}
+    {% set saved_name = chained_name.n %}
+    {% if chained_name.update({'n': chained_name.n ~ dependency.clean_name}) %}{% endif %}
+    {{ dependency_html(dependency, chained_name.n) }}
     {% if dependency.dependencies %}
       {{ loop(dependency.dependencies) }}
     {% endif %}
+    {% if chained_name.update({'n': saved_name}) %}{% endif %}
   {% endfor %}
 {% endif %}
