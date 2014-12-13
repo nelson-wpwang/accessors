@@ -140,31 +140,27 @@ def create_accessor_javascript (accessor,
 		}
 
 		function* run_accessor_fn (accessor_fn) {
-			if (typeof accessor_fn != 'undefined') {
-				accessor_function_start('${accessorname}');
-				try {
-					if (accessor_fn != init && !_inited) {
-						yield* run_accessor_fn(init);
-					}
-					if (accessor_fn == init || _inited) {
-						var subargs = [].slice.apply(arguments).slice(1, arguments.length);
-						var r = accessor_fn.apply(this, subargs);
-						if (accessor_fn == init) {
-							_inited = true;
-						}
-						if (r && typeof r.next == 'function') {
-							yield* r;
-						}
-					}
-				} catch(err) {
-					accessor_function_stop('${accessorname}');
-					console.log(err);
-					throw err;
-				} finally {
-					accessor_function_stop('${accessorname}');
+			accessor_function_start('${accessorname}');
+			try {
+				if (accessor_fn != init && !_inited) {
+					yield* run_accessor_fn(init);
 				}
-			} else {
-				rt.log.warn('Accessor did not define an '+accessor_fn+' method.');
+				if (accessor_fn == init || _inited) {
+					var subargs = Array.prototype.slice.call(arguments, 1);
+					var r = accessor_fn.apply(this, subargs);
+					if (accessor_fn == init) {
+						_inited = true;
+					}
+					if (r && typeof r.next == 'function') {
+						yield* r;
+					}
+				}
+			} catch(err) {
+				accessor_function_stop('${accessorname}');
+				console.log(err);
+				throw err;
+			} finally {
+				accessor_function_stop('${accessorname}');
 			}
 		}
 
@@ -190,9 +186,9 @@ def create_accessor_javascript (accessor,
 	function_list = ''
 	for port in accessor['ports']:
 		function_list += string.Template('''
-'${portname}': function* ${portname} () {
+'${portname}': function* () {
 	if (typeof ${portname} != 'undefined') {
-		yield* run_accessor_fn(${portname}, arguments);
+		yield* run_accessor_fn.apply(this, [${portname}].concat(Array.prototype.slice.call(arguments)));
 	}
 },
 ''').substitute(portname=port['name'])
@@ -206,14 +202,15 @@ def create_accessor_javascript (accessor,
 				.format(parametername=parameter['name'],
 				        parametervalue=parameter['value'])
 		else:
-			parameter_list += "'{parametername}':null,".format(paramter['name'])
+			parameter_list += "'{parametername}':null,"\
+				.format(parametername=parameter['name'])
 
 	# Make the correct variable instantation based on if this is the top level
 	# accessor or a dependency
 	if toplevel:
 		accessor_variable = 'var {}'.format(accessor['clean_name'])
 	else:
-		accessor_variable = '_dependencies.{}'.format(accessor['name'])
+		accessor_variable = '_dependencies.{}'.format(accessor['clean_name'])
 
 
 	js = js_module_wrapping.substitute(accessorname=chained_name,
@@ -290,7 +287,7 @@ def get_accessors (url):
 parameter does not exist in the accessor {}'.format(name, value, accessor['name']))
 				# Validate that all required paramters have values
 				for parameter in accessor['parameters']:
-					if parameter.get_default('required', True) == False:
+					if parameter.get('required', True) == False:
 						# This is the only case where a parameter doesn't have
 						# to have a value
 						if 'value' not in parameter:
@@ -307,14 +304,15 @@ parameter does not exist in the accessor {}'.format(name, value, accessor['name'
 
 			# Parse what functions were defined in the accessor to determine
 			# how to display the interface.
-			re_fn_name = re.compile(r'\bfunction\b[*]?[ \t]*([a-zA-A0-9_ \t]*)\(\)', re.MULTILINE)
+			re_fn_name = re.compile(r'\bfunction\b[*]?[ \t]*([a-zA-Z0-9_\t]*)[ \t]*\(', re.MULTILINE)
 			function_names = re.findall(re_fn_name, accessor['code'])
+			print(function_names)
 
 			accessor['display_fire_button'] = False
 			for port in accessor['ports']:
 				if port['name'] in function_names:
 					port['has_function'] = True
-				else:
+				elif port['direction'] in ['input', 'inout']:
 					port['has_function'] = False
 					accessor['display_fire_button'] = True
 

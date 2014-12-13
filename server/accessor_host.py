@@ -421,6 +421,7 @@ def create_accessors_dependencies_recurse (accessor, parameters, children):
 
 			# Insert all of the fields of the accessor into the parent accessor
 			# to form the full accessor with dependencies
+			del children[i].accessor['name']
 			dep.update(children[i].accessor)
 
 			# Recurse to fill in sub-accessors

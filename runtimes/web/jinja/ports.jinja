@@ -106,9 +106,9 @@
  #}
 
 {% macro dependency_html(dep, name_so_far) %}
-  <div id="accessor-{{ name_so_far ~ dep.clean_name }}" style="display:none;">
+  <div id="accessor-{{ name_so_far }}" style="display:none;">
     {% for port in dep.ports %}
-    {% set fieldname = 'port-' ~ name_so_far ~ dep.clean_name ~ port.name %}
+    {% set fieldname = 'port-' ~ name_so_far ~ port.name %}
     <input type="hidden" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}" data-porttype="{{ port.type }}"></input>
     {% endfor %}
   </div>
