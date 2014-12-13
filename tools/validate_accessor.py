@@ -38,7 +38,7 @@ schema = {
 		'unique_keys': ['name'],
 		'key_types': {'direction':['input', 'output', 'inout'],
 		              'name':str,
-		              'type':['button', 'bool', 'string', 'numeric', 'integer', 'select', 'color'],
+		              'type':['button', 'bool', 'string', 'numeric', 'integer', 'select', 'color', 'currency_usd'],
 		              'options':(list, str),
 		              'min':'number',
 		              'max':'number'},

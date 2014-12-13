@@ -15,7 +15,7 @@
 
           {% if port.direction == "output" %}
           <div class="col-sm-10">
-            <p id="{{ fieldname }}" class="form-control-static output-port" data-portdirection="output">not set</p>
+            <p id="{{ fieldname }}" class="form-control-static output-port" data-portdirection="output" data-porttype="{{ port.type }}">not set</p>
           </div>
 
           {% elif port.type == "bool" %}
@@ -49,7 +49,7 @@
           </div>
           {% endif %}
 
-          {% elif port.type == "string" %}
+          {% elif port.type in ["string", "currency_usd"] %}
           <div class="col-sm-10">
             <div class="row">
               <div class="{% if port.has_function %}col-xs-8{% else %}col-xs-12{% endif %}">

@@ -5,6 +5,16 @@ function alert_error (error_str) {
 	$('#alerts').html(html);
 }
 
+function format_currency_usd (price) {
+	p = price.toFixed(2);
+
+	if (p < 0) {
+		return '<span class="negative">-$' + (p*-1.0).toFixed(2) + '</span>';
+	} else {
+		return '<span class="positive">$' + p + '</span>';
+	}
+}
+
 var AccessorRuntimeException = Error;
 
 function accessor_get (accessorname, field) {
@@ -63,8 +73,13 @@ function accessor_set (accessorname, field, value) {
 	} else if (port.prop('tagName') == 'SELECT') {
 		$('#port-'+accessorname+field+' option:eq('+value+')').prop('selected', true);
 
-	} else if (port.prop('tagName') == 'P') {
-		port.text(value);
+	} else if (port.attr('data-portdirection') == 'output') {
+		if (port.attr('data-porttype') == 'currency_usd') {
+			console.log(format_currency_usd(value));
+			port.html(format_currency_usd(value));
+		} else {
+			port.text(value);
+		}
 
 	} else if (port.prop('tagName') == 'DIV' && port.hasClass('colorpicker')) {
 		port.colpickSetColor(value);

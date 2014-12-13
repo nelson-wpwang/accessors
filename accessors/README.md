@@ -63,6 +63,7 @@ Port types essentially specify the data type of the port. Valid choices are:
 | `integer` | Constrain the numeric field to just integers. See `numeric` section for information about "min" and "max". |
 | `select`  | Shows the user a list of options to choose from. Use the `options` key to specify the options. |
 | `color`   | Allow the user to enter a color. Will likely display a color picker. Color will be represented by a six digit RGB hex string. Example: "00FF00". |
+| `currency_usd` | Display a number formatted as US currency |
 
 #### Ports Example
 
