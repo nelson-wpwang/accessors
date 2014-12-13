@@ -106,7 +106,7 @@ keys in an accessor parameter object:
 | KEY            | Required | Type          | Description |
 | ---            | -------- | ------        | ----------- |
 | `name`         | yes      | string        | Name of the parameter. |
-| `default`      | no       | string        | Value of the parameter if it is not otherwise specified when the accessor is requested. Has no effect if `required` is set to `true`. |
+| `default`      | no       | string        | Value of the parameter if it is not otherwise specified when the accessor is requested. |
 | `required`     | no       | bool          | Defaults to `true`. Specifies whether the parameter must be set when the accessor is requested. If the parameter is not specified in the request an error will be returned. |
 
 #### Parameters Example
@@ -201,7 +201,7 @@ Accessor Example
 {
 	"name":    "Denon AVR-1913",
 	"version": "0.1",
-	"author":  "Brad Campbell",
+	"author":  {"name": "Brad Campbell", "email": "bradjc@umich.edu"},
 	"description": "
 Denon AVR-1913 Accessor
 =======================
