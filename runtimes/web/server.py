@@ -1,23 +1,18 @@
 #!/usr/bin/env python3
 
-import base64
-import time
-import sys
-import os
 import argparse
+import base64
+import os
+import re
 import string
+import sys
+import time
 
 import flask
 import markdown
 import requests
 
-try:
-	import rjsmin
-except:
-	class rjsminc ():
-		def jsmin (self, a):
-			return a
-	rjsmin = rjsminc()
+import rjsmin
 
 import sh
 try:
@@ -117,11 +112,15 @@ def create_accessor_javascript (accessor,
 			if (!_inited) {
 				run_accessor_fn(init);
 			}
-			if (inited) {
+			if (_inited) {
 				return accessor_get('${accessorname}', field);
 			} else {
 				return null;
 			}
+		}
+
+		function set (field, value) {
+			accessor_set('${accessorname}', field, value);
 		}
 
 		function get_parameter (parameter_name) {
@@ -145,11 +144,12 @@ def create_accessor_javascript (accessor,
 				accessor_function_start('${accessorname}');
 				try {
 					if (accessor_fn != init && !_inited) {
-						run_accessor_fn(init);
+						yield* run_accessor_fn(init);
 					}
 					if (accessor_fn == init || _inited) {
-						var r = accessor_fn.apply(this, arguments[1:arguments.length]);
-						if (accessor_fun == init) {
+						var subargs = [].slice.apply(arguments).slice(1, arguments.length);
+						var r = accessor_fn.apply(this, subargs);
+						if (accessor_fn == init) {
 							_inited = true;
 						}
 						if (r && typeof r.next == 'function') {
@@ -164,7 +164,7 @@ def create_accessor_javascript (accessor,
 					accessor_function_stop('${accessorname}');
 				}
 			} else {
-				log.warn('Accessor did not define an '+accessor_fn+' method.');
+				rt.log.warn('Accessor did not define an '+accessor_fn+' method.');
 			}
 		}
 
@@ -175,12 +175,12 @@ def create_accessor_javascript (accessor,
 
 		return {
 			'get': get,
-			'set': function (field, value) { accessor_set('${accessorname}', field, value); },
+			'set': set,
 			'get_parameter': get_parameter,
 			'get_dependency': get_dependency,
-			'init': run_accessor_fn(init),
-			'fire': run_accessor_fn(fire),
-			'wrapup': run_accessor_fn(wrapup),
+			'init': function* () { if (typeof init != 'undefined') { yield* run_accessor_fn(init) } },
+			'fire': function* () { if (typeof fire != 'undefined') { yield* run_accessor_fn(fire) } },
+			'wrapup': function* () { if (typeof wrapup != 'undefined') { yield* run_accessor_fn(wrapup) } },
 			${functionlist}
 		}
 	})();
@@ -190,8 +190,10 @@ def create_accessor_javascript (accessor,
 	function_list = ''
 	for port in accessor['ports']:
 		function_list += string.Template('''
-'${portname}': function* () {
-	yield* run_accessor_fn(${portname}, arguments);
+'${portname}': function* ${portname} () {
+	if (typeof ${portname} != 'undefined') {
+		yield* run_accessor_fn(${portname}, arguments);
+	}
 },
 ''').substitute(portname=port['name'])
 
@@ -280,20 +282,21 @@ def get_accessors (url):
 			clean_names(accessor)
 
 			# Set the parameters
-			set_accessor_parameters(accessor_item['parameters'], accessor)
-			# Display errors if parameters are set that don't exist
-			for name,value in accessor_item['parameters'].items():
-				print('ERROR: parameter "{}" was specified as "{}" but that \
+			if 'parameters' in accessor_item:
+				set_accessor_parameters(accessor_item['parameters'], accessor)
+				# Display errors if parameters are set that don't exist
+				for name,value in accessor_item['parameters'].items():
+					print('ERROR: parameter "{}" was specified as "{}" but that \
 parameter does not exist in the accessor {}'.format(name, value, accessor['name']))
-			# Validate that all required paramters have values
-			for parameter in accessor['parameters']:
-				if parameter.get_default('required', True) == False:
-					# This is the only case where a parameter doesn't have
-					# to have a value
-					if 'value' not in parameter:
-						parameter['value'] = None
-				elif 'value' not in parameter:
-					print('ERROR: parameter "{}" was not set'.format(parameter['name']))
+				# Validate that all required paramters have values
+				for parameter in accessor['parameters']:
+					if parameter.get_default('required', True) == False:
+						# This is the only case where a parameter doesn't have
+						# to have a value
+						if 'value' not in parameter:
+							parameter['value'] = None
+					elif 'value' not in parameter:
+						print('ERROR: parameter "{}" was not set'.format(parameter['name']))
 
 
 			# Make sure the 'display_name' key exists to make the JS frontend
@@ -302,11 +305,21 @@ parameter does not exist in the accessor {}'.format(name, value, accessor['name'
 				if 'display_name' not in port:
 					port['display_name'] = port['name']
 
+			# Parse what functions were defined in the accessor to determine
+			# how to display the interface.
+			re_fn_name = re.compile(r'\bfunction\b[*]?[ \t]*([a-zA-A0-9_ \t]*)\(\)', re.MULTILINE)
+			function_names = re.findall(re_fn_name, accessor['code'])
+
+			accessor['display_fire_button'] = False
+			for port in accessor['ports']:
+				if port['name'] in function_names:
+					port['has_function'] = True
+				else:
+					port['has_function'] = False
+					accessor['display_fire_button'] = True
+
 			# Do the code
 			accessor['code'] = create_javascript(accessor)
-
-			if accessor['name'] == "Brad-Pat Hue":
-				print(accessor['code'])
 
 			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
 			accessors['accessors'].append(accessor)

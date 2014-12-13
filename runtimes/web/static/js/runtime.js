@@ -20,23 +20,23 @@ rt.log.log = function _log_log (message) {
 }
 
 rt.log.debug = function _log_debug (message) {
-	log.log("DEBUG: " + message);
+	rt.log.log("DEBUG: " + message);
 }
 
 rt.log.info = function _log_info (message) {
-	log.log(" INFO: " + message);
+	rt.log.log(" INFO: " + message);
 }
 
 rt.log.warn = function _log_warn (message) {
-	log.log(" WARN: " + message);
+	rt.log.log(" WARN: " + message);
 }
 
 rt.log.error = function _log_error (message) {
-	log.log("ERROR: " + message);
+	rt.log.log("ERROR: " + message);
 }
 
 rt.log.critical = function _log_critical (message) {
-	log.log(" CRIT: " + message);
+	rt.log.log(" CRIT: " + message);
 	throw new AccessorRuntimeException(message);
 }
 
@@ -69,7 +69,7 @@ rt.socket.socket = function* (family, sock_type) {
 	s._packet_id = 0;
 
 	if (typeof ws_server_address == 'undefined') {
-		log.critical("No websocket server. Socket facilities unavailable");
+		rt.log.critical("No websocket server. Socket facilities unavailable");
 	}
 
 	// Make a connection back to the socket tunneling server (ws_server)
@@ -154,7 +154,7 @@ rt.socket.socket = function* (family, sock_type) {
 rt.http = Object();
 
 rt.http.request = function* request(url, method, properties, body, timeout) {
-	log.debug("httpRequest("
+	rt.log.debug("httpRequest("
 				+ (function(obj) {
 					result=[];
 					for(p in obj) {
@@ -188,7 +188,7 @@ rt.http.request = function* request(url, method, properties, body, timeout) {
 }
 
 rt.http.readURL = function* readURL(url) {
-	log.debug("readURL(" + url + ")");
+	rt.log.debug("readURL(" + url + ")");
 
 	var request_defer = Q.defer();
 	var request = new XMLHttpRequest();
@@ -233,6 +233,8 @@ rt.color.hsv_to_hex = function hsv_to_hex (hsv) {
 }
 
 /*** ENCODING FUNCTIONS ***/
+
+rt.encode = Object()
 
 rt.encode.atob = function atob (b64) {
 	return atob(b64);

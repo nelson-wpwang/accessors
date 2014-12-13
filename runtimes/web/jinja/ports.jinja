@@ -45,12 +45,14 @@
           {% endif %}
 
           {% elif port.type == "string" %}
-          <div class="col-lg-7">
+          <div class="col-lg-{% if port.has_function %}7{% else %}10{% endif %}">
             <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %} data-portdirection="{{ port.direction }}"></input>
           </div>
+          {% if port.has_function %}
           <div class="col-lg-3">
             <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
           </div>
+          {% endif %}
 
           {% elif port.type == "select" %}
           <div class="col-lg-10">
@@ -82,6 +84,12 @@
 
         </div>
         {% endfor %}
+
+        {% if accessor.display_fire_button %}
+        <div class="col-lg-3">
+          <button type="button" class="form-control accessor-button" data-accessorname="{{ accessor.clean_name }}" data-function="fire">Fire!</button>
+        </div>
+        {% endif %}
 
       </fieldset>
     </form>
