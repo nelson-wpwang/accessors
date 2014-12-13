@@ -56,17 +56,6 @@ def _serialize_xml(write, elem, *args, **kwargs):
 	return ET._original_serialize_xml(write, elem, *args, **kwargs)
 ET._serialize_xml = ET._serialize['xml'] = _serialize_xml
 
-def aerr (accessor, error_type, error_msg):
-	print('ERROR! [{}]'.format(error_type))
-	print('\tAccessor: {}'.format(accessor['name']))
-	print('\tMessage:  {}'.format(error_message))
-	sys.exit(1)
-
-def anote (accessor, note_type, note):
-	print('NOTICE! [{}]'.format(note_type))
-	print('\tAccessor: {}'.format(accessor['name']))
-	print('\tMessage:  {}'.format(note))
-
 # These classes are used when building the tree of accessors based on their
 # path. They are only used when the server is started or an accessor changes and
 # not during the normal operation of the accessor host server. Their purpose
@@ -113,6 +102,10 @@ class accessor_dep_tree_node ():
 
 accessor_path_to_dep_tree = {}
 
+
+###
+### Classes for the webserver
+###
 
 # Avoid this Cross-Origin nonsense
 class ServerAccessorList (tornado.web.StaticFileHandler):
@@ -240,7 +233,9 @@ class ServeAccessorXML (ServeAccessor):
 		top = ET.Element('class', attrib={'name': accessor['name'],
 		                                  'extends': 'org.terraswarm.kernel.JavaScript'})
 		ET.SubElement(top, 'version').text = accessor['version']
-		ET.SubElement(top, 'author').text = accessor['author']
+		author = ET.SubElement(top, 'author')
+		for author_field,author_value in accessor['author'].items():
+			ET.SubElement(author, author_field).text = author_value
 
 		if 'description' in accessor:
 			ET.SubElement(top, 'description').text = accessor['description']
@@ -292,6 +287,9 @@ class ServeAccessorXML (ServeAccessor):
 ''' + s
 		return s
 
+###
+### Functions that find and generate full accessors
+###
 
 def create_accessor (structure, accessor, path):
 	err = validate_accessor.check(accessor)
@@ -423,32 +421,11 @@ def create_accessors_dependencies_recurse (accessor, parameters, children):
 			# to form the full accessor with dependencies
 			del children[i].accessor['name']
 			dep.update(children[i].accessor)
-			print(dep['parameters'])
 
 			# Recurse to fill in sub-accessors
 			create_accessors_dependencies_recurse(dep,
 			                                      parameters_passdown,
 			                                      children[i].children)
-
-
-
-	# for child in dep_tree_node.children:
-	# 	create_accessors_dependencies_recurse(child)
-
-
-
-
-	# if 'dependencies' in accessor:
-	# 	for dependency in accessor['dependencies']:
-	# 		path = '/accessor{}'.format(dependency['path'])
-	# 		dep_accessor = copy.deepcopy(accessors_by_path[path])
-
-	# 		# Load any preset parameters into the 
-
-	# 		dependency['version'] = copy.deepcopy(accessors_by_path[path].accessor['version'])
-	# 		dependency['code_alternates'] = copy.deepcopy(accessors_by_path[path].accessor['code_alternates'])
-	# 		dependency['ports'] = copy.deepcopy(accessors_by_path[path].accessor['ports'])
-	# 		dependency['parameters'] = copy.deepcopy(accessors_by_path[path].accessor['parameters'])
 
 
 # Instantiate the dependency tree.
@@ -489,9 +466,6 @@ def create_accessors (accessor_tree):
 		
 
 def find_accessors (path, tree_node):
-
-	# sub_structure = copy.deepcopy(structure)
-	# sub_ports     = copy.deepcopy(ports)
 
 	# Get the name of the folder we are currently in
 	folder = os.path.basename(os.path.normpath(path))
@@ -559,7 +533,6 @@ def find_accessors (path, tree_node):
 
 
 
-
 DESC = """
 Run an accessor hosting server.
 """
@@ -604,5 +577,3 @@ print('\nStarting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
 
 # Run the loop!
 tornado.ioloop.IOLoop.instance().start()
-
-
