@@ -63,7 +63,7 @@ function accessor_set (accessorname, field, value) {
 	} else if (port.prop('tagName') == 'SELECT') {
 		$('#port-'+accessorname+field+' option:eq('+value+')').prop('selected', true);
 
-	} else if (port.prop('tagName') == 'SPAN') {
+	} else if (port.prop('tagName') == 'P') {
 		port.text(value);
 
 	} else if (port.prop('tagName') == 'DIV' && port.hasClass('colorpicker')) {
