@@ -61,12 +61,12 @@ Accessor Example
 
 The following is the structure of an accessor for a light bulb.
 
-```
+```json
 {
   "accessor": {
     "name":    "Light Bulb",
     "version": "0.1",
-    "author":  "General Electric",
+    "author":  {"name": "General Electric", "email": "ge@ge.com"},
     "description": "
 Light Bulb
 =======================
@@ -83,8 +83,8 @@ Turn a light bulb on and off.
     ],
 
     "code": {
-              "language": "javascript",
-              "code": "
+              "javascript": {
+                              "code": "
 
 function init () {
 // Not needed
@@ -95,16 +95,16 @@ function Power (power_setting) {
 }
 
 function fire (input_setting_choice) {
-  Power(get("Power"));
+  Power(get('Power'));
 }
 
 function wrapup () {
 // Not needed
 }
 "
-    }
+                            }
 
-  }
+    }
 }
 ```
 
