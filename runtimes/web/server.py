@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
 
+##
+## Browser Based Accessor Runtime
+##
+## This server retreives accessors from the accessor host server,
+## appends the javascript in the accessor to make it run in the
+## browser, and hosts the html and js files.
+##
+
 import argparse
 import base64
 import os
+import random
 import re
 import string
 import sys
@@ -11,7 +20,6 @@ import time
 import flask
 import markdown
 import requests
-
 import rjsmin
 
 import sh
@@ -82,8 +90,13 @@ def nsp(s):
 # Take accessor names and make them nice unique strings so we can have multiple
 # loaded at the same time.
 def clean_name (s):
-	return s.replace(' ', '_SPACE').replace('-', '_DASH')
+	pattern = re.compile('[\W_]+')
+	out = pattern.sub('', s)
+	out += ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+	return out
 
+# Recursively add names that we can use in HTML and JS for each accessor
+# and its dependencies.
 def clean_names (accessor):
 	accessor['clean_name'] = clean_name(accessor['name'])
 
@@ -235,7 +248,8 @@ def create_javascript (accessor, chained_name='', toplevel=True):
 
 	return create_accessor_javascript(accessor, chained_name, dep_code, toplevel)
 
-
+# This is also a recursive function that propagates parameters to accessors
+# and its dependencies.
 def set_accessor_parameters (parameters, accessor, chained_name=''):
 	for parameter in accessor['parameters']:
 		name = chained_name + parameter['name']
@@ -306,7 +320,6 @@ parameter does not exist in the accessor {}'.format(name, value, accessor['name'
 			# how to display the interface.
 			re_fn_name = re.compile(r'\bfunction\b[*]?[ \t]*([a-zA-Z0-9_\t]*)[ \t]*\(', re.MULTILINE)
 			function_names = re.findall(re_fn_name, accessor['code'])
-			print(function_names)
 
 			accessor['display_fire_button'] = False
 			for port in accessor['ports']:

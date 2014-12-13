@@ -55,11 +55,6 @@ rt.time.run_later = function (time_in_ms, fn_to_run, args) {
 }
 
 
-/*** ACCESSOR INTERFACE AND PROPERTIES ***/
-// get(), set(), and get_parameter() are in the accessor and created
-// by the webserver.
-
-
 /*** SOCKETS ***/
 
 rt.socket = Object();
