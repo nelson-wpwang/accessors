@@ -1,0 +1,17 @@
+{
+	"name": "Power Information",
+	"version": "1.0",
+	"author": {"name": "Accessors", "email": "accessors@umich.edu"},
+	"description": "
+Get Power Data
+==============
+",
+	"ports": [
+		{
+			"name": "CurrentPower",
+			"display_name": "Current Power",
+			"type": "numeric",
+			"direction": "output"
+		}
+	]
+}

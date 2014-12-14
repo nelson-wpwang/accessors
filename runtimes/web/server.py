@@ -328,6 +328,8 @@ parameter does not exist in the accessor {}'.format(name, value, accessor['name'
 				elif port['direction'] in ['input', 'inout']:
 					port['has_function'] = False
 					accessor['display_fire_button'] = True
+			if 'fire' in function_names:
+				accessor['display_fire_button'] = True
 
 			# Do the code
 			accessor['code'] = create_javascript(accessor)
