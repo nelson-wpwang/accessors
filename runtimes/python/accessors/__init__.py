@@ -79,17 +79,13 @@ def get_all_accessors_from_location (server, path):
 	accessor_list = r.json()
 	accessors = {}
 
-	for accessor_url in accessor_list['accessors']:
-		if '?' in accessor_url:
-			i = accessor_url.index('?')
-			accessor_url = accessor_url[:i] + '.json' + accessor_url[i:]
-		else:
-			accessor_url += '.json'
-		get_url = '{}/accessor{}'.format(server, accessor_url)
+	for accessor in accessor_list['accessors']:
+		accessor_path = accessor['path'] + '.json'
+		get_url = '{}/accessor{}'.format(server, accessor_path)
 		logging.debug("GET {}".format(get_url))
 		r2 = requests.get(get_url)
 		if r2.status_code == 200:
-			accessor = Accessor(accessor_url, r2.json())
+			accessor = Accessor(accessor_path, r2.json())
 			accessors[accessor._raw_name] = accessor
 		else:
 			raise NotImplementedError("Failed to get accessor: {}".format(get_url))
@@ -136,6 +132,7 @@ class Port():
 			'integer': int,
 			'string': str,
 			'color': str, #FIXME
+			'currency_usd': float, #FIXME
 			}
 
 	def __init__(self, port, accessor):
@@ -300,10 +297,13 @@ class Accessor():
 	def _init_runtime(self):
 		self._runtime = Object()
 
+		# Set up `rt` scope
+		self._js.eval_block('rt = Object();')
+
 		### SUPPORT FUNCTIONS FOR THIS RUNTIME
 		self._js.eval_block('''\
 function _port_call (port, value) {
-	log.debug("before port call of " + port + "(" + value + ")");
+	rt.log.debug("before port call of " + port + "(" + value + ")");
 	var r = global[port](value);
 	if (r && typeof r.next == 'function') {
 		r = r.next().value;
@@ -356,17 +356,17 @@ function _port_call (port, value) {
 			self._js.eval_block('''
 var _{name}_handler = {{
 get: function (target, name) {{
-	log.debug("target " + target + ", name " + name);
+	rt.log.debug("target " + target + ", name " + name);
 	if (name == 'get') {{
 		return function (to_get) {{
 			return _{name}_handler_get(to_get);
 		}};
 	}} else {{
 		return function* (arg) {{
-			log.debug("arg " + arg);
-			log.debug("source: " + typeof arg);
+			rt.log.debug("arg " + arg);
+			rt.log.debug("source: " + typeof arg);
 			r = _{name}_handler_marshall(name, arg);
-			log.debug("source: " + r);
+			rt.log.debug("source: " + r);
 			return r;
 		}};
 	}}
@@ -393,12 +393,12 @@ subinit = function* (sub_accessor, port_values) {
 			if level == 'criticl':
 				raise NotImplementedError("runtime: log.critical")
 		self._js.eval_block('''\
-log = Object();
-log.debug = function (msg) { _log('debug', msg); };
-log.info  = function (msg) { _log('info',  msg); };
-log.warn  = function (msg) { _log('warn',  msg); };
-log.error = function (msg) { _log('error', msg); };
-log.criticl = function (msg) { _log('critical', msg); };
+rt.log = Object();
+rt.log.debug = function (msg) { _log('debug', msg); };
+rt.log.info  = function (msg) { _log('info',  msg); };
+rt.log.warn  = function (msg) { _log('warn',  msg); };
+rt.log.error = function (msg) { _log('error', msg); };
+rt.log.criticl = function (msg) { _log('critical', msg); };
 ''')
 		self._js.export(do_log, "_log")
 
@@ -407,10 +407,10 @@ log.criticl = function (msg) { _log('critical', msg); };
 		self._js.export(runtime_time_sleep, '_time_sleep')
 
 		self._js.eval_block('''\
-time = Object();
-time.sleep = _time_sleep;
-time.run_later = function (delay_in_ms, fn_to_run, args) {
-	log.warn("TODO: time.run_later is a synchronous wait in this runtime currently");
+rt.time = Object();
+rt.time.sleep = _time_sleep;
+rt.time.run_later = function (delay_in_ms, fn_to_run, args) {
+	rt.log.warn("TODO: time.run_later is a synchronous wait in this runtime currently");
 	_time_sleep(delay_in_ms);
 	fn_to_run(args);
 };
@@ -481,8 +481,8 @@ time.run_later = function (delay_in_ms, fn_to_run, args) {
 		self._js.export(runtime_socket_sendto, '_socket_sendto')
 
 		self._js.eval_block('''\
-socket = Object();
-socket.socket = function* (family, sock_type) {
+rt.socket = Object();
+rt.socket.socket = function* (family, sock_type) {
 	var s = Object();
 
 	s._fd = _socket(family, sock_type);
@@ -523,11 +523,11 @@ socket.socket = function* (family, sock_type) {
 		self._js.export(http_readURL, '_http_readURL')
 
 		self._js.eval_block('''\
-http = Object();
-http.request = function* (url, method, prop, body, timeout) {
+rt.http = Object();
+rt.http.request = function* (url, method, prop, body, timeout) {
 	return _http_request (url, method, prop, body, timeout);
 };
-http.readURL = function* (url) { return _http_readURL(url); };
+rt.http.readURL = function* (url) { return _http_readURL(url); };
 ''')
 
 
@@ -549,9 +549,9 @@ http.readURL = function* (url) { return _http_readURL(url); };
 		self._js.export(color_hsv_to_hex, '_color_hsv_to_hex')
 
 		self._js.eval_block('''\
-color = Object();
-color.hex_to_hsv = _color_hex_to_hsv;
-color.hsv_to_hex = _color_hsv_to_hex;
+rt.color = Object();
+rt.color.hex_to_hsv = _color_hex_to_hsv;
+rt.color.hsv_to_hex = _color_hsv_to_hex;
 ''')
 
 
