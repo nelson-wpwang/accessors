@@ -223,7 +223,7 @@ def create_accessor_javascript (accessor,
 	if toplevel:
 		accessor_variable = 'var {}'.format(accessor['clean_name'])
 	else:
-		accessor_variable = '_dependencies.{}'.format(accessor['clean_name'])
+		accessor_variable = '_dependencies["{}"]'.format(accessor['name'])
 
 
 	js = js_module_wrapping.substitute(accessorname=chained_name,
