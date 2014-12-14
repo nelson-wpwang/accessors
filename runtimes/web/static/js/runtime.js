@@ -231,11 +231,11 @@ rt.color.hsv_to_hex = function hsv_to_hex (hsv) {
 
 rt.encode = Object()
 
-rt.encode.atob = function atob (b64) {
+rt.encode.atob = function runtime_atob (b64) {
 	return atob(b64);
 }
 
-rt.encode.btoa = function btoa (str) {
+rt.encode.btoa = function runtime_btoa (str) {
 	return btoa(str);
 }
 
