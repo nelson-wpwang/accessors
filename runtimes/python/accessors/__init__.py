@@ -85,7 +85,9 @@ def get_all_accessors_from_location (server, path):
 		logging.debug("GET {}".format(get_url))
 		r2 = requests.get(get_url)
 		if r2.status_code == 200:
-			accessor = Accessor(accessor_path, r2.json())
+			if 'parameters' not in accessor:
+				accessor['parameters'] = {}
+			accessor = Accessor(accessor_path, r2.json(), accessor['parameters'])
 			accessors[accessor._raw_name] = accessor
 		else:
 			raise NotImplementedError("Failed to get accessor: {}".format(get_url))
@@ -199,9 +201,10 @@ class InoutPort(InputPort,OutputPort):
 
 
 class Accessor():
-	def __init__(self, url, json, parent=None):
+	def __init__(self, url, json, parameters=None, parent=None):
 		self._url = url
 		self._json = json
+		self._root_params = parameters
 		self._parent = parent
 
 		# This is a nice short handle, may have namespace issues though (TODO)
@@ -234,10 +237,24 @@ class Accessor():
 		self._parameters = {}
 		if 'parameters' in json:
 			for parameter in json['parameters']:
-				if 'value' in parameter:
-					self._parameters[parameter['name']] = parameter['value']
-				elif 'default' in parameter:
+				if parameters and parameter['name'] in parameters:
+					self._parameters[parameter['name']] = parameters[parameter['name']]
+					continue
+
+				if parent:
+					if parent._parent is not None:
+						# I'm not convinced the current parameter method makes
+						# the most sense, so shortest path for the moment until
+						# this settles down.
+						raise NotImplementedError("Nested dep parameters")
+					p = '{}.{}'.format(self._name, parameter['name'])
+					if parent._root_params and p in parent._root_params:
+						self._parameters[parameter['name']] = parent._root_params[p]
+						continue
+
+				if 'default' in parameter:
 					self._parameters[parameter['name']] = parameter['default']
+					continue
 
 		if 'code' not in json:
 			raise NotImplementedError("Accessor without code?")
@@ -302,13 +319,47 @@ class Accessor():
 
 		### SUPPORT FUNCTIONS FOR THIS RUNTIME
 		self._js.eval_block('''\
-function _port_call (port, value) {
+/* For a variable number of parameters if needed, consider:
+	var args = [];
+	if (typeof value == 'object') {
+		Object.keys(value).forEach(function(key) {
+			args.push(value[key]);
+		});
+	} else {
+		args = value;
+	}
+	rt.log.debug("before port call of " + port + "(" + args + ")");
+	var r = global[port].apply(null, args);
+*/
+
+function _do_port_call (port, value) {
 	rt.log.debug("before port call of " + port + "(" + value + ")");
 	var r = global[port](value);
+	rt.log.debug("after port call, r: " + r);
 	if (r && typeof r.next == 'function') {
 		r = r.next().value;
+		rt.log.debug("after port call .next, r: " + r);
+		return [r, true];
 	}
-	return r;
+	return [r, false];
+}
+
+function _port_call (port, value) {
+	return _do_port_call(port, value)[0];
+}
+
+function _marshalled_port_call (port, value) {
+	return _do_port_call(port, value);
+}
+
+
+function _dump_stack (dump_via) {
+	var stack = new Error().stack;
+	if (typeof dump_via == 'function') {
+		dump_via(stack);
+	} else {
+		rt.log.debug(stack);
+	}
 }
 ''')
 
@@ -320,69 +371,116 @@ function _port_call (port, value) {
 			return "0.1.0"
 		self._js.export(version)
 
-		def subinit(sub_accessor, port_values):
-			log.debug("%s: Creating sub accessor: %s", self, sub_accessor)
-			dependency = None
-			for dep in self._json['dependencies']:
-				if dep['name'] == sub_accessor:
-					dependency = dep
-			if dependency is None:
-				raise RuntimeError("Request for sub accessor not listed in depenecies")
-			sub_accessor = Accessor(dependency['path'], dependency, parent=self)
-			self._sub_accessors[sub_accessor._name] = sub_accessor
-
-			log.debug("%s: Setting initial port values for %s", self, sub_accessor)
-			if port_values is not None:
-				for port,value in port_values.items():
-					# Write port value directly, not through _set so fn doesn't run
-					sub_accessor._ports[port].value = value
+		def resolve_lazy_dependency(name):
+			log.debug("%s: Request to resolve lazy binding for: %s", self, name)
+			sub_accessor = self._sub_accessors[name]
 
 			log.debug("%s: Running init() in subaccessor %s", self, sub_accessor)
 			sub_accessor._init()
 
-			log.debug("Creating proxy %s <> %s", self, sub_accessor)
 			self._js.export(
 				sub_accessor._runtime.get,
 				'_{}_handler_get'.format(sub_accessor._name)
 				)
 			self._js.export(
-				sub_accessor._runtime.set,
+				sub_accessor._runtime._set,
 				'_{}_handler_set'.format(sub_accessor._name)
 				)
 			self._js.export(
 				sub_accessor._runtime.marshall,
 				'_{}_handler_marshall'.format(sub_accessor._name)
 				)
-			self._js.eval_block('''
+
+			self._js.eval_block('_{}_is_inited = true;'.format(sub_accessor._name))
+
+			log.debug("%s: Completed lazy binding for: %s", self, sub_accessor)
+
+		def get_dependency(dependency_name):
+			log.debug("%s: Creating sub accessor: %s", self, dependency_name)
+			dependency = None
+			for dep in self._json['dependencies']:
+				if dep['name'] == dependency_name:
+					dependency = dep
+			if dependency is None:
+				raise RuntimeError("Request for sub accessor not listed in depenecies")
+			sub_accessor = Accessor(dependency['path'], dependency, parent=self)
+			self._sub_accessors[sub_accessor._name] = sub_accessor
+
+			self._js.export(
+					resolve_lazy_dependency,
+					'_{}_resolve_lazy_dependency'.format(sub_accessor._name)
+					)
+
+			log.debug("Creating proxy %s <> %s", self, sub_accessor)
+			proxy_code = ('''\
+_{name}_is_inited = false;
 var _{name}_handler = {{
-get: function (target, name) {{
-	rt.log.debug("target " + target + ", name " + name);
-	if (name == 'get') {{
-		return function (to_get) {{
-			return _{name}_handler_get(to_get);
-		}};
-	}} else {{
-		return function* (arg) {{
-			rt.log.debug("arg " + arg);
-			rt.log.debug("source: " + typeof arg);
-			r = _{name}_handler_marshall(name, arg);
-			rt.log.debug("source: " + r);
-			return r;
-		}};
+	get: function _{name}_proxy_get (target, name) {{
+		rt.log.debug("_{name}_proxy_get target " + target + ", name " + name);
+		if (!_{name}_is_inited) {{
+			_{name}_resolve_lazy_dependency('{name}');
+			if (!_{name}_is_inited) {{
+				rt.log.critical("runtime error: failed to init subaccessor");
+			}}
+		}}
+		if (name == 'get') {{
+			return function _{name}_proxy_get_get (to_get) {{
+				return _{name}_handler_get(to_get);
+			}};
+		}} else if (name == 'set') {{
+			return function _{name}_proxy_get_set (prop, value) {{
+				_{name}_handler_set(prop, value);
+			}}
+		}} else {{
+			return function _{name}_proxy_get_fn (arg) {{
+				var ret = _{name}_handler_marshall(name, arg);
+				/* Can't marshall generator objects, instead we re-create one
+				here if the other side was a generator */
+				if (ret[1]) {{
+					/*
+					From stackoverflow.com/questions/16754956 I think this is
+					more correct, but I don't know what [iterator] is doing and
+					node (v0.11.13) doesn't like it, so a less-correct generator
+					emulation it is (for now at least)
+
+					var iterator = Symbol.iterator;
+					return {{
+						[iterator]: function() {{
+							return this;
+						}},
+						next: function() {{
+							{{
+								value: ret[0]
+								done: true
+							}};
+						}}
+					}}
+					*/
+					var g = function () {{ return this; }};
+					g.next = function() {{
+						return {{
+							value: ret[0],
+							done: true
+						}}
+					}};
+					return g;
+				}}
+				return ret[0];
+			}};
+		}}
 	}}
-}},
-set: function (target, prop, value) {{
-	_{name}_handler_set(prop, value);
-}}
 }};
 _{name}_proxy = new Proxy({{}}, _{name}_handler);
 '''.format(name=sub_accessor._name))
+			self._js.eval_block(proxy_code)
 			log.debug("%s: Created sub accessor: %s", self, sub_accessor)
 			return '_{}_proxy'.format(sub_accessor._name);
-		self._js.export(subinit, '_subinit')
+
+		self._js.export(get_dependency, '_get_dependency')
 		self._js.eval_block('''\
-subinit = function* (sub_accessor, port_values) {
-	var name = _subinit(sub_accessor, port_values);
+get_dependency = function (dependency_name) {
+	rt.log.debug("get_dependency (" + dependency_name + ")");
+	var name = _get_dependency(dependency_name);
 	return global[name];
 };
 ''')
@@ -440,12 +538,25 @@ rt.time.run_later = function (delay_in_ms, fn_to_run, args) {
 			except:
 				log.exception("Uncaught error in %s.set(%s, %s)", self, port_name, value)
 				raise
-		self._runtime.set = set
 		self._js.export(set)
 
+		def _set(port_name, value):
+			try:
+				port = self._ports[port_name]
+				port.value = value
+				return
+			except:
+				log.exception("Uncaught error in marshalled %s.set(%s, %s)",
+						self, arg['0'], arg['1'])
+				raise
+		self._runtime._set = _set
+
 		def marshall(fn, arg):
+			log.debug("python %s, type %s", fn, type(fn))
 			log.debug("python %s, type %s", arg, type(arg))
-			return self._js.call("_port_call", fn, arg);
+			r = self._js.call("_marshalled_port_call", fn, arg);
+			log.debug("python %s, type %s", r, type(r))
+			return r
 		self._runtime.marshall = marshall
 
 		def get_parameter(parameter_name):
