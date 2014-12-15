@@ -56,44 +56,11 @@ public class AccessorRuntime {
 		List<Document> accessors_array = new ArrayList<Document>();
 		NodeList nList = root_doc.getElementsByTagName("accessor");
 		for (int i = 0; i < nList.getLength(); i++) {
-			Node nNode = nList.item(i);
-			String accessor_url = nNode.getTextContent();
+			Node node = nList.item(i);
+			NamedNodeMap nodeMap = node.getAttributes();
+			String accessor_url = nodeMap.getNamedItem("path").getTextContent();
 
-			int idx = accessor_url.indexOf("?");
-			if (idx == -1) {
-				accessor_url += ".xml?_language=traceur";
-			} else {
-				// Ugh, really Java? Every other runtime will do this for me
-				String root = accessor_url.substring(0, idx);
-				String params = accessor_url.substring(idx+1);
-				accessor_url =  root + ".xml?";
-				String rest;
-				//System.out.println("--------------------");
-				do {
-					//System.out.println("accessor_url: " + accessor_url);
-					//System.out.println("      params: " + params + "\n");
-					int eidx = params.indexOf("=");
-					int sidx = params.indexOf("&");
-					String param = params.substring(0, eidx);
-					String value;
-					if (sidx != -1) {
-						value = params.substring(eidx+1, sidx);
-						params = params.substring(sidx+1);
-					} else {
-						value = params.substring(eidx+1);
-						params = "";
-					}
-
-					accessor_url += URLEncoder.encode(param, "UTF-8");
-					accessor_url += "=";
-					accessor_url += URLEncoder.encode(value, "UTF-8");
-					if (sidx != -1) {
-						accessor_url += "&";
-					}
-				} while (params.length() > 0);
-				//System.out.println("accessor_url: " + accessor_url);
-				accessor_url += "&_language=traceur";
-			}
+			accessor_url += ".xml?language=traceur";
 
 			URL get_url = new URL(args.server_host + "/accessor" + accessor_url);
 			log.Debug("GET " + get_url.toString());
@@ -127,9 +94,11 @@ public class AccessorRuntime {
 		}
 
 		Element accessorElement = null;
+		NodeList accessorParameters = null;
 		for (int i = 0; i < accessors.length; i++) {
 			accessorElement = (Element) accessors[i].getDocumentElement();
 			if (accessorElement.getAttribute("name").equals(args.accessor)) {
+				accessorParameters = nList.item(i).getChildNodes();
 				break;
 			}
 		}
@@ -148,12 +117,33 @@ public class AccessorRuntime {
 			NamedNodeMap nodeMap = parameterNode.getAttributes();
 
 			Node nameNode = nodeMap.getNamedItem("name");
+			Node defNode = nodeMap.getNamedItem("default");
+
+			if (defNode != null) {
+				String name = nameNode.getTextContent();
+				String def = defNode.getTextContent();
+
+				if (def != null) {
+					parameters.put(name, def);
+				}
+			}
+		}
+
+		// Override any default parameters as requested
+		for (int i = 0; i < accessorParameters.getLength(); i++) {
+			Node parameterNode = accessorParameters.item(i);
+
+			NamedNodeMap nodeMap = parameterNode.getAttributes();
+
+			Node nameNode = nodeMap.getNamedItem("name");
 			Node valueNode = nodeMap.getNamedItem("value");
 
 			String name = nameNode.getTextContent();
 			String value = valueNode.getTextContent();
 
-			parameters.put(name, value);
+			if (value != null) {
+				parameters.put(name, value);
+			}
 		}
 
 
@@ -194,23 +184,24 @@ public class AccessorRuntime {
 +"}"
 );
 
+		engine.eval("rt = new Object()");
 
-		exportInstanceMethod("version", "version");
+		exportInstanceMethod("rt.version", "version");
 
 		// TODO subinit
 
-		engine.eval("log = new Object()");
-		exportInstanceMethod("log.debug", "log_debug");
-		exportInstanceMethod("log.info", "log_info");
-		exportInstanceMethod("log.warn", "log_warn");
-		exportInstanceMethod("log.error", "log_error");
-		exportInstanceMethod("log.critical", "log_critical");
+		engine.eval("rt.log = new Object()");
+		exportInstanceMethod("rt.log.debug", "log_debug");
+		exportInstanceMethod("rt.log.info", "log_info");
+		exportInstanceMethod("rt.log.warn", "log_warn");
+		exportInstanceMethod("rt.log.error", "log_error");
+		exportInstanceMethod("rt.log.critical", "log_critical");
 
-		engine.eval("time = new Object()");
+		engine.eval("rt.time = new Object()");
 		exportInstanceMethod("_time_sleep", "time_sleep");
-		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; time.sleep = $traceurRuntime.initGeneratorFunction(function $__0(time_in_ms) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: _time_sleep(time_in_ms); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
-		engine.eval("time.run_later = function(delay_in_ms, fn_to_run, args) {"
-				+ "log.warn('NotImplemented: time.run_later is a blocking sleep in this runtime');"
+		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; rt.time.sleep = $traceurRuntime.initGeneratorFunction(function $__0(time_in_ms) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: _time_sleep(time_in_ms); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
+		engine.eval("rt.time.run_later = function(delay_in_ms, fn_to_run, args) {"
+				+ "rt.log.warn('NotImplemented: time.run_later is a blocking sleep in this runtime');"
 				+ "_time_sleep(delay_in_ms);"
 				+ "fn_to_run(args);"
 				+ "};");
@@ -219,7 +210,7 @@ public class AccessorRuntime {
 		exportInstanceMethod("set", "set");
 		exportInstanceMethod("get_parameter", "get_parameter");
 
-		engine.eval("socket = Object()");
+		engine.eval("rt.socket = Object()");
 		engine.eval(
 "_create_socket = function (family, sock_type) {"
 +"	var s = Object();"
@@ -238,13 +229,13 @@ public class AccessorRuntime {
 );
 		exportInstanceMethod("_runtime_socket", "runtime_socket");
 		exportInstanceMethod("_runtime_sendto", "runtime_sendto");
-		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; socket.socket = $traceurRuntime.initGeneratorFunction(function $__0(family, sock_type) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: $ctx.returnValue = _create_socket(family, sock_type); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
+		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; rt.socket.socket = $traceurRuntime.initGeneratorFunction(function $__0(family, sock_type) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: $ctx.returnValue = _create_socket(family, sock_type); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
 
-		engine.eval("http = Object()");
+		engine.eval("rt.http = Object()");
 		exportInstanceMethod("_http_request", "http_request");
-		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; var o = Object(); http.request = $traceurRuntime.initGeneratorFunction(function $__0(url, method) { var properties, body, timeout; var $arguments = arguments; return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: properties = $arguments[2] !== (void 0) ? $arguments[2] : null; body = $arguments[3] !== (void 0) ? $arguments[3] : null; timeout = $arguments[4] !== (void 0) ? $arguments[4] : null; $ctx.state = 4; break; case 4: $ctx.returnValue = _http_request(url, method, properties, body, timeout); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
+		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; var o = Object(); rt.http.request = $traceurRuntime.initGeneratorFunction(function $__0(url, method) { var properties, body, timeout; var $arguments = arguments; return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: properties = $arguments[2] !== (void 0) ? $arguments[2] : null; body = $arguments[3] !== (void 0) ? $arguments[3] : null; timeout = $arguments[4] !== (void 0) ? $arguments[4] : null; $ctx.state = 4; break; case 4: $ctx.returnValue = _http_request(url, method, properties, body, timeout); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
 		exportInstanceMethod("_http_readURL", "http_readURL");
-		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; http.readURL = $traceurRuntime.initGeneratorFunction(function $__0(url) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: $ctx.returnValue = _http_readURL(url); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
+		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; rt.http.readURL = $traceurRuntime.initGeneratorFunction(function $__0(url) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: $ctx.returnValue = _http_readURL(url); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
 
 		// TODO color
 
@@ -383,7 +374,7 @@ public class AccessorRuntime {
 		engine.eval(
 				"_fire = function(arg) {"
 				+ "if (typeof " + port_name + " != 'function') {"
-				+ "  log.warn('I want to remove direct call to port => implicit fire');"
+				+ "  rt.log.warn('I want to remove direct call to port => implicit fire');"
 				+ "  _port_call(fire, arg);"
 				+ "} else {"
 				+ "  _port_call("+port_name+", arg);"
