@@ -36,7 +36,7 @@
 		{
 			"path": "/webquery/Wearabouts",
 			"parameters": {
-				"gatd_url": "http://inductor.eecs.umich.edu:8086",
+				"gatd_url": "http://gatd.eecs.umich.edu:8086",
 				"profile_id": "hsYQx8blbd",
 				"location": "University of Michigan|BBB|4908"
 			}
@@ -44,7 +44,7 @@
 		{
 			"path": "/info/power/ted",
 			"parameters": {
-				"gatd_url": "http://inductor.eecs.umich.edu:8086",
+				"gatd_url": "http://gatd.eecs.umich.edu:8086",
 				"profile_id": "nMR0xcWInF",
 				"location": "University of Michigan|BBB|4908"
 			}
