@@ -104,19 +104,15 @@ function checkGetParameter(node) {
   var parameter = null;
 
   if (node.callee.name === 'get_parameter') {
-    if (!_.contains(parameter_list, node.arguments[0].value)) {
+    parameter = _.find(parameter_list, function (cand) {
+      return cand.name === node.arguments[0].value;
+    });
+    if (parameter === undefined) {
       parameter = {
         name: node.arguments[0].value,
         required: false,
       };
       parameter_list.push(parameter);
-    } else {
-      parameter = _.find(parameter_list, function (cand) {
-        return cand.name === node.arguments[0].value;
-      });
-      if (parameter === undefined) {
-        throw "Internal Error: Lookup of parameter: " + node.arguments[0].value;
-      }
     }
 
     if (node.arguments[1] === undefined) {
@@ -147,6 +143,7 @@ function checkNewPortUnits(port) {
 
 function checkNewPortParameters(port, pnode) {
   var prop, idx;
+  var options, option, opt_idx;
   var legal_port_types = ["button", "bool", "string", "numeric", "integer", "select", "color"];
 
   for (idx in pnode) {
@@ -219,7 +216,23 @@ function checkNewPortParameters(port, pnode) {
         }
         port.default = prop.value.value;
       } else if (prop.key.name === 'options') {
-        throw "not implemented: options";
+        if (port.options !== undefined) {
+          throw port.name + ": duplicate key options";
+        }
+        port.options = [];
+        options = prop.value;
+        if (options.type !== 'ArrayExpression') {
+          throw port.name + ": options value must be an array";
+        }
+        for (opt_idx in options.elements) {
+          if (options.elements.hasOwnProperty(opt_idx)) {
+            option = options.elements[opt_idx];
+            if (option.type !== 'Literal') {
+              throw port.name + ".options: Elements must be static";
+            }
+            port.options.push(option.value);
+          }
+        }
       } else if (prop.key.name === 'min') {
         if (port.min !== undefined) {
           throw port.name + ": duplicate key min";
@@ -246,9 +259,6 @@ function checkNewPortParameters(port, pnode) {
   }
   if ((port.type === 'select') && (!port.options)) {
     throw port.name + ": Port with type select must include options";
-  }
-  if (port.type === 'select') {
-    throw "not implemented: select";
   }
 
   if (port.min !== undefined) {
@@ -311,22 +321,17 @@ function checkNewPorts(node) {
       throw "Port name " + nameNode.value + " is not a legal port name";
     }
 
-    if ((parametersNode === undefined) || (parametersNode === null)) {
-      return;
-    }
-    if (parametersNode.type !== 'ObjectExpression') {
-      throw "Third argument to 'create_port' must be a dictionary of named parameters";
-    }
-
     var port = {
       direction: directionNode.value,
       name: nameNode.value,
     };
 
-    checkNewPortParameters(
-      port,
-      parametersNode.properties
-    );
+    if (parametersNode !== undefined) {
+      if (parametersNode.type !== 'ObjectExpression') {
+        throw "Third argument to 'create_port' must be a dictionary of named parameters";
+      }
+      checkNewPortParameters(port, parametersNode.properties);
+    }
 
     port_list.push(port);
   }
