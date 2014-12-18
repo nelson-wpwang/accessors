@@ -368,6 +368,9 @@ def accessor():
 	locations.append({'name': 'Anywhere',
 	                  'path': '/'})
 
+	if not args.websocket_server.startswith('ws://'):
+		args.websocket_server = 'ws://' + args.websocket_server
+
 	return flask.render_template('accessors.jinja',
 	                             locations=locations,
 	                             ws_server_address=args.websocket_server)
