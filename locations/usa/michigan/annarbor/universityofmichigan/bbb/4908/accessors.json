@@ -66,6 +66,12 @@
 					"username": "lab11in4908"
 				}
 			}
+		},
+		{
+			"path": "/onoffdevice/acme++",
+			"parameters": {
+				"ipv6_address": "2607:f018:800:10f:c298:e541:4310:13"
+			}
 		}
 	]
 }
