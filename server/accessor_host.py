@@ -550,7 +550,7 @@ def find_accessors (path, tree_node):
 								line = '* ' + line[3:]
 								in_comment = True
 							else:
-								log.warn("non-comment line: >>%s<<", line)
+								log.debug("non-comment line: >>%s<<", line)
 								break
 						else:
 							if line == '*':
@@ -616,7 +616,8 @@ def find_accessors (path, tree_node):
 							}
 						}
 
-				pprint.pprint(meta)
+				#if meta['name'] == 'Hue Single':
+				#	pprint.pprint(meta)
 
 				atl = accessor_tree_leaf(filename, meta, path)
 				atn.add_child(atl)

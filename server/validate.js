@@ -331,6 +331,9 @@ function checkNewPorts(node) {
         throw "Third argument to 'create_port' must be a dictionary of named parameters";
       }
       checkNewPortParameters(port, parametersNode.properties);
+    } else {
+      // We're responsible for setting type to the default
+      port.type = 'string';
     }
 
     port_list.push(port);
