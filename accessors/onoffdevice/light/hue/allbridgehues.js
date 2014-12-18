@@ -1,3 +1,13 @@
+// name: All Hues on a Bridge
+// author: Brad Campbell
+// email: bradjc@umich.edu
+//
+// Hue Light Bulbs
+// ===============
+//
+// This controls all of the hues behind a bridge.
+//
+
 var bulbids = [];
 
 function* on_each (body) {
@@ -8,6 +18,8 @@ function* on_each (body) {
 }
 
 function* init () {
+	create_port('output', 'Bridge');
+
 	var url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights';
 	var data = JSON.parse(yield* rt.http.readURL(url));
 	var on = false;
