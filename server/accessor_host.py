@@ -64,7 +64,7 @@ ET._serialize_xml = ET._serialize['xml'] = _serialize_xml
 # These classes are used when building the tree of accessors based on their
 # path. They are only used when the server is started or an accessor changes and
 # not during the normal operation of the accessor host server. Their purpose
-# is to aid in getting inherited ports setup correctly. 
+# is to aid in getting inherited ports setup correctly.
 class accessor_tree_node ():
 	def __init__ (self, name, accessor):
 		self.name = name
@@ -362,6 +362,8 @@ def create_accessor (structure, accessor, path):
 
 	else:
 		# Add the accessor to the list of valid accessors to request
+		json_path = re.escape(json_path)
+		xml_path = re.escape(xml_path)
 		server_path_tuples.append((json_path, json_serve_class))
 		server_path_tuples.append((xml_path, xml_serve_class))
 		accessors_by_path[json_path] = json_serve_class
@@ -467,7 +469,7 @@ def create_accessors (accessor_tree):
 			continue
 	#for path,accessor_obj in accessors_by_path.items():
 		create_accessors_dependencies_recurse(dep_tree_node.accessor, {}, dep_tree_node.children)
-		
+
 
 def find_accessors (path, tree_node):
 

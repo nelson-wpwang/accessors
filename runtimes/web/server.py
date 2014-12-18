@@ -10,6 +10,7 @@
 
 import argparse
 import base64
+import json
 import os
 import random
 import re
@@ -117,7 +118,7 @@ def create_accessor_javascript (accessor,
 	# This wrapper also handles calling generator functions correctly and
 	# providing the get, set, etc functions.
 	js_module_wrapping = string.Template('''
-	${accessorvariable} = (function () {
+	${accessorvariable} (function () {
 
 		var _inited = false;
 
@@ -125,32 +126,24 @@ def create_accessor_javascript (accessor,
 			/* no-op, happened upstream */
 		}
 
-		function get (field) {
-			if (!_inited) {
-				run_accessor_fn(init);
-			}
-			if (_inited) {
-				return accessor_get('${accessorname}', field);
-			} else {
-				return null;
-			}
-		}
-
-		function set (field, value) {
-			accessor_set('${accessorname}', field, value);
-		}
+		${get_set}
 
 		function get_parameter (parameter_name) {
-			var parameters = {${parameterlist}};
-			if (parameters[parameter_name] === undefined) {
+			if (_parameters[parameter_name] === undefined) {
 				throw new AccessorRuntimeException('Error: parameter "'+parameter_name+'" is not defined.');
 			}
-			return parameters[parameter_name];
+			return _parameters[parameter_name];
 		};
 
-		function get_dependency (dependency_name) {
-			if (dependency_name in _dependencies) {
-				return _dependencies[dependency_name];
+		function load_dependency (dependency_path, dep_params) {
+			if (dependency_path in _dependencies) {
+				var dep_str = _dependencies[dependency_path];
+				var dep = eval(dep_str);
+				for (key in dep_params) {
+					dep._set_parameter(key, dep_params[key]);
+				}
+				dep._set_parameter = 'undefined';
+				return dep;
 			} else {
 				return null;
 			}
@@ -181,16 +174,20 @@ def create_accessor_javascript (accessor,
 			}
 		}
 
+
+		var _parameters = JSON.parse('${parameters}');
+
 		var _dependencies = Object();
 		${dependencies}
 
 		${accessorjs}
 
 		return {
+			'_set_parameter': function (name, value) { _parameters[name] = value; },
 			'get': get,
 			'set': set,
 			'get_parameter': get_parameter,
-			'get_dependency': get_dependency,
+			'load_dependency': load_dependency,
 			'init': function* () { if (typeof init != 'undefined') { yield* run_accessor_fn(init) } },
 			'fire': function* () { if (typeof fire != 'undefined') { yield* run_accessor_fn(fire) } },
 			'wrapup': function* () { if (typeof wrapup != 'undefined') { yield* run_accessor_fn(wrapup) } },
@@ -198,6 +195,44 @@ def create_accessor_javascript (accessor,
 		}
 	})();
 	''')
+
+	if toplevel:
+		get_set = string.Template('''
+		function get (field) {
+			if (!_inited) {
+				run_accessor_fn(init);
+			}
+			if (_inited) {
+				return accessor_get('${accessorname}', field);
+			} else {
+				return null;
+			}
+		}
+
+		function set (field, value) {
+			accessor_set('${accessorname}', field, value);
+		}
+		''').substitute(accessorname=chained_name)
+
+	else:
+		get_set = '''
+		var _ports = Object();
+
+		function get (field) {
+			if (!_inited) {
+				run_accessor_fn(init);
+			}
+			if (_inited) {
+				return _ports[field];
+			} else {
+				return null;
+			}
+		}
+
+		function set (field, value) {
+			_ports[field] = value;
+		}
+		'''
 
 	# Each port can have a function, make them public here.
 	function_list = ''
@@ -212,30 +247,28 @@ def create_accessor_javascript (accessor,
 
 	# Parameters end up being implemented as a pre-constructed object that
 	# is referenced at runtime.
-	parameter_list = ''
+	parameter_obj = {}
 	for parameter in accessor['parameters']:
 		if parameter['value']:
-			parameter_list += "'{parametername}':'{parametervalue}',"\
-				.format(parametername=parameter['name'],
-				        parametervalue=parameter['value'])
+			parameter_obj[parameter['name']] = parameter['value']
 		else:
-			parameter_list += "'{parametername}':null,"\
-				.format(parametername=parameter['name'])
+			parameter_obj[parameter['name']] = None
 
 	# Make the correct variable instantation based on if this is the top level
 	# accessor or a dependency
+	accessor_variable = ''
 	if toplevel:
-		accessor_variable = 'var {}'.format(accessor['clean_name'])
-	else:
-		accessor_variable = '_dependencies["{}"]'.format(accessor['name'])
-
+		accessor_variable = 'var {} = '.format(accessor['clean_name'])
+	#else:
+	#	accessor_variable = '_dependencies["{}"]'
 
 	js = js_module_wrapping.substitute(accessorname=chained_name,
 	                                   accessorvariable=accessor_variable,
 	                                   accessorjs=accessor['code'],
 	                                   dependencies=dependency_code,
 	                                   functionlist=function_list,
-	                                   parameterlist=parameter_list)
+	                                   parameters=json.dumps(parameter_obj),
+	                                   get_set=get_set)
 	return rjsmin.jsmin(js)
 
 
@@ -248,7 +281,9 @@ def create_javascript (accessor, chained_name='', toplevel=True):
 	dep_code = ''
 	if 'dependencies' in accessor:
 		for dependency in accessor['dependencies']:
-			dep_code += create_javascript(dependency, chained_name, False)
+			js = create_javascript(dependency, chained_name, False)
+			escaped = json.dumps(js)
+			dep_code += "_dependencies['{}'] = {};".format(dependency['path'], escaped)
 
 	return create_accessor_javascript(accessor, chained_name, dep_code, toplevel)
 

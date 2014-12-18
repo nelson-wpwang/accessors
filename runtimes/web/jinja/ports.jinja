@@ -55,7 +55,7 @@
               <div class="{% if port.has_function %}col-xs-8{% else %}col-xs-12{% endif %}">
                 <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %} data-portdirection="{{ port.direction }}"></input>
               </div>
-            
+
               {% if port.has_function %}
               <div class="col-xs-4">
                 <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
@@ -110,32 +110,3 @@
   </div>
 
 </div>
-
-
-{# Put in hidden ports for all dependencies.
-   We allow for dependent accessors to have dependencies
-   so we make sure to create hidden ports for all
-   sub dependencies.
- #}
-
-{% macro dependency_html(dep, name_so_far) %}
-  <div id="accessor-{{ name_so_far }}" style="display:none;">
-    {% for port in dep.ports %}
-    {% set fieldname = 'port-' ~ name_so_far ~ port.name %}
-    <input type="hidden" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}" data-porttype="{{ port.type }}"></input>
-    {% endfor %}
-  </div>
-{% endmacro %}
-
-{% if 'dependencies' in accessor %}
-  {% set chained_name = {'n': accessor.clean_name} %}
-  {% for dependency in accessor.dependencies recursive %}
-    {% set saved_name = chained_name.n %}
-    {% if chained_name.update({'n': chained_name.n ~ dependency.clean_name}) %}{% endif %}
-    {{ dependency_html(dependency, chained_name.n) }}
-    {% if dependency.dependencies %}
-      {{ loop(dependency.dependencies) }}
-    {% endif %}
-    {% if chained_name.update({'n': saved_name}) %}{% endif %}
-  {% endfor %}
-{% endif %}
