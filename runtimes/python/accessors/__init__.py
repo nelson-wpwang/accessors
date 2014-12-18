@@ -7,7 +7,9 @@ import base64
 import pprint
 import time
 import sys
+import traceback
 import os
+import copy
 import socket
 import argparse
 import string
@@ -88,15 +90,25 @@ def get_all_accessors_from_location (server, path):
 			if 'parameters' not in accessor:
 				accessor['parameters'] = {}
 			accessor = Accessor(accessor_path, r2.json(), accessor['parameters'])
-			accessors[accessor._raw_name] = accessor
+			accessors[accessor._name] = accessor
 		else:
-			raise NotImplementedError("Failed to get accessor: {}".format(get_url))
+			log.error("Failed to get accessor: {}".format(get_url))
 
 	return accessors
 
 # I've clearly been writing too much JS since I think this is a good idea...
 class Object():
 	pass
+
+# Decorator to print tracebacks when crossing the runtime bridge
+def exported(fn_to_decorate):
+	def exported_fn_decorator(*args, **kwargs):
+		try:
+			return fn_to_decorate(*args, **kwargs)
+		except:
+			log.exception("Uncaught exception in exported function")
+			raise
+	return exported_fn_decorator
 
 class Port():
 	@staticmethod
@@ -207,12 +219,15 @@ class Accessor():
 		self._root_params = parameters
 		self._parent = parent
 
-		# This is a nice short handle, may have namespace issues though (TODO)
-		self._raw_name = url.split('.json')[0].split('/')[-1]
-
 		# Required Keys
-		self._name = json['name']
-		self._version = json['version']
+		try:
+			self._name = json['name']
+			self._safe_name = json['safe_name']
+			self._version = json['version']
+		except:
+			log.exception("Missing required key in accessor")
+			pprint.pprint(json)
+			raise
 
 		log.debug("Creating new accessor: %s", self._name)
 
@@ -241,20 +256,13 @@ class Accessor():
 					self._parameters[parameter['name']] = parameters[parameter['name']]
 					continue
 
-				if parent:
-					if parent._parent is not None:
-						# I'm not convinced the current parameter method makes
-						# the most sense, so shortest path for the moment until
-						# this settles down.
-						raise NotImplementedError("Nested dep parameters")
-					p = '{}.{}'.format(self._name, parameter['name'])
-					if parent._root_params and p in parent._root_params:
-						self._parameters[parameter['name']] = parent._root_params[p]
-						continue
-
 				if 'default' in parameter:
 					self._parameters[parameter['name']] = parameter['default']
 					continue
+
+				if 'required' in parameter and parameter['required']:
+					raise RuntimeError("{}: Missing value for required parameter {}".\
+									format(self, parameter['name']))
 
 		if 'code' not in json:
 			raise NotImplementedError("Accessor without code?")
@@ -268,7 +276,7 @@ class Accessor():
 		if self._js is not None:
 			raise RuntimeError("Multiple requests to init accessor")
 
-		log.debug("%s: creating JS runtime", self._name)
+		log.debug("%s: creating JS runtime", self)
 		self._js = bond.make_bond('JavaScript', 'node', ['--harmony'])
 
 		log.debug("%s: loading `harmony-reflect` (patches to support ES6 Proxy)", self)
@@ -280,22 +288,22 @@ class Accessor():
 				log.critical("Install via `npm install harmony-reflect`")
 				sys.exit(1)
 
-		log.debug("%s: loading accessor", self._name)
+		log.debug("%s: loading accessor", self)
 		self._js.eval_block(self._code)
 
 		self._init_runtime()
 
-		log.debug("%s: running accessor init method", self._name)
+		log.debug("%s: running accessor init method", self)
 		ret = self._js.call('_port_call', 'init')
-		log.debug("%s: accessor init ret %r", self._name, ret)
+		log.debug("%s: accessor init ret %r", self, ret)
 
 	def __str__(self):
 		if self._parent:
-			return str(self._parent) + '.' + self._name
-		return self._name
+			return str(self._parent) + '.' + self._safe_name
+		return self._safe_name
 
 	def __repr__(self):
-		return "<Accessor: {}>".format(self._name)
+		return "<Accessor: {}>".format(self._safe_name)
 
 	def __getattribute__(self, attr):
 		if attr != '_ports' and hasattr(self, '_ports') and attr in self._ports:
@@ -386,35 +394,44 @@ create_port = function () {
 
 			self._js.export(
 				sub_accessor._runtime.get,
-				'_{}_handler_get'.format(sub_accessor._name)
+				'_{}_handler_get'.format(sub_accessor._safe_name)
 				)
 			self._js.export(
 				sub_accessor._runtime._set,
-				'_{}_handler_set'.format(sub_accessor._name)
+				'_{}_handler_set'.format(sub_accessor._safe_name)
 				)
 			self._js.export(
 				sub_accessor._runtime.marshall,
-				'_{}_handler_marshall'.format(sub_accessor._name)
+				'_{}_handler_marshall'.format(sub_accessor._safe_name)
 				)
 
-			self._js.eval_block('_{}_is_inited = true;'.format(sub_accessor._name))
+			self._js.eval_block('_{}_is_inited = true;'.format(sub_accessor._safe_name))
 
 			log.debug("%s: Completed lazy binding for: %s", self, sub_accessor)
 
-		def get_dependency(dependency_name):
-			log.debug("%s: Creating sub accessor: %s", self, dependency_name)
+		@exported
+		def load_dependency(path, parameters):
+			log.debug("%s: Creating sub accessor: %s", self, path)
 			dependency = None
 			for dep in self._json['dependencies']:
-				if dep['name'] == dependency_name:
+				if dep['path'] == path:
 					dependency = dep
 			if dependency is None:
 				raise RuntimeError("Request for sub accessor not listed in depenecies")
-			sub_accessor = Accessor(dependency['path'], dependency, parent=self)
-			self._sub_accessors[sub_accessor._name] = sub_accessor
+			i = 0
+			while True:
+				if '{}_{}'.format(dependency['safe_name'], i) in self._sub_accessors:
+					i += 1
+				else:
+					break
+			dependency = copy.deepcopy(dependency)
+			dependency['safe_name'] = '{}_{}'.format(dependency['safe_name'], i)
+			sub_accessor = Accessor(path, dependency, parameters=parameters, parent=self)
+			self._sub_accessors[sub_accessor._safe_name] = sub_accessor
 
 			self._js.export(
 					resolve_lazy_dependency,
-					'_{}_resolve_lazy_dependency'.format(sub_accessor._name)
+					'_{}_resolve_lazy_dependency'.format(sub_accessor._safe_name)
 					)
 
 			log.debug("Creating proxy %s <> %s", self, sub_accessor)
@@ -477,16 +494,16 @@ var _{name}_handler = {{
 	}}
 }};
 _{name}_proxy = new Proxy({{}}, _{name}_handler);
-'''.format(name=sub_accessor._name))
+'''.format(name=sub_accessor._safe_name))
 			self._js.eval_block(proxy_code)
 			log.debug("%s: Created sub accessor: %s", self, sub_accessor)
-			return '_{}_proxy'.format(sub_accessor._name);
+			return '_{}_proxy'.format(sub_accessor._safe_name);
 
-		self._js.export(get_dependency, '_get_dependency')
+		self._js.export(load_dependency, '_load_dependency')
 		self._js.eval_block('''\
-get_dependency = function (dependency_name) {
-	rt.log.debug("get_dependency (" + dependency_name + ")");
-	var name = _get_dependency(dependency_name);
+load_dependency = function (path, parameters) {
+	rt.log.debug("load_dependency (" + path + ", " + parameters + ")");
+	var name = _load_dependency(path, parameters);
 	return global[name];
 };
 ''')
@@ -527,7 +544,7 @@ rt.time.run_later = function (delay_in_ms, fn_to_run, args) {
 			try:
 				port = self._ports[port_name]
 				r = port.get()
-				log.debug("%s: get(%s) => %s", self._name, port_name, r)
+				log.debug("%s: get(%s) => %s", self, port_name, r)
 				return r
 			except:
 				log.exception("Uncaught error in %s.get(%s)", self, port_name)
@@ -538,7 +555,7 @@ rt.time.run_later = function (delay_in_ms, fn_to_run, args) {
 		def set(port_name, value):
 			try:
 				port = self._ports[port_name]
-				log.debug("%s: set(%s) <= %s", self._name, port_name, value)
+				log.debug("%s: set(%s) <= %s", self, port_name, value)
 				port.set(value)
 				return
 			except:
@@ -678,7 +695,12 @@ def get_accessor_by_location(server, location, name):
 			location = loc['path']
 			break
 	accessors = get_all_accessors_from_location(server, location)
-	return accessors[name]
+	try:
+		return accessors[name]
+	except:
+		log.error("Count not find accesor by that name. Known accessors:")
+		pprint.pprint(accessors)
+		raise
 
 #accessors = {}
 #for location in get_known_locations():

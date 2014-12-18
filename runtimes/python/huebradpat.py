@@ -12,7 +12,7 @@ import logging
 hues = accessors.get_accessor_by_location(
 	'localhost:6565',
 	'University of Michigan - 4908 BBB',
-	'huebradpat'
+	'Brad-Pat Hue'
 	)
 try:
 	print("Fair warning, this isn't the fastest right now")

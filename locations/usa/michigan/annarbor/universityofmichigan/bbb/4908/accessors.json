@@ -52,10 +52,10 @@
 		{
 			"path": "/onoffdevice/light/hue/huebradpat",
 			"parameters": {
-				"BradHue.bridge_url": "http://4908hue.eecs.umich.edu",
-				"BradHue.username": "lab11in4908",
-				"PatHue.bridge_url": "http://4908hue.eecs.umich.edu",
-				"PatHue.username": "lab11in4908"
+				"hue_config": {
+					"bridge_url": "http://4908hue.eecs.umich.edu",
+					"username": "lab11in4908"
+				}
 			}
 		},
 		{

@@ -1,11 +1,23 @@
+// name: Brad-Pat Hue
+// author: Brad Campbell
+// email: bradjc@umich.edu
+//
+// Hue Bulbs for Brad and Pat
+// ================================
+//
+// This is an example of a meta-accessor.
+//
+
 var BradHue;
 var PatHue;
 
 function* init () {
 
+	var hue_config = get_parameter("hue_config");
+
 	// Get pointers to the sub-accessors (dependencies)
-	BradHue = get_dependency('BradHue');
-	PatHue = get_dependency('PatHue');
+	BradHue = load_dependency('/onoffdevice/light/hue/huesingle', hue_config);
+	PatHue = load_dependency('/onoffdevice/light/hue/huesingle', hue_config);
 
 	// Pretend like we typed in the bulb names that we want to control
 	BradHue.set('BulbName', 'Brad');
