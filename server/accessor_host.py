@@ -500,9 +500,11 @@ def find_accessors (path, tree_node):
 	if tree_node:
 		tree_node.add_child(atn)
 
-	def parse_error(msg, path, line=None):
+	def parse_error(msg, path, line_no=None, line=None):
 		log.error(msg)
-		if line:
+		if line_no and line:
+			log.error("Found parsing %s on line %d: >>>%s<<<", path, line_no, line)
+		elif line_no:
 			log.error("Found parsing %s on line %d", path, line_no)
 		else:
 			log.error("Found parsing %s")
@@ -544,21 +546,27 @@ def find_accessors (path, tree_node):
 							elif line[0:3] == '// ':
 								line = line[3:]
 							elif line[0:3] == '/* ':
-								line = ' * ' + line[3:]
+								line = '* ' + line[3:]
 								in_comment = True
 							else:
 								log.warn("non-comment line: >>%s<<", line)
 								break
+						else:
+							if line == '*':
+								if description is not None:
+									description += '\n'
+								continue
 						if '*/' in line:
-							if line[:-2] != '*/':
+							if line[-2:] != '*/':
 								parse_error("Comment terminator `*/` must end line",
-										item_path, line_no)
+										item_path, line_no, line)
 							in_comment = False
+							continue
 						if in_comment:
-							if line[0:3] != ' * ':
+							if line[0:2] != '* ':
 								parse_error("Comment block lines must begin ' * '",
-										item_path, line_no)
-							line = line[3:]
+										item_path, line_no, line)
+							line = line[2:]
 
 						if line.strip()[:8] == 'author: ':
 							author = line.strip()[8:].strip()
@@ -566,12 +574,15 @@ def find_accessors (path, tree_node):
 							email = line.strip()[7:].strip()
 						elif line.strip()[:9] == 'website: ':
 							website = line.strip()[9:].strip()
-						elif description is None:
+						elif author and email and description is None:
 							if len(line.strip()) is 0:
 								continue
 							description = line + '\n'
-						else:
+						elif description is not None:
 							description += line + '\n'
+						else:
+							# Comments above our stuff in the file
+							pass
 
 				if not author:
 					parse_error("Missing required key: author", item_path)

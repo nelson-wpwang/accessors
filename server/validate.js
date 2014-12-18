@@ -101,9 +101,38 @@ function checkGetDependency(node) {
 var parameter_list = [];
 
 function checkGetParameter(node) {
+  var parameter = null;
+
   if (node.callee.name === 'get_parameter') {
     if (!_.contains(parameter_list, node.arguments[0].value)) {
-      parameter_list.push(node.arguments[0].value);
+      parameter = {
+        name: node.arguments[0].value,
+        required: false,
+      };
+      parameter_list.push(parameter);
+    } else {
+      parameter = _.find(parameter_list, function (cand) {
+        return cand.name === node.arguments[0].value;
+      });
+      if (parameter === undefined) {
+        throw "Internal Error: Lookup of parameter: " + node.arguments[0].value;
+      }
+    }
+
+    if (node.arguments[1] === undefined) {
+      // No default parameter supplied
+      parameter.required = true;
+    } else {
+      if (node.arguments[1].type !== 'Literal') {
+        throw "Default parameter value must be constant for parameter: " + parameter.name;
+      }
+      if (parameter.default === undefined) {
+        parameter.default = node.arguments[1].value;
+      } else {
+        if (parameter.default !== node.arguments[1].value) {
+          throw "Inconsistent defaults for parameter: " + parameter.name;
+        }
+      }
     }
   }
 }
@@ -186,7 +215,7 @@ function checkNewPortParameters(port, pnode) {
           throw port.name + ".default property must be static";
         }
         if (port.default !== undefined) {
-          throw prot.name + ": duplicate key default";
+          throw port.name + ": duplicate key default";
         }
         port.default = prop.value.value;
       } else if (prop.key.name === 'options') {
