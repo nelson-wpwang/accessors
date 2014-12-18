@@ -1,3 +1,14 @@
+/* author: Pat Pannuto
+ * email: ppannuto@umich.edu
+ * name: Raspberry Pi Door
+ *
+ * Accessor for a Door Controller by a Raspberry Pi
+ * ================================================
+ *
+ * We should post the TinyOS app we use for door control to github, so that this
+ * description can point to it. File that on the todo list.
+ */
+
 function init () {
 	set_to_locked();
 }
@@ -16,9 +27,9 @@ function* Lock (lock) {
 		set_to_locked();
 		return;
 	}
-	var host = get_parameter('host');
-	var port = get_parameter('port');
-	var pass = get_parameter('password');
+	var host = get_parameter('host', '::1');
+	var port = get_parameter('port', 4999);
+	var pass = get_parameter('password', 'password');
 	try {
 		yield* s.sendto(pass, [host, port]);
 	} catch (err) {

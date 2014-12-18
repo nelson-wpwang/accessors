@@ -524,6 +524,7 @@ def find_accessors (path, tree_node):
 			elif ext == '.js':
 				if os.path.isfile(item_path[:-3] + '.json'):
 					continue
+				name = None
 				author = None
 				email = None
 				website = None
@@ -574,6 +575,8 @@ def find_accessors (path, tree_node):
 							email = line.strip()[7:].strip()
 						elif line.strip()[:9] == 'website: ':
 							website = line.strip()[9:].strip()
+						elif line.strip()[:6] == 'name: ':
+							name = line.strip()[6:].strip()
 						elif author and email and description is None:
 							if len(line.strip()) is 0:
 								continue
@@ -590,7 +593,7 @@ def find_accessors (path, tree_node):
 					parse_error("Missing required key: email", item_path)
 
 				meta = {
-						'name': filename,
+						'name': name if name else filename,
 						'version': '0.1',
 						'author': {
 							'name': author,
