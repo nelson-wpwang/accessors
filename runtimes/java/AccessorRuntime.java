@@ -188,6 +188,8 @@ public class AccessorRuntime {
 
 		exportInstanceMethod("rt.version", "version");
 
+		engine.eval("create_port = function () { /* no-op */ };");
+
 		// TODO subinit
 
 		engine.eval("rt.log = new Object()");

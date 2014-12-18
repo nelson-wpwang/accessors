@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import logging
+log = logging.getLogger(__name__)
 
 import argparse
 import pprint
@@ -31,6 +33,8 @@ except ImportError:
 	print("You need to install npm: https://www.npmjs.org/")
 	print("(this isn't a python package)")
 	sys.exit(1)
+
+parse_js = sh.Command('./validate.js')
 
 traceur = os.path.join(
 	os.getcwd(),
@@ -471,6 +475,9 @@ def find_accessors (path, tree_node):
 	folder = os.path.basename(os.path.normpath(path))
 	atn = None
 
+	if folder == 'tests' and not args.tests:
+		return
+
 	# See if there is a .json file in this folder with the same
 	# name as the folder. If so, this is the interface file
 	interface_path = os.path.join(path, folder) + '.json'
@@ -493,6 +500,13 @@ def find_accessors (path, tree_node):
 	if tree_node:
 		tree_node.add_child(atn)
 
+	def parse_error(msg, path, line=None):
+		log.error(msg)
+		if line:
+			log.error("Found parsing %s on line %d", path, line_no)
+		else:
+			log.error("Found parsing %s")
+		sys.exit(1)
 
 	# Look for any other .json files. These are accessors
 	contents = os.listdir(path)
@@ -502,25 +516,106 @@ def find_accessors (path, tree_node):
 		if os.path.isfile(item_path):
 			filename, ext = os.path.splitext(os.path.basename(item_path))
 			if ext == '.json' and filename != folder:
-				# This must be an accessor file
-				with open(item_path) as f:
-					try:
-						j = json.load(f, strict=False)
-					except ValueError as e:
-						print('ERROR: loading accessor json: {}'.format(item_path))
-						print(e)
-						continue
-					atl = accessor_tree_leaf(filename, j, path)
-					atn.add_child(atl)
-					#create_accessor(path, sub_structure+[filename], sub_ports, j)
+				log.warn("Skipping old-style accessor: %s", item_path)
+			elif ext == '.json':
+				continue
+			elif ext == '.js':
+				if os.path.isfile(item_path[:-3] + '.json'):
+					continue
+				author = None
+				email = None
+				website = None
+				description = None
 
-					# We make the node now with the current accessor. This pointer
-					# will get updated later with the fully expanded ports.
-					adtn = accessor_dep_tree_node(j)
-					accessor_path = os.path.join(path, filename)
-					# TODO: make this not a hack
-					accessor_path = accessor_path[len(args.accessor_path)-1:]
-					accessor_path_to_dep_tree[accessor_path] = adtn
+				line_no = 0
+				in_comment = False
+				with open(item_path) as f:
+					while True:
+						line = f.readline().strip()
+						line_no += 1
+						if len(line) is 0:
+							continue
+
+						if not in_comment:
+							if line == '//':
+								if description is not None:
+									description += '\n'
+								continue
+							elif line[0:3] == '// ':
+								line = line[3:]
+							elif line[0:3] == '/* ':
+								line = ' * ' + line[3:]
+								in_comment = True
+							else:
+								log.warn("non-comment line: >>%s<<", line)
+								break
+						if '*/' in line:
+							if line[:-2] != '*/':
+								parse_error("Comment terminator `*/` must end line",
+										item_path, line_no)
+							in_comment = False
+						if in_comment:
+							if line[0:3] != ' * ':
+								parse_error("Comment block lines must begin ' * '",
+										item_path, line_no)
+							line = line[3:]
+
+						if line.strip()[:8] == 'author: ':
+							author = line.strip()[8:].strip()
+						elif line.strip()[:7] == 'email: ':
+							email = line.strip()[7:].strip()
+						elif line.strip()[:9] == 'website: ':
+							website = line.strip()[9:].strip()
+						elif description is None:
+							if len(line.strip()) is 0:
+								continue
+							description = line + '\n'
+						else:
+							description += line + '\n'
+
+				if not author:
+					parse_error("Missing required key: author", item_path)
+				if not email:
+					parse_error("Missing required key: email", item_path)
+
+				meta = {
+						'name': filename,
+						'version': '0.1',
+						'author': {
+							'name': author,
+							'email': email,
+							},
+						}
+				if website:
+					meta['author']['website'] = website
+				if description:
+					meta['description'] = description
+
+				analyzed = parse_js(item_path)
+				analyzed = json.loads(analyzed.stdout.decode('utf-8'))
+
+				meta.update(analyzed)
+
+				meta['code'] = {
+						'javascript': {
+							'code' : open(item_path).read()
+							}
+						}
+
+				pprint.pprint(meta)
+
+				atl = accessor_tree_leaf(filename, meta, path)
+				atn.add_child(atl)
+
+				# We make the node now with the current accessor. This pointer
+				# will get updated later with the fully expanded ports.
+				adtn = accessor_dep_tree_node(meta)
+				accessor_path = os.path.join(path, filename)
+				# TODO: make this not a hack
+				accessor_path = accessor_path[len(args.accessor_path)-1:]
+				accessor_path_to_dep_tree[accessor_path] = adtn
+			else:
+				log.warn("Unknown extension: %s", ext)
 
 
 	# Do the directories
@@ -545,6 +640,8 @@ parser.add_argument('-p', '--accessor_path',
 parser.add_argument('-l', '--location_path',
                     required=True,
                     help='The root of the location tree.')
+parser.add_argument('-t', '--tests', action='store_true',
+                    help='Include test accessors')
 args = parser.parse_args()
 
 # Initialize the accessors
@@ -557,6 +654,7 @@ class AccessorChangeHandler (watchdog.events.FileSystemEventHandler):
 		if str(event.src_path[-1]) == '~' or str(event.src_path[-4:-1]) == '.sw':
 			# Ignore temporary files
 			return
+		print('\n\n' + '='*80)
 		root = find_accessors(args.accessor_path, None)
 		create_accessors(root)
 

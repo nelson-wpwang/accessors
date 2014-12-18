@@ -371,6 +371,12 @@ function _dump_stack (dump_via) {
 			return "0.1.0"
 		self._js.export(version)
 
+		self._js.eval_block('''\
+create_port = function () {
+	/* no-op: operation handled upstream */
+}
+''')
+
 		def resolve_lazy_dependency(name):
 			log.debug("%s: Request to resolve lazy binding for: %s", self, name)
 			sub_accessor = self._sub_accessors[name]

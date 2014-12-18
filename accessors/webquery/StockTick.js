@@ -1,4 +1,24 @@
-function* init() { ; }
+// author:  Edward A. Lee
+// email:   eal@eecs.berkeley.edu
+//
+// Stock Price Lookup Accessor
+// ===========================
+//
+// This accessor, when fired, reads the most recent bid price for the specified
+// stock symbol from a Yahoo server.
+
+function init() {
+  create_port('input', 'StockSymbol', {
+    display_name: "Stock Symbol",
+    default: "YHOO",
+    description: "The stock symbol."
+  });
+  create_port('output', 'Price', {
+    type: "numeric",
+    units: "currency.usd",
+    description: "The most recent stock price (bid)."
+  });
+}
 
 function* fire() {
   rt.log.debug("StockTick fire start");

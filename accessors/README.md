@@ -42,8 +42,11 @@ are valid in the port object:
 | KEY            | Required | Type          | Description |
 | ---            | -------- | ------        | ----------- |
 | `direction`    | yes      | string        | Specifies if this port takes data from the user, displays data to the user, or both. Valid choices are: `input`, `output`, and `inout`. |
-| `name`         | yes      | string        | Port name. Valid characters are "A-Z", "a-z", "0-9", and "_". |
+| `name`         | yes      | string        | Port name. Valid characters are `A-Z`, `a-z`, `0-9`, and `_`. |
+| `display_name` | no       | string        | A preferred format for the port name in UI elements. |
+| `description`  | no       | string        | A description of the port for use in UIs (like a tagline, or tooltip). |
 | `type`         | no       | string        | Specifies the data type of the port. Defaults to "string". See "Port Types" below for more information. |
+| `units`        | no       | string        | Specifies how the data should be interpreted. See "Units" below for more information. |
 | `default`      | no       | `<type>`      | Specify a default value for the port |
 | `options`      | no       | array         | Only valid when `type` == "select". Specifies the list of valid options the user can select from. |
 | `min`          | no       | number        | Only valid when `type` == "integer" or "numeric". Allows the accessor runtime to limit input values. |
@@ -63,7 +66,23 @@ Port types essentially specify the data type of the port. Valid choices are:
 | `integer` | Constrain the numeric field to just integers. See `numeric` section for information about "min" and "max". |
 | `select`  | Shows the user a list of options to choose from. Use the `options` key to specify the options. |
 | `color`   | Allow the user to enter a color. Will likely display a color picker. Color will be represented by a six digit RGB hex string. Example: "00FF00". |
-| `currency_usd` | Display a number formatted as US currency |
+
+**TODO:** Should `color` be a type, or should `color_hex_rgb` be a unit
+affiliated with a `string` type?
+
+#### Units
+
+Units optionally express how a basic port type should be interpreted for
+contexts where they may be meaningful. Units are only valid for certain types,
+as specified here. Note that `integer` is a subset of `numeric`, (any `numeric`
+type can be applied to an `integer`, but not vice-versa).
+
+##### `numeric` units
+
+* `currency`: A currency type. Specific currency types exist as (**TODO**
+  `currency_usd` or `currency.usd`).
+  - **(TODO, idea):** The accessor `/anywhere/utility/currency/convert` can be
+    used to convert between currency types.
 
 #### Ports Example
 

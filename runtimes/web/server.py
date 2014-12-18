@@ -121,6 +121,10 @@ def create_accessor_javascript (accessor,
 
 		var _inited = false;
 
+		function create_port () {
+			/* no-op, happened upstream */
+		}
+
 		function get (field) {
 			if (!_inited) {
 				run_accessor_fn(init);
