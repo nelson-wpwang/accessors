@@ -61,10 +61,10 @@
 		{
 			"path": "/onoffdevice/light/hue/threehues",
 			"parameters": {
-				"BradPatHues.BradHue.bridge_url": "http://4908hue.eecs.umich.edu",
-				"BradPatHues.BradHue.username": "lab11in4908",
-				"BradPatHues.PatHue.bridge_url": "http://4908hue.eecs.umich.edu",
-				"BradPatHues.PatHue.username": "lab11in4908"
+				"hue_config": {
+					"bridge_url": "http://4908hue.eecs.umich.edu",
+					"username": "lab11in4908"
+				}
 			}
 		}
 	]

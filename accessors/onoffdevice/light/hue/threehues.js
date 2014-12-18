@@ -1,11 +1,27 @@
+// name: Three Hues
+// author: Brad Campbell
+// email: bradjc@umich.edu
+//
+// Three Hues Accessor
+// ===================
+//
+// This accessors controls Brad, Pat, and a third hue. It is basically a test
+// of nested accessors.
+
 var BradPatHue;
 var OtherHue;
 
 function* init () {
+	create_port('input', 'BulbName');
+
+	var hue_config = get_parameter("hue_config");
+	var params = {
+		hue_config: hue_config
+	};
 
 	// Get pointers to the sub-accessors (dependencies)
-	BradPatHue = get_dependency('BradPatHues');
-	OtherHue = get_dependency('OtherHue');
+	BradPatHue = load_dependency('/onoffdevice/light/hue/huebradpat', params);
+	OtherHue = load_dependency('/onoffdevice/light/hue/huesingle', hue_config);
 
 	OtherHue.set('BulbName', 'Spare 1');
 }
