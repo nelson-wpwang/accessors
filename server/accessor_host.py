@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 import json
 import sys
 import os
+import re
 
 import semver
 
@@ -423,7 +424,6 @@ def create_accessors_dependencies_recurse (accessor, parameters, children):
 
 			# Insert all of the fields of the accessor into the parent accessor
 			# to form the full accessor with dependencies
-			del children[i].accessor['name']
 			dep.update(children[i].accessor)
 
 			# Recurse to fill in sub-accessors
@@ -600,6 +600,8 @@ def find_accessors (path, tree_node):
 							'email': email,
 							},
 						}
+				# http://stackoverflow.com/q/3303312
+				meta['safe_name'] = re.sub('\W|^(?=\d)', '_', meta['name'])
 				if website:
 					meta['author']['website'] = website
 				if description:

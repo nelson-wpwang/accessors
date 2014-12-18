@@ -90,11 +90,28 @@ function checkForRuntime(node) {
 var dependency_list = [];
 
 function checkGetDependency(node) {
-  if (node.callee.name === 'get_dependency') {
-    if (_.contains(dependency_list, node.arguments[0].value)) {
-      throw "Duplicate dependency: " + node.arguments[0].value;
+  var dep = null;
+
+  if (node.callee.name === 'load_dependency') {
+    dep = _.find(dependency_list, function (cand) {
+      return cand.path === node.arguments[0].value;
+    });
+    if (dep === undefined) {
+      dep = {
+        path: node.arguments[0].value
+      };
+      dependency_list.push(dep);
     }
-    dependency_list.push(node.arguments[0].value);
+
+    if (node.arguments[1] !== undefined) {
+      if (node.arguments[1].type === 'Identifier') {
+        console.error("WARN: Variables as parameter arguments are unchecked");
+      } else if (node.arguments[1].type === 'ObjectExpression') {
+        console.error("WARN: Dependency parameters are unchecked");
+      } else {
+        throw "load_dependency parameters argument must be a dict";
+      }
+    }
   }
 }
 

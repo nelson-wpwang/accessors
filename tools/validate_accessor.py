@@ -61,8 +61,8 @@ schema = {
 	'dependencies': {
 		'type': list,
 		'subtype': dict,
-		'required_keys': ['name', 'path'],
-		'unique_keys': ['name'],
+		'required_keys': ['path',],
+		#'unique_keys': ['name'],
 		'key_types': {'name':str, 'path':str, 'parameters':(dict, str)}
 	}
 }

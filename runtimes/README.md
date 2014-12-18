@@ -150,8 +150,15 @@ port.
 - `<string> get_parameter(<string> parameter_name)`: Get the value of a
 configured parameter.
 
-- `<accessor> get_dependency(<string> dependency_name)`: Get a handle for a
-dependency of this accessor.
+- `<accessor> load_dependency(<string> path, <dict> parameters=null)`: Loads a
+  new accessor as a dependency. Dependencies are guaranteed to exist at
+  runtime.
+   - Dependencies are lazily init-ed, meaning that the dependency's `init`
+     method is not called until the first time the dependency is accessed.
+   - You may call a dependency's `init` method directly to force immediate
+     and predictable initialization.
+   - Attempts to call a dependency's `init` method after it has already been
+     initialized are (**TODO:** ignored / throw an exception).
 
 ### Sockets
 
