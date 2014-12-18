@@ -1,3 +1,16 @@
+// name: Hue Single
+// author: Brad Campbell
+// email: bradjc@umich.edu
+//
+// Hue Light Bulb
+// ==============
+//
+// This controls a single Hue bulb.
+//
+// To use, select a Bulb name by entering it in the `Bulb Name` box and
+// click update.
+//
+
 var bulb_layout;
 
 function* prefetch_bulb_layout () {
@@ -23,6 +36,9 @@ function* set_bulb_paramter (params) {
 }
 
 function* init () {
+	create_port('input', 'BulbName');
+	create_port('output', 'Bulbs');
+
 	yield* prefetch_bulb_layout();
 	var s = '';
 

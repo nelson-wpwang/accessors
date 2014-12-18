@@ -50,7 +50,7 @@ schema = {
 		'subtype': dict,
 		'required_keys': ['name'],
 		'unique_keys': ['name'],
-		'key_types': {'name':str, 'default':str, 'required':bool},
+		'key_types': {'name':str, 'required':bool},
 		'restrictions': {'name': {'invalid_chr': PARAMETERS_INVALID}}
 	},
 	'code': {

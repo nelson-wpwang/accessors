@@ -1,3 +1,13 @@
+// name: Denon AVR-1913
+// author: Brad Campbell
+// email: bradjc@umich.edu
+//
+// Denon AVR-1913 Accessor
+// =======================
+//
+// The Denon AVR-1913 is a digital receiver.
+//
+
 var receiver_url;
 
 function receiver_get_key (xml, key_name) {
@@ -6,6 +16,16 @@ function receiver_get_key (xml, key_name) {
 }
 
 function* init () {
+  create_port('output', 'Name');
+  create_port('inout', 'Input', {
+    type: 'select',
+    options: ['PC', 'Apple TV', 'Internet']
+  });
+  create_port('inout', 'AudioMode', {
+    type: 'select',
+    options: ['Multi Channel Stereo', 'Stereo']
+  });
+
   receiver_url = get_parameter('device_url') + '/goform/formMainZone_MainZoneXml.xml?_=1416011630214';
 
   /* Get the XML from the receiver via the proxy running on the webserver */

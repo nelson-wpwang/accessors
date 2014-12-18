@@ -1,3 +1,13 @@
+// name: TED Power Data
+// author: Brad Campbell
+// email: bradjc@umich.edu
+//
+// TED Power Data
+// ==============
+//
+// Retrieve data from a TED power meter through GATD.
+//
+
 var gatd_url;
 
 function* get_power () {

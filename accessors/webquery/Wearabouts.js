@@ -1,4 +1,24 @@
+/* A Wearabouts Accessor
+ *
+ *  author: Brad Campbell
+ *   email: bradjc@umich.edu
+ * website: bradcampbell.com
+ *
+ * Wearabouts Accessor
+ * ===========================
+ *
+ * Get list of people in the room.
+ */
+
 function* init () {
+	create_port('output', 'People', {
+		type: 'string',
+		description: 'The people in the room'
+	});
+	create_port('input', 'Update', {
+		type: 'button'
+	});
+
 	yield* Update();
 }
 
