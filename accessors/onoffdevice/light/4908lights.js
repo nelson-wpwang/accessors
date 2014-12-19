@@ -14,7 +14,18 @@ var acc_panel;
 var acc_hue;
 var acc_lamp;
 
+function* all (state) {
+	yield* acc_ceiling.Power(state);
+	yield* acc_panel.Power(state);
+	yield* acc_hue.Power(state);
+	yield* acc_lamp.Power(state);
+}
+
 function init () {
+	create_port('input', 'Off', {
+		type: "button"
+	});
+
 	acc_ceiling = load_dependency('/onoffdevice/light/4908ceiling', get_parameter('gatd_lights'));
 	acc_panel = load_dependency('/onoffdevice/light/4908panel', get_parameter('gatd_lights'));
 	acc_hue = load_dependency('/onoffdevice/light/hue/allbridgehues', get_parameter('hue_settings'));
@@ -22,8 +33,9 @@ function init () {
 }
 
 function* Power (state) {
-	yield* acc_ceiling.Power(state);
-	yield* acc_panel.Power(state);
-	yield* acc_hue.Power(state);
-	yield* acc_lamp.Power(state);
+	yield* all(state);
+}
+
+function* Off () {
+	yield* all(false);
 }
