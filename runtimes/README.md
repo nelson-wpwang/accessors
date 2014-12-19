@@ -194,6 +194,8 @@ runtimes.
 - _Blocking_ `<string> rt.http.readURL(<string> url)`: A convenience function for
 `GET`-ing a URL that wraps `http.request`.
 
+- _Blocking_ `<void> rt.http.post(<string> url, <string> body)`: HTTP POST.
+
 - _Blocking_ `<void> rt.http.put(<string> url, <string> body)`: HTTP PUT.
 
 ### Color Functions

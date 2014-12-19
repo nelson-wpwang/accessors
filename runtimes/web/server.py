@@ -94,6 +94,7 @@ def clean_name (s):
 	pattern = re.compile('[\W_]+')
 	out = pattern.sub('', s)
 	out += ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+	out = 'a' + out # easiest way to force accessor names to start with letter
 	return out
 
 # Recursively add names that we can use in HTML and JS for each accessor
@@ -152,13 +153,20 @@ def create_accessor_javascript (accessor,
 		function* run_accessor_fn (accessor_fn) {
 			accessor_function_start('${accessorname}');
 			try {
-				if (accessor_fn != init && !_inited) {
+				if (typeof init != 'undefined') {
+					// If there is no init function, then we were inited
+					// from the start.
+					_inited = true;
+				}
+				if (!_inited && accessor_fn != init) {
+					// If we are not inited and we are not running init,
+					// run init now.
 					yield* run_accessor_fn(init);
 				}
-				if (accessor_fn == init || _inited) {
+				if (_inited || accessor_fn == init) {
 					var subargs = Array.prototype.slice.call(arguments, 1);
 					var r = accessor_fn.apply(this, subargs);
-					if (accessor_fn == init) {
+					if (typeof init != 'undefined' && accessor_fn == init) {
 						_inited = true;
 					}
 					if (r && typeof r.next == 'function') {
@@ -188,7 +196,7 @@ def create_accessor_javascript (accessor,
 			'set': set,
 			'get_parameter': get_parameter,
 			'load_dependency': load_dependency,
-			'init': function* () { if (typeof init != 'undefined') { yield* run_accessor_fn(init) } },
+			'init': function* () { if (typeof init != 'undefined') { yield* run_accessor_fn(init) } else { _inited = true; } },
 			'fire': function* () { if (typeof fire != 'undefined') { yield* run_accessor_fn(fire) } },
 			'wrapup': function* () { if (typeof wrapup != 'undefined') { yield* run_accessor_fn(wrapup) } },
 			${functionlist}
@@ -200,7 +208,11 @@ def create_accessor_javascript (accessor,
 		get_set = string.Template('''
 		function get (field) {
 			if (!_inited) {
-				run_accessor_fn(init);
+				if (typeof init != 'undefined') {
+					yield* run_accessor_fn(init);
+				} else {
+					_inited = true;
+				}
 			}
 			if (_inited) {
 				return accessor_get('${accessorname}', field);
@@ -417,17 +429,19 @@ def proxy():
 	url = base64.b64decode(flask.request.args.get('url')).decode('ascii')
 	method = flask.request.args.get('method')
 
+	headers = {'Content-Type': flask.request.headers.get('Content-Type').split(';')[0]}
+
 	if method.lower() == 'get':
-		r = requests.get(url)
+		r = requests.get(url, headers=headers)
 		return r.text
 	elif method.lower() == 'post':
 		print('POST: {}, {}'.format(url, flask.request.data))
-		r = requests.post(url, flask.request.data)
+		r = requests.post(url, data=flask.request.data, headers=headers)
 		print(r.text)
 		return ''
 	elif method.lower() == 'put':
 		print('PUT: {}, {}'.format(url, flask.request.data))
-		r = requests.put(url, flask.request.data)
+		r = requests.put(url, data=flask.request.data, headers=headers)
 		print(r.text)
 		return ''
 

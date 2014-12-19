@@ -167,6 +167,11 @@ rt.http.request = function* request(url, method, properties, body, timeout) {
 	}
 
 	request.open(method, "/proxy?method="+method+"&url="+btoa(url));
+
+	for (key in properties) {
+		request.setRequestHeader(key, properties[key]);
+	}
+
 	request.send(body);
 
 	yield request_defer.promise;
@@ -207,6 +212,10 @@ rt.http.readURL = function* readURL(url) {
 	} else {
 		throw "readURL did not complete: " + url;
 	}
+}
+
+rt.http.post = function* post(url, body) {
+	yield* rt.http.request(url, 'POST', null, body, 0);
 }
 
 rt.http.put = function* put(url, body) {
