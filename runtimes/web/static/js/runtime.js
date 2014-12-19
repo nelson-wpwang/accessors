@@ -293,7 +293,16 @@ function getElementValueById (html, id) {
 }
 
 function getXMLValue (xml, element) {
-	var first = xml.indexOf(element);
-	var second = xml.indexOf(element, first+1);
-	return xml.substring(first+element.length+1, second-2);
+	var start = 0;
+
+	while (true) {
+		var first = xml.indexOf(element, start);
+		if (first - start < 1) return null;
+		if (xml.substring(first-1, first) == '<' && xml.substring(first+element.length, first+element.length+1) == '>') {
+			var second = xml.indexOf(element, first+1);
+			return xml.substring(first+element.length+1, second-2);
+		} else {
+			start = first+1;
+		}
+	}
 }

@@ -429,7 +429,9 @@ def proxy():
 	url = base64.b64decode(flask.request.args.get('url')).decode('ascii')
 	method = flask.request.args.get('method')
 
-	headers = {'Content-Type': flask.request.headers.get('Content-Type').split(';')[0]}
+	headers = {}
+	for h,v in flask.request.headers.items():
+		headers[h] = v
 
 	if method.lower() == 'get':
 		r = requests.get(url, headers=headers)
@@ -438,12 +440,12 @@ def proxy():
 		print('POST: {}, {}'.format(url, flask.request.data))
 		r = requests.post(url, data=flask.request.data, headers=headers)
 		print(r.text)
-		return ''
+		return r.text
 	elif method.lower() == 'put':
 		print('PUT: {}, {}'.format(url, flask.request.data))
 		r = requests.put(url, data=flask.request.data, headers=headers)
 		print(r.text)
-		return ''
+		return r.text
 
 
 
