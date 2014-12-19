@@ -153,7 +153,7 @@ def create_accessor_javascript (accessor,
 		function* run_accessor_fn (accessor_fn) {
 			accessor_function_start('${accessorname}');
 			try {
-				if (typeof init != 'undefined') {
+				if (typeof init == 'undefined') {
 					// If there is no init function, then we were inited
 					// from the start.
 					_inited = true;

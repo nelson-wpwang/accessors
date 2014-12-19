@@ -74,10 +74,31 @@
 			}
 		},
 		{
-			"path": "/onoffdevice/light/lights4908",
+			"path": "/onoffdevice/light/4908ceiling",
 			"parameters": {
 				"post_url": "http://gatd.eecs.umich.edu:8081/MUs0XwOiyp",
 				"location_str": "University of Michigan|BBB|4908"
+			}
+		},
+		{
+			"path": "/onoffdevice/light/4908panel",
+			"parameters": {
+				"post_url": "http://gatd.eecs.umich.edu:8081/MUs0XwOiyp",
+				"location_str": "University of Michigan|BBB|4908"
+			}
+		},
+		{
+			"path": "/onoffdevice/light/4908lights",
+			"parameters": {
+				"gatd_lights": {
+					"post_url": "http://gatd.eecs.umich.edu:8081/MUs0XwOiyp",
+					"location_str": "University of Michigan|BBB|4908"
+				},
+				"hue_settings": {
+					"bridge_url": "http://4908hue.eecs.umich.edu",
+					"username": "lab11in4908"
+				},
+				"acme_ip": "2607:f018:800:10f:c298:e541:4310:13"
 			}
 		}
 	]

@@ -52,7 +52,9 @@ function getRootMemberExpression(mnode) {
     return getRootMemberExpression(mnode.object);
   }
   if (mnode.object.type !== 'Identifier') {
-    throw "MemberExpression more complex that I currently handle";
+    //throw "MemberExpression more complex that I currently handle";
+    console.error("WARN: Complex MemberExpression ignored");
+    return null;
   }
   return mnode;
 }
@@ -109,7 +111,7 @@ function checkGetDependency(node) {
       } else if (node.arguments[1].type === 'ObjectExpression') {
         console.error("WARN: Dependency parameters are unchecked");
       } else {
-        throw "load_dependency parameters argument must be a dict";
+        console.warn("WARN: load_dependency parameters argument must be a dict");
       }
     }
   }
