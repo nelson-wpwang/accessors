@@ -74,6 +74,12 @@
 			}
 		},
 		{
+			"path": "/onoffdevice/acme++",
+			"parameters": {
+				"ipv6_address": "2607:f018:800:10f:c298:e541:4310:5"
+			}
+		},
+		{
 			"path": "/onoffdevice/light/4908ceiling",
 			"parameters": {
 				"post_url": "http://gatd.eecs.umich.edu:8081/MUs0XwOiyp",
