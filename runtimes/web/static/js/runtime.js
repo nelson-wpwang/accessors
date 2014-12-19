@@ -167,6 +167,7 @@ rt.http.request = function* request(url, method, properties, body, timeout) {
 	}
 
 	request.open(method, "/proxy?method="+method+"&url="+btoa(url));
+	request.timeout = timeout;
 
 	for (key in properties) {
 		request.setRequestHeader(key, properties[key]);

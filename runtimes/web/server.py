@@ -426,26 +426,37 @@ def accessor():
 # This is some nonsense to bypass the cross-origin policy nonsense
 @app.route('/proxy', methods=['POST', 'GET', 'PUT'])
 def proxy():
-	url = base64.b64decode(flask.request.args.get('url')).decode('ascii')
-	method = flask.request.args.get('method')
+	try:
+		url = base64.b64decode(flask.request.args.get('url')).decode('ascii')
+		method = flask.request.args.get('method')
 
-	headers = {}
-	for h,v in flask.request.headers.items():
-		headers[h] = v
+		headers = {}
+		for h,v in flask.request.headers.items():
+			headers[h] = v
 
-	if method.lower() == 'get':
-		r = requests.get(url, headers=headers)
-		return r.text
-	elif method.lower() == 'post':
-		print('POST: {}, {}'.format(url, flask.request.data))
-		r = requests.post(url, data=flask.request.data, headers=headers)
-		print(r.text)
-		return r.text
-	elif method.lower() == 'put':
-		print('PUT: {}, {}'.format(url, flask.request.data))
-		r = requests.put(url, data=flask.request.data, headers=headers)
-		print(r.text)
-		return r.text
+		if method.lower() == 'get':
+			r = requests.get(url, headers=headers, timeout=0.250)
+			print(r)
+			return r.text
+		elif method.lower() == 'post':
+			print('POST: {}, {}'.format(url, flask.request.data))
+			r = requests.post(url, data=flask.request.data, headers=headers)
+			print(r.text)
+			return r.text
+		elif method.lower() == 'put':
+			print('PUT: {}, {}'.format(url, flask.request.data))
+			r = requests.put(url, data=flask.request.data, headers=headers)
+			print(r.text)
+			return r.text
+
+	except requests.exceptions.Timeout :
+		flask.abort(408)
+
+	except requests.exceptions.ConnectionError:
+		flask.abort(503)
+
+	except Exception:
+		flask.abort(500)
 
 
 

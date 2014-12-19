@@ -104,7 +104,7 @@
 		{
 			"path": "/onoffdevice/wemo",
 			"parameters": {
-				"wemo_url": "http://4908wemo3.eecs.umich.edu:49153"
+				"wemo_url": "http://4908wemo3.eecs.umich.edu"
 			}
 		}
 	]
