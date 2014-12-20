@@ -25,7 +25,7 @@ var get_body = '<?xml version="1.0" encoding="utf-8"?>\
 </s:Envelope>';
 
 var url;
-var port = 49152;
+var port = null;
 
 function* find_wemo_port () {
 	// WeMo ports like to change
@@ -35,10 +35,11 @@ function* find_wemo_port () {
 		try {
 			var content = yield* rt.http.request(url+':'+(start_port+i)+'/setup.xml', 'GET', null, '', 300);
 			port = start_port + i;
-			break;
+			return;
 		} catch (err) {
 		}
 	}
+	error('Could not connect to the WeMo. Perhaps it\'s not online?');
 }
 
 function* get_power_state () {
@@ -67,10 +68,12 @@ function* init () {
 	url = get_parameter('wemo_url');
 
 	yield* find_wemo_port();
-
 	yield* get_power_state();
 }
 
 function* Power (state) {
+	if (port == null) {
+		error('WeMo not found. Can not control the relay.');
+	}
 	yield* set_power_state(state);
 }

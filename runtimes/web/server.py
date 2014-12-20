@@ -150,6 +150,10 @@ def create_accessor_javascript (accessor,
 			}
 		}
 
+		function error (error_msg) {
+			throw new Error(error_msg);
+		}
+
 		function* run_accessor_fn (accessor_fn) {
 			accessor_function_start('${accessorname}');
 			try {
@@ -176,7 +180,7 @@ def create_accessor_javascript (accessor,
 			} catch(err) {
 				accessor_function_stop('${accessorname}');
 				console.log(err);
-				throw err;
+				${error_handle}
 			} finally {
 				accessor_function_stop('${accessorname}');
 			}
@@ -226,6 +230,8 @@ def create_accessor_javascript (accessor,
 		}
 		''').substitute(accessorname=chained_name)
 
+		error_handle = 'accessor_exception("{}", err);'.format(chained_name)
+
 	else:
 		get_set = '''
 		var _ports = Object();
@@ -245,6 +251,8 @@ def create_accessor_javascript (accessor,
 			_ports[field] = value;
 		}
 		'''
+
+		error_handle = 'throw err;'
 
 	# Each port can have a function, make them public here.
 	function_list = ''
@@ -271,8 +279,6 @@ def create_accessor_javascript (accessor,
 	accessor_variable = ''
 	if toplevel:
 		accessor_variable = 'var {} = '.format(accessor['clean_name'])
-	#else:
-	#	accessor_variable = '_dependencies["{}"]'
 
 	js = js_module_wrapping.substitute(accessorname=chained_name,
 	                                   accessorvariable=accessor_variable,
@@ -280,7 +286,8 @@ def create_accessor_javascript (accessor,
 	                                   dependencies=dependency_code,
 	                                   functionlist=function_list,
 	                                   parameters=json.dumps(parameter_obj),
-	                                   get_set=get_set)
+	                                   get_set=get_set,
+	                                   error_handle=error_handle)
 	return rjsmin.jsmin(js)
 
 
@@ -428,6 +435,7 @@ def accessor():
 def proxy():
 	try:
 		url = base64.b64decode(flask.request.args.get('url')).decode('ascii')
+		print('Proxying for: {}'.format(url))
 		method = flask.request.args.get('method')
 
 		headers = {}
@@ -449,7 +457,7 @@ def proxy():
 			print(r.text)
 			return r.text
 
-	except requests.exceptions.Timeout :
+	except requests.exceptions.Timeout:
 		flask.abort(408)
 
 	except requests.exceptions.ConnectionError:

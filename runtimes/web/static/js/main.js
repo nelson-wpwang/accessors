@@ -5,6 +5,16 @@ function alert_error (error_str) {
 	$('#alerts').html(html);
 }
 
+function accessor_alert_error (accessorname, error_str) {
+	html = '<div class="alert alert-danger" role="alert">'+error_str+'</div>';
+	$('#accessor-'+accessorname+'-alerts').empty();
+	$('#accessor-'+accessorname+'-alerts').html(html);
+}
+
+function accessor_alert_clear (accessorname) {
+	$('#accessor-'+accessorname+'-alerts').empty();
+}
+
 function format_currency_usd (price) {
 	p = price.toFixed(2);
 
@@ -88,9 +98,14 @@ function accessor_set (accessorname, field, value) {
 };
 
 function accessor_function_start (name) {
+	accessor_alert_clear(name);
 	$('#accessor-'+name+' .spinner').show();
 }
 
 function accessor_function_stop (name) {
 	$('#accessor-'+name+' .spinner').hide();
+}
+
+function accessor_exception (accessorname, err) {
+	accessor_alert_error(accessorname, err.message);
 }

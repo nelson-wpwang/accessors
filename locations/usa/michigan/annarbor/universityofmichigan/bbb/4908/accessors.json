@@ -112,6 +112,12 @@
 			"parameters": {
 				"wemo_url": "http://4908wemo3.eecs.umich.edu"
 			}
+		},
+		{
+			"path": "/onoffdevice/wemo",
+			"parameters": {
+				"wemo_url": "http://4908wemo1.eecs.umich.edu"
+			}
 		}
 	]
 }
