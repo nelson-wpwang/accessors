@@ -178,11 +178,23 @@ class ServeAccessor (tornado.web.RequestHandler):
 
 	def get (self):
 		print("get accessor {}".format(self))
-		# Create a local copy of the accessor to serve so we can configure it
-		accessor = copy.deepcopy(self.accessor)
 
 		# Look for any parameters that change how we will respond
 		language = self.get_argument('language', 'es6')
+
+		# Handle any lazy alternate creation before creating a copy
+		def create_traceur_alternate (accessor):
+			accessor['code_alternates']['traceur'] =\
+				javascript_to_traceur(accessor['code_alternates']['javascript'])
+			for dep in accessor['dependencies']:
+				create_traceur_alternate(dep)
+
+		if language == 'traceur':
+			if 'traceur' not in self.accessor['code_alternates']:
+				create_traceur_alternate(self.accessor)
+
+		# Create a local copy of the accessor to serve so we can configure it
+		accessor = copy.deepcopy(self.accessor)
 
 		def set_dependency_js (accessor, language):
 			for dep in accessor['dependencies']:
@@ -296,6 +308,21 @@ class ServeAccessorXML (ServeAccessor):
 ### Functions that find and generate full accessors
 ###
 
+def javascript_to_traceur(javascript):
+	sh.rm('-f', '_temp1.js')
+	sh.rm('-f', '_temp2.js')
+	try:
+		open('_temp1.js', 'w').write(javascript)
+		traceur('--out', '_temp2.js', '--script', '_temp1.js')
+		try:
+			code = open('_temp2.js').read()
+		finally:
+			sh.rm('-f', "_temp2.js")
+	finally:
+		sh.rm('-f', '_temp1.js')
+
+	return code
+
 def create_accessor (structure, accessor, path):
 	err = validate_accessor.check(accessor)
 	if err:
@@ -320,24 +347,13 @@ def create_accessor (structure, accessor, path):
 		for language,v in accessor['code'].items():
 			code = ''
 			if 'include' in v:
-				for include in v['include']:
-					code += open(os.path.join(path, include)).read()
+				raise NotImplementedError("The 'include' option has been removed")
 			if 'code' in v:
 				code += v['code']
 			accessor['code_alternates'][language] = code
 
-			if language == 'javascript':
-				sh.rm('-f', '_temp1.js')
-				sh.rm('-f', '_temp2.js')
-				try:
-					open('_temp1.js', 'w').write(code)
-					traceur('--out', '_temp2.js', '--script', '_temp1.js')
-					try:
-						accessor['code_alternates']['traceur'] = open('_temp2.js').read()
-					finally:
-						rm("_temp2.js")
-				finally:
-					rm('_temp1.js')
+			if language != 'javascript':
+				raise NotImplementedError("Accessor code must be javascript")
 		del accessor['code']
 
 	# Create the URL based on the hierarchy
