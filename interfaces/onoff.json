@@ -1,7 +1,8 @@
-[
-	{
-      "direction": "inout",
-      "name":      "Power",
-      "type":      "bool"
+{
+    "ports": {
+        "Power": {
+            "direction": "inout",
+            "type":      "bool"
+        }
     }
-]
+}

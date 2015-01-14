@@ -34,24 +34,28 @@ function* set_bulb_paramter (params) {
 }
 
 function* init () {
-	use_interface('lighting/light');
-	use_interface('lighting/hue');
+	provide_interface('/lighting/light', {
+			'lighting.light.Power': power,
+			});
+	provide_interface('/lighting/hue', {
+			'lighting.rgb.color': color,
+			'lighting.brightness.Brightness': brightness,
+			});
 
 	yield* prefetch_bulb_layout();
 }
 
-function* lighting.light.Power (on) {
+function* power (on) {
 	yield* set_bulb_paramter({'on': on});
 }
 
-function* lighting.rgb.Color (hex_color) {
+function* color (hex_color) {
 	hsv = rt.color.hex_to_hsv(hex_color);
 	params = {'hue': Math.round(hsv.h*182.04),
 	          'sat': Math.round(hsv.s*255),
 	          'bri': Math.round(hsv.v*255)}
 	yield* set_bulb_paramter(params);
 }
-
-function* lighting.brightness.Brightness (brightness) {
+function* brightness (brightness) {
 	yield* set_bulb_paramter({'bri': parseInt(brightness)});
 }

@@ -2,6 +2,7 @@
 
 import logging
 log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 import argparse
 import pprint
@@ -35,7 +36,20 @@ except ImportError:
 	print("(this isn't a python package)")
 	sys.exit(1)
 
-parse_js = sh.Command('./validate.js')
+# n.b. newer sh will support this directly when released
+class pushd(object):
+	def __init__(self, path):
+		self.path = path
+
+	def __enter__(self):
+		self.cwd = os.getcwd()
+		os.chdir(self.path)
+
+	def __exit__(self, exception_type, exception_val, trace):
+		os.chdir(self.cwd)
+
+
+parse_js = sh.Command(os.path.abspath('./validate.js'))
 
 traceur = os.path.join(
 	os.getcwd(),
@@ -61,115 +75,11 @@ def _serialize_xml(write, elem, *args, **kwargs):
 	return ET._original_serialize_xml(write, elem, *args, **kwargs)
 ET._serialize_xml = ET._serialize['xml'] = _serialize_xml
 
-# These classes are used when building the tree of accessors based on their
-# path. They are only used when the server is started or an accessor changes and
-# not during the normal operation of the accessor host server. Their purpose
-# is to aid in getting inherited ports setup correctly.
-class accessor_tree_node ():
-	def __init__ (self, name, accessor):
-		self.name = name
-		self.accessor = accessor
-		self.children = []
-
-	def add_child (self, child):
-		self.children.append(child)
-
-	def __str__ (self):
-		return self.to_string(0)
-
-	def to_string (self, indent):
-		s =  '{indent}ATN: {name}\n'.format(indent=' '*indent, name=self.name)
-		s += '{indent}Children:\n'.format(indent=' '*indent)
-		for c in self.children:
-			s += c.to_string(indent+2)
-		return s
-
-class accessor_tree_leaf ():
-	def __init__ (self, name, accessor, path):
-		self.name = name
-		self.accessor = accessor
-		self.path = path
-
-	def to_string (self, indent):
-		s =  '{indent}ATL: {name}\n'.format(indent=' '*indent, name=self.name)
-		return s
-
-# These objects form the tree of accessor dependencies. Again they are used
-# at initialization or when an accessor changes. Their purpose is to make sure
-# that accessors include their dependencies correctly.
-class accessor_dep_tree_node ():
-	def __init__ (self, accessor):
-		self.accessor = accessor
-		self.children = []
-
-	def add_child (self, child):
-		self.children.append(child)
-
-accessor_path_to_dep_tree = {}
 
 
 ###
 ### Classes for the webserver
 ###
-
-# Avoid this Cross-Origin nonsense
-class ServerAccessorList (tornado.web.StaticFileHandler):
-	def set_default_headers(self):
-		self.set_header("Access-Control-Allow-Origin", "*")
-
-	def validate_absolute_path(self, root, absolute_path):
-		if absolute_path[-3:] == 'xml':
-			super().validate_absolute_path(root, absolute_path[:-3]+'json')
-			return absolute_path
-		return super().validate_absolute_path(root, absolute_path)
-
-	def get_modified_time(self):
-		if self.absolute_path[-3:] == 'xml':
-			t = self.absolute_path
-			self.absolute_path = self.absolute_path[:-3]+'json'
-			ret = super().get_modified_time()
-			self.absolute_path = t
-			return ret
-		return super().get_modified_time()
-
-	def get_content_size(self):
-		if self.absolute_path[-3:] == 'xml':
-			return len(self.json_to_xml(self.absolute_path))
-		return super().get_content_size()
-
-	# http://tornado.readthedocs.org/en/latest/_modules/tornado/web.html#StaticFileHandler.get_content
-	@classmethod
-	def get_content(cls, abspath, start=None, end=None):
-		name, ext = os.path.splitext(abspath)
-		if ext == '.json':
-			return super().get_content(abspath, start, end)
-
-		if (start is not None) or (end is not None):
-			raise NotImplementedError("Seek for Accessor List XML")
-
-		return cls.json_to_xml(abspath)
-
-	@classmethod
-	def json_to_xml(cls, jsonpath):
-		with open(jsonpath[:-3] + 'json') as f:
-			j = json.loads(f.read())
-
-			# some basic checks on the format
-			assert 'accessors' in j
-			assert len(j.keys()) == 1
-
-			root = ET.Element('accessors')
-			for accessor in j['accessors']:
-				child = ET.Element("accessor", attrib={'path': accessor['path']})
-
-				if 'parameters' in accessor:
-					for name,value in accessor['parameters'].items():
-						ET.SubElement(child, 'parameter', attrib={'name':name, 'value': value})
-
-				root.append(child)
-
-			return ET.tostring(root)
-
 
 # Base class for serving accessors.
 class ServeAccessor (tornado.web.RequestHandler):
@@ -304,6 +214,58 @@ class ServeAccessorXML (ServeAccessor):
 ''' + s
 		return s
 
+
+###
+### Functions that find and understand interfaces
+###
+
+interface_tree = {}
+
+class Interface():
+	def __init__(self, path, loop=[]):
+		try:
+			if path[-5:] != '.json':
+				log.warn("Non-json file in interface tree: %s -- Skipped", path)
+				log.warn("Do something better")
+				return
+
+			log.debug("New Interface: %s", path)
+			self.path = '.' + path
+			self.raw = open(self.path).read()
+			self.json = json.loads(self.raw)
+
+			self.extends = []
+			if 'extends' in self.json:
+				if type(self.json['extends']) == type(''):
+					self.json['extends'] = [self.json['extends'],]
+				for dep in self.json['extends']:
+					dep += '.json'
+					if dep not in interface_tree:
+						log.debug("Interface %s requried advance loading of extends %s", self.path, dep)
+						if dep in loop:
+							log.critical("Recursive extends directives. %s", loop)
+							raise RuntimeError
+						else:
+							loop.append(dep)
+						interface_tree[dep] = Interface(dep, loop)
+					self.extends.append(interface_tree[dep])
+
+		except:
+			log.exception("Uncaught exception generating %s", path)
+			raise
+
+def load_interface_tree(root_path, prefix=None):
+	with pushd(root_path):
+		for root, dirs, files in os.walk('.'):
+			root = root[1:] # strip leading '.'
+			if root == '':  # imho python does this wrong; should be ./ already
+				root = '/'
+
+			assert root not in interface_tree
+
+			for path in map(lambda x: os.path.join(root, x), files):
+				interface_tree[path] = Interface(path)
+
 ###
 ### Functions that find and generate full accessors
 ###
@@ -323,43 +285,13 @@ def javascript_to_traceur(javascript):
 
 	return code
 
-def create_accessor (structure, accessor, path):
-	err = validate_accessor.check(accessor)
-	if err:
-		print('ERROR: Invalid accessor format.')
-		accessor['valid'] = False
-		return
 
-	# Make sure that we have at least empty fields for all of the various
-	# keys in the accessor. This simplifies logic down the line.
-	if 'ports' not in accessor:
-		accessor['ports'] = []
-	if 'parameters' not in accessor:
-		accessor['parameters'] = []
-	if 'code' not in accessor:
-		accessor['code'] = {}
-	if 'dependencies' not in accessor:
-		accessor['dependencies'] = []
-
-	# Handle any code include directives
-	if 'code' in accessor:
-		accessor['code_alternates'] = {}
-		for language,v in accessor['code'].items():
-			code = ''
-			if 'include' in v:
-				raise NotImplementedError("The 'include' option has been removed")
-			if 'code' in v:
-				code += v['code']
-			accessor['code_alternates'][language] = code
-
-			if language != 'javascript':
-				raise NotImplementedError("Accessor code must be javascript")
-		del accessor['code']
-
+def create_servable_objects_from_accessor (accessor, path):
 	# Create the URL based on the hierarchy
-	name = ''.join(structure)
-	json_path = '/accessor/{}.json'.format('/'.join(structure[1:]))
-	xml_path = '/accessor/{}.xml'.format('/'.join(structure[1:]))
+	path = path[:-3]
+	name = path.replace('/', '_')
+	json_path = '/accessor{}.json'.format(path)
+	xml_path = '/accessor{}.xml'.format(path)
 
 	# Create a class for the tornado webserver to use when the accessor
 	# is requested
@@ -371,152 +303,19 @@ def create_accessor (structure, accessor, path):
 		'accessor': accessor
 	})
 
-	if json_path in accessors_by_path:
-		accessors_by_path[json_path].accessor = accessor
-		print('Updating accessor {}'.format(json_path))
-		print('Updating accessor {}'.format(xml_path))
-
-	else:
-		# Add the accessor to the list of valid accessors to request
-		json_path = re.escape(json_path)
-		xml_path = re.escape(xml_path)
-		server_path_tuples.append((json_path, json_serve_class))
-		server_path_tuples.append((xml_path, xml_serve_class))
-		accessors_by_path[json_path] = json_serve_class
-		print('Adding accessor {}'.format(json_path))
-		print('Adding accessor {}'.format(xml_path))
+	# Add the accessor to the list of valid accessors to request
+	json_path = re.escape(json_path)
+	xml_path = re.escape(xml_path)
+	server_path_tuples.append((json_path, json_serve_class))
+	server_path_tuples.append((xml_path, xml_serve_class))
+	accessors_by_path[json_path] = json_serve_class
+	print('Adding accessor {}'.format(json_path))
+	print('Adding accessor {}'.format(xml_path))
 
 
+accessor_tree = {}
 
-# Build accessors going down the tree
-def create_accessors_recurse (accessor_tree, current_accessor, structure):
-	structure.append(accessor_tree.name)
-
-	# accessor_tree.accessor is the current accessor we are pointing to.
-	#                        This is the furthest down the chain so far.
-	# current_accessor       is the accessor we have been building so far
-
-	if current_accessor == None:
-		current_accessor = accessor_tree.accessor
-	else:
-		# Take what we want from current_accessor
-		if 'ports' in current_accessor:
-			if 'ports' in accessor_tree.accessor:
-				accessor_tree.accessor['ports'] = \
-					copy.deepcopy(current_accessor['ports']) + \
-					accessor_tree.accessor['ports']
-			else:
-				accessor_tree.accessor['ports'] = \
-					copy.deepcopy(current_accessor['ports'])
-
-	if type(accessor_tree) == accessor_tree_leaf:
-		# This is an accessor we can actually serve
-		create_accessor(structure, accessor_tree.accessor, accessor_tree.path)
-
-	else:
-		# recurse!
-		for atn in accessor_tree.children:
-			create_accessors_recurse(atn, accessor_tree.accessor, copy.deepcopy(structure))
-
-# Loads all dependencies and recurses in the case of nested dependencies
-def create_accessors_dependencies_recurse (accessor, parameters, children):
-
-	if 'dependencies' in accessor:
-		for i,dep in enumerate(accessor['dependencies']):
-
-			# Substitute in the given values of the parameters if they exist.
-			if 'parameters' in dep:
-				dep_accessor = children[i].accessor
-				dep['parameters'].update(parameters)
-				for parameter in dep_accessor['parameters']:
-					if parameter['name'] in dep['parameters']:
-						parameter['value'] = dep['parameters'][parameter['name']]
-						del dep['parameters'][parameter['name']]
-
-			# There may be some leftover parameters for further sub dependencies
-			parameters_passdown = {}
-			if 'parameters' in dep:
-				for pname,pvalue in dep['parameters'].items():
-					if '.' in pname:
-						parameters_passdown['.'.join(pname.split('.')[1:])] = pvalue
-
-			# Insert all of the fields of the accessor into the parent accessor
-			# to form the full accessor with dependencies
-			dep.update(children[i].accessor)
-
-			# Recurse to fill in sub-accessors
-			create_accessors_dependencies_recurse(dep,
-			                                      parameters_passdown,
-			                                      children[i].children)
-
-
-# Instantiate the dependency tree.
-# The key here is to deep copy everything when making the tree. Rather than
-# having a messy graph this gives us a nice directed acyclic graph that will
-# make things work with preset parameters.
-def create_dependency_tree_recurse (accessor_dep_tree_node):
-	if 'dependencies' in accessor_dep_tree_node.accessor:
-		for dep in accessor_dep_tree_node.accessor['dependencies']:
-			if dep['path'] not in accessor_path_to_dep_tree:
-				print('ERROR: dependency {} not found for accessor {}'\
-					.format(dep['path'], accessor_dep_tree_node.accessor['name']))
-				continue
-
-			sub_node = copy.deepcopy(accessor_path_to_dep_tree[dep['path']])
-			accessor_dep_tree_node.add_child(sub_node)
-
-			create_dependency_tree_recurse(sub_node)
-
-def create_accessors (accessor_tree):
-	# This does the first pass on making complete accessors by resolving ports
-	# and updating the code sections
-	create_accessors_recurse(accessor_tree, None, [])
-
-	# Next up: create the dependency tree
-	for path,dep_tree_node in accessor_path_to_dep_tree.items():
-		if not dep_tree_node.accessor.get('valid', True):
-			continue
-		create_dependency_tree_recurse(dep_tree_node)
-
-	# After we have the tree, build complete accessors based on all of their
-	# dependencies.
-	for path,dep_tree_node in accessor_path_to_dep_tree.items():
-		if not dep_tree_node.accessor.get('valid', True):
-			continue
-	#for path,accessor_obj in accessors_by_path.items():
-		create_accessors_dependencies_recurse(dep_tree_node.accessor, {}, dep_tree_node.children)
-
-
-def find_accessors (path, tree_node):
-
-	# Get the name of the folder we are currently in
-	folder = os.path.basename(os.path.normpath(path))
-	atn = None
-
-	if folder == 'tests' and not args.tests:
-		return
-
-	# See if there is a .json file in this folder with the same
-	# name as the folder. If so, this is the interface file
-	interface_path = os.path.join(path, folder) + '.json'
-	if os.path.isfile(interface_path):
-		with open(interface_path) as f:
-			try:
-				j = json.load(f, strict=False)
-			except ValueError as e:
-				print('ERROR: loading interface json: {}'.format(interface_path))
-				print(e)
-				sys.exit(1)
-			atn = accessor_tree_node(folder, j)
-			# sub_structure += [folder]
-			# if 'ports' in j:
-			# 	sub_ports += j['ports']
-	else:
-		atn = accessor_tree_node(folder, None)
-
-
-	if tree_node:
-		tree_node.add_child(atn)
+def find_accessors (accessor_path, tree_node):
 
 	def parse_error(msg, path, line_no=None, line=None):
 		log.error(msg)
@@ -528,20 +327,26 @@ def find_accessors (path, tree_node):
 			log.error("Found parsing %s")
 		sys.exit(1)
 
-	# Look for any other .json files. These are accessors
-	contents = os.listdir(path)
-	for item in contents:
-		item_path = os.path.join(path, item)
-		# Do only .json files on the first pass
-		if os.path.isfile(item_path):
-			filename, ext = os.path.splitext(os.path.basename(item_path))
-			if ext == '.json' and filename != folder:
-				log.warn("Skipping old-style accessor: %s", item_path)
-			elif ext == '.json':
-				continue
-			elif ext == '.js':
-				if os.path.isfile(item_path[:-3] + '.json'):
+	with pushd(accessor_path):
+		for root, dirs, files in os.walk('.'):
+			root = root[1:] # strip leading '.'
+			if root == '':  # imho python does this wrong; should be ./ already
+				root = '/'
+
+			for item_path in files:
+				if item_path[:6] == 'README':
+					log.debug("Ignoring %s", item_path)
 					continue
+
+				filename, ext = os.path.splitext(os.path.basename(item_path))
+				if ext != '.js':
+					log.warn("Non-.js in accessors: %s -- SKIPPED", item_path)
+					continue
+
+				path = os.path.join(root, item_path)
+
+				log.debug("NEW ACCESSOR: %s", path)
+
 				name = None
 				author = None
 				email = None
@@ -550,7 +355,7 @@ def find_accessors (path, tree_node):
 
 				line_no = 0
 				in_comment = False
-				with open(item_path) as f:
+				with open("." + path) as f:
 					while True:
 						line = f.readline().strip()
 						line_no += 1
@@ -578,13 +383,13 @@ def find_accessors (path, tree_node):
 						if '*/' in line:
 							if line[-2:] != '*/':
 								parse_error("Comment terminator `*/` must end line",
-										item_path, line_no, line)
+										path, line_no, line)
 							in_comment = False
 							continue
 						if in_comment:
 							if line[0:2] != '* ':
 								parse_error("Comment block lines must begin ' * '",
-										item_path, line_no, line)
+										path, line_no, line)
 							line = line[2:]
 
 						if line.strip()[:8] == 'author: ':
@@ -606,9 +411,9 @@ def find_accessors (path, tree_node):
 							pass
 
 				if not author:
-					parse_error("Missing required key: author", item_path)
+					parse_error("Missing required key: author", path)
 				if not email:
-					parse_error("Missing required key: email", item_path)
+					parse_error("Missing required key: email", path)
 
 				meta = {
 						'name': name if name else filename,
@@ -625,41 +430,62 @@ def find_accessors (path, tree_node):
 				if description:
 					meta['description'] = description
 
-				analyzed = parse_js(item_path)
+				try:
+					analyzed = parse_js("." + path)
+				except sh.ErrorReturnCode as e:
+					log.debug('-'*50)
+					print(e.stderr.decode("unicode_escape"))
+					raise
 				analyzed = json.loads(analyzed.stdout.decode('utf-8'))
 
 				meta.update(analyzed)
 
 				meta['code'] = {
 						'javascript': {
-							'code' : open(item_path).read()
+							'code' : open("."+path).read()
 							}
 						}
 
-				#if meta['name'] == 'Hue Single':
-				#	pprint.pprint(meta)
+				if meta['name'] == 'Hue Single':
+					pprint.pprint(meta)
 
-				atl = accessor_tree_leaf(filename, meta, path)
-				atn.add_child(atl)
+				# Now we make it a proper accessor
+				accessor = meta
+				err = validate_accessor.check(accessor)
+				if err:
+					print('ERROR: Invalid accessor format.')
+					accessor['valid'] = False
+					return
 
-				# We make the node now with the current accessor. This pointer
-				# will get updated later with the fully expanded ports.
-				adtn = accessor_dep_tree_node(meta)
-				accessor_path = os.path.join(path, filename)
-				# TODO: make this not a hack
-				accessor_path = accessor_path[len(args.accessor_path)-1:]
-				accessor_path_to_dep_tree[accessor_path] = adtn
-			else:
-				log.warn("Unknown extension: %s", ext)
+				# Make sure that we have at least empty fields for all of the various
+				# keys in the accessor. This simplifies logic down the line.
+				if 'ports' not in accessor:
+					accessor['ports'] = []
+				if 'parameters' not in accessor:
+					accessor['parameters'] = []
+				if 'code' not in accessor:
+					accessor['code'] = {}
+				if 'dependencies' not in accessor:
+					accessor['dependencies'] = []
 
+				if 'code' in accessor:
+					accessor['code_alternates'] = {}
+					for language,v in accessor['code'].items():
+						code = ''
+						if 'include' in v:
+							raise NotImplementedError("The 'include' option has been removed")
+						if 'code' in v:
+							code += v['code']
+						accessor['code_alternates'][language] = code
 
-	# Do the directories
-	for item in contents:
-		item_path = os.path.join(path, item)
-		if os.path.isdir(item_path):
-			find_accessors(item_path, atn)
+						if language != 'javascript':
+							raise NotImplementedError("Accessor code must be javascript")
+					del accessor['code']
 
-	return atn
+				assert path not in accessor_tree
+				accessor_tree[path] = accessor
+
+				create_servable_objects_from_accessor(accessor, path)
 
 
 
@@ -670,37 +496,48 @@ Run an accessor hosting server.
 
 parser = argparse.ArgumentParser(description=DESC)
 parser.add_argument('-p', '--accessor_path',
-                    required=True,
+                    default='../accessors',
                     help='The root of the tree that holds the accessors.')
-parser.add_argument('-l', '--location_path',
-                    required=True,
-                    help='The root of the location tree.')
+parser.add_argument('-i', '--interfaces_path',
+                    default='../interfaces',
+                    help='The root of the tree that holds the accessors.')
 parser.add_argument('-t', '--tests', action='store_true',
                     help='Include test accessors')
 args = parser.parse_args()
 
+# Validate the accessor paths exist
+args.accessor_path = os.path.abspath(args.accessor_path)
+if not os.path.exists(args.accessor_path):
+	raise IOError("Accessor Path ({}) does not exist".format(args.accessor_path))
+args.interfaces_path = os.path.abspath(args.interfaces_path)
+if not os.path.exists(args.interfaces_path):
+	raise IOError("Interfaces Path ({}) does not exist".format(args.interfaces_path))
+
+# Parse the interface heirarchy
+load_interface_tree(args.interfaces_path)
+
 # Initialize the accessors
-root = find_accessors(args.accessor_path, None)
-create_accessors(root)
+find_accessors(args.accessor_path, None)
 
-# Start a monitor to watch for any changes to accessors
-class AccessorChangeHandler (watchdog.events.FileSystemEventHandler):
-	def on_any_event (self, event):
-		if str(event.src_path[-1]) == '~' or str(event.src_path[-4:-1]) == '.sw':
-			# Ignore temporary files
-			return
-		print('\n\n' + '='*80)
-		root = find_accessors(args.accessor_path, None)
-		create_accessors(root)
+#pprint.pprint(accessor_tree, depth=2)
 
-observer = watchdog.observers.Observer()
-observer.schedule(AccessorChangeHandler(), path=args.accessor_path, recursive=True)
-observer.start()
+# # Start a monitor to watch for any changes to accessors
+# class AccessorChangeHandler (watchdog.events.FileSystemEventHandler):
+# 	def on_any_event (self, event):
+# 		if str(event.src_path[-1]) == '~' or str(event.src_path[-4:-1]) == '.sw':
+# 			# Ignore temporary files
+# 			return
+# 		print('\n\n' + '='*80)
+# 		root = find_accessors(args.accessor_path, None)
+# 		create_accessors(root)
+# 
+# observer = watchdog.observers.Observer()
+# observer.schedule(AccessorChangeHandler(), path=args.accessor_path, recursive=True)
+# observer.start()
 
 # Start the webserver for accessors
 accessor_server = tornado.web.Application(
-	server_path_tuples +
-	[(r'/accessors/(.*)', ServerAccessorList, {'path': args.location_path})],
+	server_path_tuples,
 	static_path="static/",
 	debug=True
 	)
