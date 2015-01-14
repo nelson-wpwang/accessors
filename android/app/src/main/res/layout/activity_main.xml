@@ -1,0 +1,56 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:id="@+id/LinearLayout2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#222"
+                android:orientation="vertical"
+                tools:context=".MainActivity">
+
+
+    <RelativeLayout
+            android:layout_width="fill_parent"
+            android:layout_height="25dp"
+            android:layout_alignParentTop="true">
+    </RelativeLayout>
+    <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent" android:weightSum="1">
+        <RelativeLayout
+                android:layout_width="fill_parent"
+                android:layout_height="108dp">
+            <ImageView
+                    android:layout_width="100dp"
+                    android:layout_height="70dp"
+                    android:id="@+id/imageView" android:background="@drawable/lab11_1000px" android:layout_row="6"
+                    android:layout_column="11"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_centerHorizontal="true" android:layout_alignParentBottom="true"/>
+        </RelativeLayout>
+        <RelativeLayout
+                android:layout_width="fill_parent"
+                android:layout_height="372dp">
+            <com.larswerkman.holocolorpicker.ColorPicker
+                android:id="@+id/colorPicker"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true" android:layout_centerHorizontal="true"/>
+        </RelativeLayout>
+        <Button
+                android:id="@+id/setColorBTN"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Update Color"
+                android:layout_gravity="center_horizontal"
+                android:layout_centerHorizontal="true"
+                android:layout_alignBottom="@+id/colorPicker"/>
+    </LinearLayout>
+
+
+</RelativeLayout>
+
+
+
+
+
