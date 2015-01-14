@@ -11,9 +11,8 @@
         <legend>Controls</legend>
 
         {% for port in accessor.ports %}
-        {% set fieldname = 'port-' ~ accessor.clean_name ~ port.name %}
         <div class="form-group">
-          <label for="{{ fieldname }}" class="col-sm-2 control-label">{{ port.display_name }}</label>
+          <label for="{{ port.name }}" class="col-sm-2 control-label">{{ port.display_name }}</label>
 
           {% if port.direction == "output" %}
           <div class="col-sm-10">

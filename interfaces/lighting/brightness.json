@@ -1,10 +1,12 @@
-[
-    {
-        "direction": "inout",
-        "type": "integer",
-        "name": "Brightness",
-        "min": 0,
-        "max": 255
+{
+    "ports": [
+	    {
+	        "direction": "inout",
+	        "type": "integer",
+	        "name": "Brightness",
+	        "min": 0,
+	        "max": 255
 
-    }
-]
+	    }
+	]
+}

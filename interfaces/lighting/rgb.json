@@ -1,7 +1,9 @@
-[
-    {
-        "direction": "inout",
-        "type": "color",
-        "name": "Color"
-    }
-]
+{
+    "ports": [
+        {
+            "direction": "inout",
+            "type": "color",
+            "name": "Color"
+        }
+    ]
+}

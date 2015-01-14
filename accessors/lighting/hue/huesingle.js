@@ -35,8 +35,7 @@ function* set_bulb_paramter (params) {
 
 function* init () {
 	use_interface('lighting/light');
-	use_interface('lighting/rgb');
-	use_interface('lighting/brightness');
+	use_interface('lighting/hue');
 
 	yield* prefetch_bulb_layout();
 }
