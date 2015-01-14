@@ -34,7 +34,7 @@ $("#accessor-select").change(function () {
 		// Activate all sliders
 		$('#accessor-'+accessor.uuid+' .slider').each(function () {
 			$(this).slider().on('slideStop', function (slide_event) {
-				post_accessor($(this), slide_event.value);
+				post_accessor(accessor.uuid, $(this).attr('data-port'), slide_event.value);
 			});
 		});
 
@@ -44,39 +44,38 @@ $("#accessor-select").change(function () {
 			layout: 'hex',
 			submit: 0,
 			onChange: function (hsb, hex, rgb, el, bySetColor) {
-				post_accessor($(this), hex);
+				post_accessor(accessor.uuid, $(this).attr('data-port'), hex);
 			}
 		});
 
 		// Setup callbacks for buttons and check boxes
 		$('#accessor-'+accessor.uuid).on('click', '.accessor-arbitrary-input-button', function () {
-			var accessor_port = $(this).attr('data-port');
-			post_accessor($(this), $('#'+accessor_port).val());
+			var port = $(this).siblings('.port');
+			post_accessor(accessor.uuid, port.attr('data-port'), port.val());
 		});
 
 		$('#accessor-'+accessor.uuid).on('click', '.accessor-checkbox', function () {
-			var accessor_port = $(this).attr('data-port');
-			post_accessor($(this), $('#'+accessor_port).is(':checked'));
+			post_accessor(accessor.uuid, $(this).attr('data-port'), $(this).is(':checked'));
 		});
 
 		$('#accessor-'+accessor.uuid).on('click', '.accessor-button', function () {
-			post_accessor($(this), null);
+			post_accessor(accessor.uuid, $(this).attr('data-port'), null);
 		});
 
-		// Call init now.
-		call_accessor($(this), init)
+		// init all with GET
 	}
 });
 
-function post_accessor (element, arg) {
-	var accessor_name = element.attr('data-accessorname');
-	var accessor_func = element.attr('data-function');
-
-	var accessor = element.parents('.accessor');
+function post_accessor (uuid, port, arg) {
+	var accessor = $('#accessor-'+uuid);
 	var device_name = accessor.attr('data-device-name');
 	var device_group = accessor.attr('data-device-group');
 
-	Q.spawn(function* () {
-		yield* window[accessor_name][accessor_func](arg);
-	});
+	url = accessor_runtime_server + '/' + device_group + '/' + device_name + '/' + port;
+
+	console.log(url);
+
+	// Q.spawn(function* () {
+	// 	yield* window[accessor_name][accessor_func](arg);
+	// });
 }

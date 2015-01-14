@@ -16,14 +16,14 @@
 
           {% if port.direction == "output" %}
           <div class="col-sm-10">
-            <p id="{{ fieldname }}" class="form-control-static output-port" data-portdirection="output" data-porttype="{{ port.type }}">not set</p>
+            <p id="{{ port.name }}" class="form-control-static output-port" data-portdirection="output" data-porttype="{{ port.type }}">not set</p>
           </div>
 
           {% elif port.type == "bool" %}
           <div class="col-sm-10">
             <div class="checkbox">
               <label>
-                <input type="checkbox" name="{{ fieldname }}" id="{{ fieldname }}" class="accessor-checkbox" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}" data-portdirection="{{ port.direction }}">
+                <input type="checkbox" class="accessor-checkbox" data-port="{{ port.name }}" data-portdirection="{{ port.direction }}">
               </label>
             </div>
           </div>
@@ -33,7 +33,7 @@
           {% if 'min' in port and 'max' in port %}
           {# Do a slider #}
           <div class="col-sm-10">
-            <input type="text" name="{{ fieldname }}" id="{{ fieldname }}" class="slider" data-slider-id='{{ fieldname }}-slider' data-slider-min="{{ port.min }}" data-slider-max="{{ port.max }}" data-slider-step="1" data-slider-value="{{ port.min }}" data-accessorname="{{ accessor.clean_name }}" data-function="{{ port.name }}"/>
+            <input type="text" class="slider" data-slider-id='{{ fieldname }}-slider' data-slider-min="{{ port.min }}" data-slider-max="{{ port.max }}" data-slider-step="1" data-slider-value="{{ port.min }}" data-port="{{ port.name }}"/>
           </div>
 
           {% else %}
@@ -41,10 +41,10 @@
           <div class="col-sm-10">
             <div class="row">
               <div class="col-xs-8">
-                <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %} data-portdirection="{{ port.direction }}"></input>
+                <input type="text" class="form-control port" {% if 'default' in port %} value="{{ port.default }}"{% endif %} data-port="{{ port.name }}"></input>
               </div>
               <div class="col-xs-4">
-                <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
+                <button type="button" class="form-control accessor-arbitrary-input-button">Update</button>
               </div>
             </div>
           </div>
@@ -54,20 +54,20 @@
           <div class="col-sm-10">
             <div class="row">
               <div class="{% if port.has_function %}col-xs-8{% else %}col-xs-12{% endif %}">
-                <input type="text" class="form-control" name="{{ fieldname }}" id="{{ fieldname }}"{% if 'default' in port %} value="{{ port.default }}"{% endif %} data-portdirection="{{ port.direction }}"></input>
+                <input type="text" class="form-control port" {% if 'default' in port %} value="{{ port.default }}"{% endif %} data-port="{{ port.name }}"></input>
               </div>
 
-              {% if port.has_function %}
+              {#{% if port.has_function %}#}
               <div class="col-xs-4">
-                <button type="button" class="form-control accessor-arbitrary-input-button" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}">Update</button>
+                <button type="button" class="form-control accessor-arbitrary-input-button">Update</button>
               </div>
-              {% endif %}
+              {#{% endif %}#}
             </div>
           </div>
 
           {% elif port.type == "select" %}
           <div class="col-sm-10">
-            <select class="form-control" name="{{ port.name }}" id="{{ fieldname }}" data-portdirection="{{ port.direction }}">
+            <select class="form-control port-select">
               {% for opt in port.options %}
               <option value="{{ loop.index }}"{% if 'default' in port and port.default == 'opt' %} selected="selected"{% endif %}>{{ opt }}</option>
               {% endfor %}
@@ -76,18 +76,18 @@
 
           {% elif port.type == "button" %}
           <div class="col-sm-3">
-            <button type="button" class="form-control accessor-button" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}" data-portdirection="{{ port.direction }}">Execute</button>
+            <button type="button" class="form-control accessor-button" data-port="{{ port.name }}">Execute</button>
           </div>
 
           {% elif port.type == "color" %}
           {# color picker #}
           <div class="col-sm-10">
-            <div class="colorpicker" name="{{ fieldname }}" id="{{ fieldname }}" data-accessorname="{{ accessor.clean_name }}" data-port="{{ fieldname }}" data-function="{{ port.name }}" data-portdirection="{{ port.direction }}"></div>
+            <div class="colorpicker" data-port="{{ fieldname }}"></div>
           </div>
 
           {% else %}
           <div class="col-lg-10">
-            <p id="{{ fieldname }}" class="from-control-static" data-portdirection="{{ port.direction }}">unknown</p>
+            <p class="from-control-static" data-port="{{ port.name }}">unknown</p>
           </div>
 
           {% endif %}
@@ -96,14 +96,14 @@
         </div>
         {% endfor %}
 
-        {% if accessor.display_fire_button %}
+        {#{% if accessor.display_fire_button %}
         <div class="form-group">
           <label class="col-sm-2 control-label"></label>
           <div class="col-sm-10">
             <button type="button" class="form-control accessor-button" data-accessorname="{{ accessor.clean_name }}" data-function="fire">Fire!</button>
           </div>
         </div>
-        {% endif %}
+        {% endif %}#}
 
       </fieldset>
     </form>
