@@ -41,11 +41,11 @@ function* init () {
 	yield* prefetch_bulb_layout();
 }
 
-function* Power (on) {
+function* lighting.light.Power (on) {
 	yield* set_bulb_paramter({'on': on});
 }
 
-function* Color (hex_color) {
+function* lighting.rgb.Color (hex_color) {
 	hsv = rt.color.hex_to_hsv(hex_color);
 	params = {'hue': Math.round(hsv.h*182.04),
 	          'sat': Math.round(hsv.s*255),
@@ -53,18 +53,6 @@ function* Color (hex_color) {
 	yield* set_bulb_paramter(params);
 }
 
-function* Brightness (brightness) {
+function* lighting.brightness.Brightness (brightness) {
 	yield* set_bulb_paramter({'bri': parseInt(brightness)});
-}
-
-function* BulbName (name) {
-	var bulbid = get_bulb_id();
-	if (bulbid) {
-		var url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights/' + bulbid;
-		var data = JSON.parse(yield* rt.http.readURL(url));
-
-		set('Power', data.state.on);
-		set('Color', rt.color.hsv_to_hex({h:data.state.hue/182.04, s:data.state.sat/255, v:data.state.bri/255}));
-		set('Brightness', data.state.bri);
-	}
 }

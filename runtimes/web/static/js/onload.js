@@ -3,21 +3,21 @@
 var accessors = [];
 
 
-$("#location-select").change(function () {
+$("#group-select").change(function () {
 	if ($(this).val() != 0) {
 		$("#accessor-interface").text('');
-		$.ajax({url: '/location' + $(this).val(),
+		$.ajax({url: '/group' + $(this).val(),
 			success: function (data) {
 				if ('status' in data && data['status'] == 'error') {
-					alert_error('Unable to load accessors for that location.');
+					alert_error('Unable to load accessors for that group.');
 
 				} else {
 
-					accessors = data['accessors'];
+					devices = data['devices'];
 					$("#accessor-select option[data-temp='true']").remove();
 
-					for (i=0; i<accessors.length; i++) {
-						$("#accessor-select").append('<option value="'+i+'" data-temp="true">'+accessors[i].name+'</option>')
+					for (i=0; i<devices.length; i++) {
+						$("#accessor-select").append('<option value="'+i+'" data-temp="true">'+devices[i].name+'</option>')
 					}
 					$("#accessor-select").show();
 
@@ -31,64 +31,50 @@ $("#accessor-select").change(function () {
 		accessor = accessors[$(this).val()];
 		$("#accessor-interface").html(accessor.html);
 
-		// Check to see if any accessor port names are reserved javascript
-		// functions and won't work because of the conflict.
-		for (var i=0; i<accessor.ports.length; i++) {
-			var port = accessor.ports[i];
-			if (typeof window[port.name] == 'function') {
-				alert_error('Port name "'+port.clean_name+'" conflicts with an \
-existing JavaScript function. The name of the port will need to be changed \
-in order for the accessor to work.');
-			}
-		}
-
-		// Oh yeah, call eval on code we downloaded.
-		// As a wise undergrad once said: "Safety Off"
-		var code = accessor.code;
-		$.globalEval(code);
-
 		// Activate all sliders
-		$('#accessor-'+accessor.clean_name+' .slider').each(function () {
+		$('#accessor-'+accessor.uuid+' .slider').each(function () {
 			$(this).slider().on('slideStop', function (slide_event) {
-				call_accessor($(this), slide_event.value);
+				post_accessor($(this), slide_event.value);
 			});
 		});
 
 		// Activate all color pickers
-		$('#accessor-'+accessor.clean_name+' .colorpicker').colpick({
+		$('#accessor-'+accessor.uuid+' .colorpicker').colpick({
 			flat: true,
 			layout: 'hex',
 			submit: 0,
 			onChange: function (hsb, hex, rgb, el, bySetColor) {
-				call_accessor($(this), hex);
+				post_accessor($(this), hex);
 			}
 		});
 
 		// Setup callbacks for buttons and check boxes
-		$('#accessor-'+accessor.clean_name).on('click', '.accessor-arbitrary-input-button', function () {
+		$('#accessor-'+accessor.uuid).on('click', '.accessor-arbitrary-input-button', function () {
 			var accessor_port = $(this).attr('data-port');
-			call_accessor($(this), $('#'+accessor_port).val());
+			post_accessor($(this), $('#'+accessor_port).val());
 		});
 
-		$('#accessor-'+accessor.clean_name).on('click', '.accessor-checkbox', function () {
+		$('#accessor-'+accessor.uuid).on('click', '.accessor-checkbox', function () {
 			var accessor_port = $(this).attr('data-port');
-			call_accessor($(this), $('#'+accessor_port).is(':checked'));
+			post_accessor($(this), $('#'+accessor_port).is(':checked'));
 		});
 
-		$('#accessor-'+accessor.clean_name).on('click', '.accessor-button', function () {
-			call_accessor($(this), null);
+		$('#accessor-'+accessor.uuid).on('click', '.accessor-button', function () {
+			post_accessor($(this), null);
 		});
 
 		// Call init now.
-		Q.spawn(function* () {
-			yield* window[accessor.clean_name].init();
-		});
+		call_accessor($(this), init)
 	}
 });
 
-function call_accessor (element, arg) {
+function post_accessor (element, arg) {
 	var accessor_name = element.attr('data-accessorname');
 	var accessor_func = element.attr('data-function');
+
+	var accessor = element.parents('.accessor');
+	var device_name = accessor.attr('data-device-name');
+	var device_group = accessor.attr('data-device-group');
 
 	Q.spawn(function* () {
 		yield* window[accessor_name][accessor_func](arg);

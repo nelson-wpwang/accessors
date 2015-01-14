@@ -69,13 +69,13 @@ Accessors / University of Michigan
 
       <div class="panel panel-info">
         <div class="panel-heading">
-          <h3 class="panel-title">To get started, choose a location.</h3>
+          <h3 class="panel-title">To get started, choose an accessor group.</h3>
         </div>
         <div class="panel-body">
-          <select class="form-control" id="location-select">
-            <option value="0">Select a location</option>
-            {% for location in locations %}
-            <option value="{{ location.path }}">{{ location.name }}</option>
+          <select class="form-control" id="group-select">
+            <option value="0">Select a group</option>
+            {% for group in groups %}
+            <option value="{{ group.path }}">{{ group.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -134,6 +134,9 @@ Accessors / University of Michigan
 
 </div>
 
+<script type="text/javascript">
+var accessor_runtime_server = {{ accessor_runtime_server }};
+</script>
 
 
 <!-- <div id="body">
