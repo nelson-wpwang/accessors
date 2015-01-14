@@ -38,7 +38,7 @@ function* init () {
 			'lighting.light.Power': power,
 			});
 	provide_interface('/lighting/hue', {
-			'lighting.rgb.color': color,
+			'lighting.rgb.Color': color,
 			'lighting.brightness.Brightness': brightness,
 			});
 

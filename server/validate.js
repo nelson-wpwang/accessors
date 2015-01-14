@@ -117,6 +117,64 @@ function checkGetDependency(node) {
   }
 }
 
+var interface_list = [];
+
+function checkProvidedInterfaceFunctions(iface, node) {
+  var prop, idx;
+
+  for (idx in node) {
+    if (node.hasOwnProperty(idx)) {
+      prop = node[idx];
+
+      if (prop.type !== 'Property') {
+        throw "Unxpected non-property in provided interfaces: " + prop;
+      }
+      if (prop.key.type !== 'Literal') {
+        throw "Implemented interfaces must be string literals " + prop.key;
+      }
+      if (prop.value.type !== 'Identifier') {
+        throw "Interface must be implemented by an Identifier";
+        // TODO: collect idents that impl interfaces and verify they exist
+        // TODO: allow anonymous functions to implement interfaces
+      }
+
+      iface.provides.push(prop.key.value);
+    }
+  }
+}
+
+function checkProvideInterface(node) {
+  var iface = null;
+
+  if (node.callee.name === 'provide_interface') {
+    if (node.arguments[0].type !== 'Literal') {
+      throw "provide_interface() first argument must be a string literal";
+    }
+
+    iface = _.find(interface_list, function (cand) {
+      return cand.interface === node.arguments[0].value;
+    });
+    if (iface !== undefined) {
+      throw "Multiple provides of same interface: " + node.arguments[0].value;
+    }
+
+    iface = {
+      interface: node.arguments[0].value,
+      provides: []
+    };
+
+    if (node.arguments[1] !== undefined) {
+      if (node.arguments[1].type !== 'ObjectExpression') {
+        throw "Second argument to 'provide_interface' must be a dictionary of named parameters";
+      }
+
+      checkProvidedInterfaceFunctions(iface, node.arguments[1].properties);
+    }
+
+    interface_list.push(iface);
+  }
+}
+
 var parameter_list = [];
 
 function checkGetParameter(node) {
@@ -375,6 +433,7 @@ function on_read(err, data) {
     if (node.type === 'CallExpression') {
       checkForRuntime(node);
       checkGetDependency(node);
+      checkProvideInterface(node);
       checkGetParameter(node);
       checkNewPorts(node);
     }
@@ -393,6 +452,7 @@ function on_read(err, data) {
 
   data = {
     runtime_imports: runtime_list,
+    implements: interface_list,
     dependencies: dependency_list,
     parameters: parameter_list,
     ports: port_list

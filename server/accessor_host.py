@@ -222,24 +222,31 @@ class ServeAccessorXML (ServeAccessor):
 interface_tree = {}
 
 class Interface():
-	def __init__(self, path, loop=[]):
+	def __init__(self, file_path, loop=[]):
 		try:
-			if path[-5:] != '.json':
-				log.warn("Non-json file in interface tree: %s -- Skipped", path)
+			if file_path[-5:] != '.json':
+				log.warn("Non-json file in interface tree: %s -- Skipped", file_path)
 				log.warn("Do something better")
 				return
+			self.file_path = '.' + file_path
 
-			log.debug("New Interface: %s", path)
-			self.path = '.' + path
-			self.raw = open(self.path).read()
+			self.path = file_path[:-5]
+			log.debug("New Interface: %s", self.path)
+
+			self.raw = open(self.file_path).read()
 			self.json = json.loads(self.raw)
+
+			self.ports = []
+			if 'ports' in self.json:
+				for port in self.json['ports']:
+					print(port)
+					self.ports.append(self.path[1:].replace('/', '.') + '.' + port)
 
 			self.extends = []
 			if 'extends' in self.json:
 				if type(self.json['extends']) == type(''):
 					self.json['extends'] = [self.json['extends'],]
 				for dep in self.json['extends']:
-					dep += '.json'
 					if dep not in interface_tree:
 						log.debug("Interface %s requried advance loading of extends %s", self.path, dep)
 						if dep in loop:
@@ -247,12 +254,34 @@ class Interface():
 							raise RuntimeError
 						else:
 							loop.append(dep)
-						interface_tree[dep] = Interface(dep, loop)
+						Interface(dep+'.json', loop)
 					self.extends.append(interface_tree[dep])
 
+			interface_tree[self.path] = self
+			print('---'*30)
+			pprint.pprint(interface_tree)
+
 		except:
-			log.exception("Uncaught exception generating %s", path)
+			log.exception("Uncaught exception generating %s", self.path)
 			raise
+
+	def __iter__(self):
+		for port in self.ports:
+			yield port
+		for ext in self.extends:
+			for dep_port in ext:
+				yield dep_port
+
+	@staticmethod
+	def normalize(fq_port):
+		iface = '/'+'/'.join(fq_port.split('.')[:-1])
+		iface = interface_tree[iface]
+		for port in iface:
+			if port.split('.')[-1:] == fq_port.split('.')[-1:]:
+				return port
+		log.error("Unknown port: %s", fq_port)
+		log.error("Interface expects ports: %s", list(iface))
+		raise NotImplementedError("Unknown port: {}".format(fq_port))
 
 def load_interface_tree(root_path, prefix=None):
 	with pushd(root_path):
@@ -264,7 +293,7 @@ def load_interface_tree(root_path, prefix=None):
 			assert root not in interface_tree
 
 			for path in map(lambda x: os.path.join(root, x), files):
-				interface_tree[path] = Interface(path)
+				Interface(path)
 
 ###
 ### Functions that find and generate full accessors
@@ -353,6 +382,8 @@ def find_accessors (accessor_path, tree_node):
 				website = None
 				description = None
 
+				# Parse the accessor source to pull out information in the
+				# comments (name, author, email, website, description)
 				line_no = 0
 				in_comment = False
 				with open("." + path) as f:
@@ -430,6 +461,9 @@ def find_accessors (accessor_path, tree_node):
 				if description:
 					meta['description'] = description
 
+				# External program that validates accessor and pulls out more
+				# complex features from the source code, specifically:
+				#	runtime_imports, implements, dependencies, parameters, ports
 				try:
 					analyzed = parse_js("." + path)
 				except sh.ErrorReturnCode as e:
@@ -440,6 +474,7 @@ def find_accessors (accessor_path, tree_node):
 
 				meta.update(analyzed)
 
+				# Embed the actual code into the accessor
 				meta['code'] = {
 						'javascript': {
 							'code' : open("."+path).read()
@@ -451,6 +486,22 @@ def find_accessors (accessor_path, tree_node):
 
 				# Now we make it a proper accessor
 				accessor = meta
+
+				# Verify interfaces are fully implemented
+				for claim in accessor['implements']:
+					claim['ports'] = []
+					for port in claim['provides']:
+						claim['ports'].append(Interface.normalize(port))
+					iface = interface_tree[claim['interface']]
+					for req in iface:
+						if req not in claim['ports']:
+							log.error("Interface %s requires %s",
+									claim['interface'], req)
+							log.error("But %s only implements %s",
+									accessor['name'], claim['ports'])
+							raise NotImplementedError("Incomplete interface")
+
+				# Run the other accessor checker concept
 				err = validate_accessor.check(accessor)
 				if err:
 					print('ERROR: Invalid accessor format.')
