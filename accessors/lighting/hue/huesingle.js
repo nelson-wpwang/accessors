@@ -7,8 +7,6 @@
 //
 // This controls a single Hue bulb.
 //
-// To use, select a Bulb name by entering it in the `Bulb Name` box and
-// click update.
 //
 
 var bulb_layout;
@@ -19,7 +17,7 @@ function* prefetch_bulb_layout () {
 }
 
 function get_bulb_id () {
-	var name = get('BulbName');
+	var name = get_parameter('bulb_name');
 
 	for (var key in bulb_layout) {
 		if (bulb_layout[key].name == name) {
@@ -36,16 +34,11 @@ function* set_bulb_paramter (params) {
 }
 
 function* init () {
-	create_port('input', 'BulbName');
-	create_port('output', 'Bulbs');
+	use_interface('lighting/light');
+	use_interface('lighting/rgb');
+	use_interface('lighting/brightness');
 
 	yield* prefetch_bulb_layout();
-	var s = '';
-
-	for (var key in bulb_layout) {
-		s += bulb_layout[key].name + ', ';
-	}
-	set('Bulbs', s);
 }
 
 function* Power (on) {
