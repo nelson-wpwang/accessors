@@ -1,6 +1,11 @@
 [
 	{
 		"name": "umhue01",
-		"path": "/lighting/hue/huesingle"
+		"path": "/lighting/hue/huesingle",
+		"parameters": {
+			"bridge_url": "http://4908hue.eecs.umich.edu",
+			"username": "lab11in4908",
+			"name": "Brad"
+		}
 	}
 ]
