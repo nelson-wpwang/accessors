@@ -1,0 +1,9 @@
+{
+	"ports": {
+		"CurrentPower": {
+			"display_name": "Current Power",
+			"type": "numeric",
+			"direction": "output"
+		}
+	}
+}

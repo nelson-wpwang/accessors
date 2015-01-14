@@ -9,6 +9,12 @@
  */
 
 
+function* init () {
+	provide_interface('/lighting/light', {
+		'/onoff/Power': Power
+	});
+}
+
 function* Power (state) {
 	var post_url = get_parameter('post_url');
 	var location = get_parameter('location_str');

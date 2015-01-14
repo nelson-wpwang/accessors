@@ -65,6 +65,13 @@ function* set_power_state (state) {
 
 
 function* init () {
+
+	// INTERFACES
+
+	provide_interface('/onoff', {
+		'/onoff.Power': Power
+	});
+
 	url = get_parameter('wemo_url');
 
 	yield* find_wemo_port();

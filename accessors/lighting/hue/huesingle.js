@@ -35,11 +35,11 @@ function* set_bulb_paramter (params) {
 
 function* init () {
 	provide_interface('/lighting/light', {
-			'lighting.light.Power': power,
+			'/lighting/light.Power': power,
 			});
 	provide_interface('/lighting/hue', {
-			'lighting.rgb.Color': color,
-			'lighting.brightness.Brightness': brightness,
+			'/lighting/rgb.Color': color,
+			'/lighting/brightness.Brightness': brightness,
 			});
 
 	yield* prefetch_bulb_layout();

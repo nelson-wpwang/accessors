@@ -27,6 +27,20 @@ SOURCES = {
 
 function* init () {
 
+  // INTERFACES
+
+  provide_interface('/av/videodevice', {
+    'onoff.Power': Power
+  });
+
+  // PORTS
+
+  // Select the video source for the projector
+  create_port('input', 'Input', {
+    type: 'select',
+    options: ['VGA', 'HDMI 1', 'HDMI 2', 'S-Video', 'Composite']
+  });
+
   var url = get_parameter('device_url') + '/PJState.xml';
 
   /* Get the XML status from the receiver */
@@ -57,13 +71,3 @@ function* Input (input_setting_choice) {
   var url = get_parameter('device_url') + '/dpjset.cgi?PJ_SRCINPUT=' + SOURCES[input_setting_choice];
   yield* rt.http.request(url, 'GET', null, '', 3000);
 }
-
-function* fire () {
-  yield* Power(get('power'));
-  yield* Input(get('input'));
-}
-
-function wrapup () {
-
-}
-

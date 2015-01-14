@@ -10,6 +10,12 @@
  */
 
 function init () {
+
+	// INTERFACES
+	provide_interface('/lockunlock/door', {
+		'/lock.Lock': Lock
+	});
+
 	set_to_locked();
 }
 
@@ -41,7 +47,3 @@ function* Lock (lock) {
 
 	rt.time.run_later(2000, set_to_locked);
 }
-
-function wrapup () {
-}
-

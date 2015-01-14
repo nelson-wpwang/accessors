@@ -341,7 +341,7 @@ def get_devices (url):
 			"parameters": {
 				"bridge_url": "http://4908hue.eecs.umich.edu",
 				"username": "lab11in4908",
-				"name": "Brad"
+				"bulb_name": "Brad"
 			}
 		}
 	]

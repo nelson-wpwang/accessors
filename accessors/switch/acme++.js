@@ -11,6 +11,11 @@
 var ip_addr;
 
 function init () {
+	// INTERFACES
+	provide_interface('/onoff', {
+		'/onoff.Power': Power
+	});
+
 	ip_addr = get_parameter('ipv6_address');
 }
 

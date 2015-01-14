@@ -22,6 +22,11 @@ function* get_power () {
 }
 
 function* init () {
+
+	provide_interface('/sensor/power', {
+		'/sensor/power.CurrentPower': CurrentPower
+	});
+
 	var pid = get_parameter('profile_id');
 	var gatd = get_parameter('gatd_url');
 	var query = rt.encode.btoa(JSON.stringify({'location_str':get_parameter('location')}));
