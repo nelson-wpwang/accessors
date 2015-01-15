@@ -274,10 +274,21 @@ class Interface():
 
 	@staticmethod
 	def normalize(fq_port):
-		iface = '/'+'/'.join(fq_port.split('.')[:-1])
+		log.debug("normalize: %s", fq_port)
+		if '.' in fq_port:
+			if '/' in fq_port:
+				# /iface/path.Port
+				iface, fq_port = fq_port.split('.')
+			else:
+				# All '.'
+				iface = '/'+'/'.join(fq_port.split('.')[:-1])
+				fq_port = fq_port.split('.')[-1]
+		else:
+			# All '/'
+			iface, fq_port = fq_port.rsplit('/', 1)
 		iface = interface_tree[iface]
 		for port in iface:
-			if port.split('.')[-1:] == fq_port.split('.')[-1:]:
+			if port.split('.')[-1] == fq_port:
 				return port
 		log.error("Unknown port: %s", fq_port)
 		log.error("Interface expects ports: %s", list(iface))
