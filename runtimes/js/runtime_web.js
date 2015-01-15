@@ -108,31 +108,9 @@ rt.http.request = function* request(url, method, properties, body, timeout) {
 	yield request_defer.promise;
 }
 
+//This is just GET. Don't know why it's called readURL...
 rt.http.readURL = function* readURL(url) {
-	rt.log.debug("readURL(" + url + ")");
-
-	var request_defer = Q.defer();
-	var request = new XMLHttpRequest();
-
-	request.onload = function readURL_listener () {
-		request_defer.resolve();
-	}
-
-	request.open("GET", "/proxy?method=get&url="+btoa(url));
-	// Null argument says there is no body.
-	request.send(null);
-
-	yield request_defer.promise;
-
-	if (request.readyState === request.DONE) {
-		if (request.status == 200) {
-			return request.responseText;
-		} else {
-			throw "readURL failed with code " + request.status + " at URL: " + url;
-		}
-	} else {
-		throw "readURL did not complete: " + url;
-	}
+	yield* rt.http.request(url, 'GET', null, null, 0);
 }
 
 rt.http.post = function* post(url, body) {
@@ -145,6 +123,7 @@ rt.http.put = function* put(url, body) {
 
 /*** COLOR FUNCTIONS ***/
 
+// need to npm install tinycolor2 for this. Not tinycolor. Because _javascript_
 rt.color = Object();
 
 rt.color.hex_to_hsv = function hex_to_hsv (hex_code) {
@@ -184,46 +163,5 @@ javascript.
  * not nested elements or crazy spaces.
  */
 function getElementValueById (html, id) {
-	var start_index = 0;
-	var id_index = 0;
-
-	while (true) {
-		id_index = html.indexOf(id, start_index);
-
-		if ((id_index - start_index) < 4) {
-			// If -1, then it wasn't found. If < 4, there isn't room for
-			// the 'id="' part.
-			return null;
-		}
-		var part_check = html.substring(id_index, id_index-4);
-		if (part_check == 'id="') {
-			// At this point we're going to say we found the correct element.
-			break;
-		} else {
-			// Must've been something else. Keep searching.
-			start_index = id_index;
-		}
-	}
-
-	// Find the next ">" marking the end of the element identifier and
-	// start of the value.
-	var val_index_beg = html.indexOf(">", id_index) + 1;
-	var val_index_end = html.indexOf("<", val_index_beg);
-
-	return html.substring(val_index_beg, val_index_end);
-}
-
-function getXMLValue (xml, element) {
-	var start = 0;
-
-	while (true) {
-		var first = xml.indexOf(element, start);
-		if (first - start < 1) return null;
-		if (xml.substring(first-1, first) == '<' && xml.substring(first+element.length, first+element.length+1) == '>') {
-			var second = xml.indexOf(element, first+1);
-			return xml.substring(first+element.length+1, second-2);
-		} else {
-			start = first+1;
-		}
-	}
+		throw new AccessorRuntimeException("very funny");
 }
