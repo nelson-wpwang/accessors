@@ -12,7 +12,7 @@
 function init () {
 
 	// INTERFACES
-	provide_interface('/lockunlock/door', {
+	provide_interface('/lock/door', {
 		'/lock.Lock': Lock
 	});
 
