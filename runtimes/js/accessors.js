@@ -63,7 +63,7 @@ console.log(path);
     	//	Also figure out what their default values should be
     	var params = "var parameters = "+JSON.stringify(parameters)+";\n";
       console.log(params);
-    	var runtime_code = fs.readFileSync('runtime_web.js');
+    	var runtime_code = fs.readFileSync('runtime_help.js');
     	var accessor_code = fix_functions(accessor.code);
 
     	// turn the code into a module
@@ -116,6 +116,7 @@ function fix_functions(code) {
 		code += export_str;
 
 		//console.log(code);
+    code = 'var rt = require("./runtime_web.js");\n' + code;
     return code;
 }
 
