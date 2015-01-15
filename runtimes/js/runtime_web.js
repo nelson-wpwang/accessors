@@ -1,6 +1,32 @@
 /* This runtime conforms to accessor runtime v0.1.0 */
 /* vim: set noet ts=2 sts=2 sw=2: */
 
+/*** Core Functions ***/
+//Not in the namespace
+
+create_port = function() {}; // Apparently don't need to fill this one in
+
+get = function (port_name) {
+	return ports[port_name];
+}
+
+set = function (port_name, val) {
+	ports[port_name] = val;
+}
+
+get_parameter = function (parameter_name) {
+	return parameters[parameter_name];
+}
+
+load_dependency = function (path, parameters) {
+	if(typeof(parameters)==='undefined') parameters = null;
+
+	throw new AccessorRuntimeException("That was optimistic");
+}
+
+var AcessorRuntimeException = Error;
+
+
 /*
  * Create the over-arching runtime object that lets us scope all of this
  * accessor runtime code nicely.
@@ -40,8 +66,6 @@ rt.log.critical = function _log_critical (message) {
 	throw new AccessorRuntimeException(message);
 }
 
-var AcessorRuntimeException = Error;
-
 rt.time = Object();
 
 rt.time.sleep = function* (time_in_ms) {
@@ -71,7 +95,7 @@ rt.socket.socket = function* (family, sock_type) {
 
 rt.http = Object();
 
-rt.http.request = function* request(url, method, properties, body, timeout) {
+rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 	rt.log.debug("httpRequest("
 				+ (function(obj) {
 					result=[];
@@ -94,7 +118,7 @@ rt.http.request = function* request(url, method, properties, body, timeout) {
 		json: body,
 		timeout: timeout
 	}
-	var req = req_lib(options, function (error, response, body) {
+	var req = request(options, function (error, response, body) {
 		if (!error) {
 			if (response.statusCode == 200) {
 				request_defer.resolve(body);
