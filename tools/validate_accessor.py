@@ -42,8 +42,8 @@ schema = {
 		              'options':(list, str),
 		              'min':'number',
 		              'max':'number'},
-		'restrictions': {'name': {'invalid_str': PORTS_RESERVED,
-		                          'valid_chr': ALPHANUMERIC}}
+#		'restrictions': {'name': {'invalid_str': PORTS_RESERVED,
+#		                          'valid_chr': ALPHANUMERIC}}
 	},
 	'parameters': {
 		'type': list,

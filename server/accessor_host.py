@@ -276,7 +276,7 @@ class Interface():
 		name = port.split('.')[-1]
 		if port in self.ports:
 			detail = self.json['ports'][name]
-			detail['name'] = name
+			detail['name'] = '/' + '/'.join(port.split('.'))
 			return detail
 		iface = '/' + '/'.join(port.split('.')[:-1])
 		log.debug(iface)
