@@ -272,6 +272,16 @@ class Interface():
 			for dep_port in ext:
 				yield dep_port
 
+	def get_port_detail(self, port):
+		name = port.split('.')[-1]
+		if port in self.ports:
+			detail = self.json['ports'][name]
+			detail['name'] = name
+			return detail
+		iface = '/' + '/'.join(port.split('.')[:-1])
+		log.debug(iface)
+		return interface_tree[iface].get_port_detail(port)
+
 	@staticmethod
 	def normalize(fq_port):
 		log.debug("normalize: %s", fq_port)
@@ -490,9 +500,6 @@ def find_accessors (accessor_path, tree_node):
 							}
 						}
 
-				if meta['name'] == 'Hue Single':
-					pprint.pprint(meta)
-
 				# Now we make it a proper accessor
 				accessor = meta
 
@@ -509,6 +516,7 @@ def find_accessors (accessor_path, tree_node):
 							log.error("But %s only implements %s",
 									accessor['name'], claim['ports'])
 							raise NotImplementedError("Incomplete interface")
+						accessor['ports'].append(iface.get_port_detail(req))
 
 				# Run the other accessor checker concept
 				err = validate_accessor.check(accessor)
@@ -546,6 +554,9 @@ def find_accessors (accessor_path, tree_node):
 				accessor_tree[path] = accessor
 
 				create_servable_objects_from_accessor(accessor, path)
+
+				if accessor['name'] == 'Hue Single':
+					pprint.pprint(accessor)
 
 
 
