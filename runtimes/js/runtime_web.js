@@ -40,6 +40,7 @@ rt.log.critical = function _log_critical (message) {
 	throw new AccessorRuntimeException(message);
 }
 
+var AcessorRuntimeException = Error;
 
 rt.time = Object();
 

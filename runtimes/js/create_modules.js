@@ -1,9 +1,17 @@
 var http = require('http');
 var fs = require('fs');
 
+//XXX: Should include actual dependencies somehow and only push these into the module
+var req_lib = require('request');
+var tinycolor = require('tinycolor2');
+var atob = require('atob');
+var btoa = require('btoa');
+
+
 var json_data = '';
 
 /*
+//XXX This can be used again when Pat gets the accessor accessor working
 http.get("http://pfet-v2.eecs.umich.edu:6565/accessor/onoffdevice/light/hue/huesingle.json", function(res) {
       console.log("Got response:\n" + res.statusCode);
       var body = '';
@@ -20,20 +28,23 @@ http.get("http://pfet-v2.eecs.umich.edu:6565/accessor/onoffdevice/light/hue/hues
 });
 */
 
-// for testing offline
+// --- for testing offline ---
 var json_str = fs.readFileSync('huesingle.json', 'utf8');
 //var json_str = fs.readFileSync('test.json', 'utf8');
-parse_json(JSON.parse(json_str));
+// ---------------------------
 
-function parse_json(json_data) {
-    console.log("JSON Data:\n", json_data.code);
+var hue = create_accessor(JSON.parse(json_str));
+hue.init();
+hue.get_bulb_id();
+console.log('done');
+
+function create_accessor(json_data) {
+    //console.log("JSON Data:\n", json_data.code);
     
-    hue_code = fix_functions(json_data.code);
-    var hue = requireFromString(hue_code);
+		var runtime_code = fs.readFileSync('runtime_web.js');
+    var accessor_code = fix_functions(json_data.code);
 
-    hue.init();
-    hue.get_bulb_id();
-    console.log('done');
+    return requireFromString(runtime_code + accessor_code);
 }
 
 function requireFromString(src) {
