@@ -290,8 +290,6 @@ def load_interface_tree(root_path, prefix=None):
 			if root == '':  # imho python does this wrong; should be ./ already
 				root = '/'
 
-			assert root not in interface_tree
-
 			for path in map(lambda x: os.path.join(root, x), files):
 				Interface(path)
 
