@@ -47,7 +47,7 @@ var resp = yield* s.recv();
 ```
 
 In practice, the only impact on the accessor writer is that the accessor must
-remember to write `yeild*` before any function call that may block. If yeild
+remember to write `yield*` before any function call that may block. If yield
 is omitted, the call will return immediately without actually doing anything.
 
 > For those familiar with C#'s `async` (maps to `function*`) and `await` (maps
