@@ -42,11 +42,13 @@ rt.log.critical = function _log_critical (message) {
 
 
 rt.time = Object();
+
 rt.time.sleep = function* (time_in_ms) {
 	var deferred = Q.defer();
 	setTimeout(deferred.resolve, time_in_ms);
 	yield deferred.promise;
 }
+
 rt.time.run_later = function (time_in_ms, fn_to_run, args) {
 	if (args != null) {
 		throw new AccessorRuntimeException("runtime doesn't support arguments yet");
@@ -60,87 +62,7 @@ rt.time.run_later = function (time_in_ms, fn_to_run, args) {
 rt.socket = Object();
 
 rt.socket.socket = function* (family, sock_type) {
-	var s = new Object();
-	s._packet_id = 0;
-
-	if (typeof ws_server_address == 'undefined') {
-		rt.log.critical("No websocket server. Socket facilities unavailable");
-	}
-
-	// Make a connection back to the socket tunneling server (ws_server)
-	var ws = new WebSocket(ws_server_address);
-	var ws_defer = Q.defer();
-
-	ws.onopen = function (evt) {
-		console.log("ws connected");
-		ws_defer.resolve(ws);
-	}
-	ws.onclose = function (evt) {
-		console.log("ws onclose");
-		if (Q.isPending(ws_defer)) {
-			ws_defer.reject(new Error(evt));
-		} else {
-			s._send_reply_defer.reject(new Error(evt));
-		}
-	}
-	ws.onmessage = function (evt) {
-		console.log("ws message");
-		s._send_reply_defer.resolve(evt);
-	}
-	ws.onerror = function (evt) {
-		// TODO On connect failure we get this and an onclose, should really only
-		// reject the promise once.
-		console.log("ws onerror");
-		if (Q.isPending(ws_defer)) {
-			ws_defer.reject(new Error(evt));
-		} else {
-			s._send_reply_defer.reject(new Error(evt));
-		}
-	}
-
-	s.ws = yield ws_defer.promise;
-
-	s._send = function* (msg) {
-		msg['packet_id'] = s._packet_id;
-		s._packet_id += 1;
-		s._send_reply_defer = Q.defer();
-		console.log("socket >> " + JSON.stringify(msg));
-		s.ws.send(JSON.stringify(msg));
-
-		var evt = yield s._send_reply_defer.promise;
-		console.log("socket << " + evt['data']);
-
-		var resp = JSON.parse(evt['data']);
-
-		if (resp['type'] != 'ack') {
-			console.log(resp['data']['type']);
-			throw new AccessorRuntimeException("Internal Error: ws protocol expected ack?");
-		}
-		if (resp['packet_id'] != msg['packet_id']) {
-			throw new AccessorRuntimeException("Internal Error: ws synchronization fail?");
-		}
-		if (resp['result'] != 'success') {
-			throw new AccessorRuntimeException("Send failed.");
-		}
-	}
-
-	var msg = {
-		type: 'handshake',
-		version: 0.1,
-		family: family,
-		sock_type: sock_type
-	};
-	yield* s._send(msg);
-
-	s.sendto = function* (bytes, dest) {
-		var msg = {
-			type: 'udp',
-			bytes: bytes,
-			dest: dest
-		};
-		yield* s._send(msg);
-	};
-	return s;
+	throw new AccessorRuntimeException("Not implemented");
 }
 
 
@@ -159,33 +81,31 @@ rt.http.request = function* request(url, method, properties, body, timeout) {
 				})(arguments)
 				+ ")");
 
+	if (properties != null) {
+		throw new AccessorRuntimeException("Don't know what to do with properties...");
+	}
+
 	var request_defer = Q.defer();
-	var request = new XMLHttpRequest();
 
-	request.onload = function request_listener () {
-		request_defer.resolve();
+	var options = {
+		url: url,
+		method: method,
+		json: body,
+		timeout: timeout
 	}
-
-	request.open(method, "/proxy?method="+method+"&url="+btoa(url));
-	request.timeout = timeout;
-
-	for (key in properties) {
-		request.setRequestHeader(key, properties[key]);
-	}
-
-	request.send(body);
+	var req = req_lib(options, function (error, response, body) {
+		if (!error) {
+			if (response.statusCode == 200) {
+				request_defer.resolve(body);
+			} else {
+				throw "httpRequest failed with code " + request.statusCode + " at URL: " + url;
+			}
+		} else {
+			throw "httpRequest at URL: " + url + " had an error: \n" + error;
+		}
+	});
 
 	yield request_defer.promise;
-
-	if (request.readyState === request.DONE) {
-		if (request.status == 200) {
-			return request.responseText;
-		} else {
-			throw "httpRequest failed with code " + request.status + " at URL: " + url;
-		}
-	} else {
-		throw "httpRequest did not complete: " + url;
-	}
 }
 
 rt.http.readURL = function* readURL(url) {
