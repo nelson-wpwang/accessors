@@ -112,7 +112,8 @@ function get_exports (accessor) {
     for (var i=0; i<accessor.ports.length; i++) {
       var port = accessor.ports[i];
       var name = port.name;
-      var func = port.function;
+
+      var func = port.function || port.name;
 
       // var wrapper = 'function () {set("'+name+'", arguments[0]); _do_port_call.apply(this, [' + func + '].concat(Array.prototype.slice.call(arguments)))};\n'
       var wrapper = 'function () {set("'+name+'", arguments[0]); _do_port_call.apply(this, [' + func + ', arguments[0], arguments[1]])};\n'

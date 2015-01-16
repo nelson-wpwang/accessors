@@ -64,12 +64,16 @@ dir.readFiles('../../groups',
 						console.log(port)
 
 						// console.log(port.name);
-
-						var path = group_name + '/' + item.name + port.name;
+						var slash = '';
+						if (port.name.substring(0,1) != '/') {
+							slash = '/';
+						}
+						var this_accessor = group_name + '/' + item.name;
+						var path = group_name + '/' + item.name + slash + port.name;
 						console.log(path)
 						console.log(group.parameters)
 
-						serve[path] = {
+						serve[this_accessor] = {
 							group_name: group_name,
 							parameters: item.parameters,
 							item_name: item.name,
@@ -80,7 +84,21 @@ dir.readFiles('../../groups',
 
 						w.get(path, function (req, res) {
 							var p = req.path;
-							var item = serve[p];
+
+
+							// TODO TODO this has to be fixed
+							var d = p.split('/');
+							var this_accessor = '/' + d[1] + '/' + d[2] + '/' + d[3];
+							console.log(this_accessor)
+
+							var item = serve[this_accessor];
+
+							var port = p.split(item.item_name)[1];
+							if ((port.match(/\//g) || []).length == 1) {
+								port = port.substring(1,port.length);
+							}
+
+							console.log('port ' + port)
 
 
 							// Check if we have already instantiated an
@@ -93,8 +111,7 @@ dir.readFiles('../../groups',
 									console.log('USING NEW ACC');
 									console.log(item.accessor)
 
-									var port = p.split(item.item_name)[1];
-									res.send(item.accessor.get(port));
+									res.send(''+item.accessor.get(port));
 								});
 							} else {
 
@@ -105,16 +122,24 @@ dir.readFiles('../../groups',
 								// item.accessor.power(false, function () {
 								// // TODO: this will break if the name is in the port
 								// // or something weird
-								var port = p.split(item.item_name)[1];
 
-								res.send(item.accessor.get(port));
+								res.send(''+item.accessor.get(port));
 								// });
 							}
 						});
 
 						w.post(path, function (req, res) {
 							var p = req.path;
-							var item = serve[p];
+
+							var d = p.split('/');
+							var this_accessor = '/' + d[1] + '/' + d[2] + '/' + d[3];
+
+							var item = serve[this_accessor];
+
+							var port = p.split(item.item_name)[1];
+							if ((port.match(/\//g) || []).length == 1) {
+								port = port.substring(1,port.length);
+							}
 
 
 							// Check if we have already instantiated an
@@ -127,7 +152,6 @@ dir.readFiles('../../groups',
 									console.log('USING NEW ACC');
 									console.log(item.accessor);
 
-									var port = p.split(item.item_name)[1];
 
 									var arg = null;
 									if (item.port_type == 'bool') {
@@ -152,7 +176,6 @@ dir.readFiles('../../groups',
 
 								// TODO: this will break if the name is in the port
 								// or something weird
-								var port = p.split(item.item_name)[1];
 								console.log("IN BODY: " + req.body);
 
 								var arg = null;
