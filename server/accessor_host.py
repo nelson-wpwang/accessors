@@ -520,7 +520,7 @@ def find_accessors (accessor_path, tree_node):
 							log.error("But %s only implements %s",
 									accessor['name'], claim['ports'])
 							raise NotImplementedError("Incomplete interface")
-						accessor['ports'].append(iface.get_port_detail(req, name))
+						accessor['ports'].append(iface.get_port_detail(req, name_map[req]))
 
 				# Run the other accessor checker concept
 				err = validate_accessor.check(accessor)
