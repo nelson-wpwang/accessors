@@ -1,8 +1,9 @@
 {
 	"ports": {
-		"CurrentPower": {
-			"display_name": "Current Power",
+		"Power": {
+			"display_name": "Power Usage",
 			"type": "numeric",
+			"unit": "watts",
 			"direction": "output"
 		}
 	}

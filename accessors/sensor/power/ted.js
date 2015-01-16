@@ -17,14 +17,14 @@ function* get_power () {
 		rt.log.error('Could not get TED data.');
 	} else {
 		watts = parseFloat(data[0].watts);
-		set('CurrentPower', watts);
+		set('Power', watts);
 	}
 }
 
 function* init () {
 
 	provide_interface('/sensor/power', {
-		'/sensor/power.CurrentPower': CurrentPower
+		'/sensor/power.Power': get_power,
 	});
 
 	var pid = get_parameter('profile_id');
