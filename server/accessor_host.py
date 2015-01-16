@@ -278,8 +278,13 @@ class Interface():
 			detail = copy.deepcopy(self.json['ports'][name])
 			detail['name'] = '/' + '/'.join(port.split('.'))
 			detail['function'] = function_name
+			# We add some (currently) optional keys to make downstream stuff
+			# easier, TODO: re-think about what should be required in the
+			# definition of a complete accessor
 			if 'type' not in detail:
 				detail['type'] = 'string'
+			if 'display_name' not in detail:
+				detail['display_name'] = port.split('.')[-1]
 			return detail
 		iface = '/' + '/'.join(port.split('.')[:-1])
 		log.debug(iface)
