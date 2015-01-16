@@ -401,6 +401,7 @@ function checkNewPorts(node) {
     var port = {
       direction: directionNode.value,
       name: nameNode.value,
+      function: nameNode.value,
     };
 
     if (parametersNode !== undefined) {
