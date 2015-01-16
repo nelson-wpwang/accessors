@@ -272,15 +272,16 @@ class Interface():
 			for dep_port in ext:
 				yield dep_port
 
-	def get_port_detail(self, port):
+	def get_port_detail(self, port, function_name):
 		name = port.split('.')[-1]
 		if port in self.ports:
 			detail = self.json['ports'][name]
 			detail['name'] = '/' + '/'.join(port.split('.'))
+			detail['function'] = function_name
 			return detail
 		iface = '/' + '/'.join(port.split('.')[:-1])
 		log.debug(iface)
-		return interface_tree[iface].get_port_detail(port)
+		return interface_tree[iface].get_port_detail(port, function_name)
 
 	@staticmethod
 	def normalize(fq_port):
@@ -506,8 +507,11 @@ def find_accessors (accessor_path, tree_node):
 				# Verify interfaces are fully implemented
 				for claim in accessor['implements']:
 					claim['ports'] = []
-					for port in claim['provides']:
-						claim['ports'].append(Interface.normalize(port))
+					name_map = {}
+					for port,name in claim['provides']:
+						norm = Interface.normalize(port)
+						claim['ports'].append(norm)
+						name_map[norm] = name
 					iface = interface_tree[claim['interface']]
 					for req in iface:
 						if req not in claim['ports']:
@@ -516,7 +520,7 @@ def find_accessors (accessor_path, tree_node):
 							log.error("But %s only implements %s",
 									accessor['name'], claim['ports'])
 							raise NotImplementedError("Incomplete interface")
-						accessor['ports'].append(iface.get_port_detail(req))
+						accessor['ports'].append(iface.get_port_detail(req, name))
 
 				# Run the other accessor checker concept
 				err = validate_accessor.check(accessor)

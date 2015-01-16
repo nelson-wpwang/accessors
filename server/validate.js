@@ -138,7 +138,7 @@ function checkProvidedInterfaceFunctions(iface, node) {
         // TODO: allow anonymous functions to implement interfaces
       }
 
-      iface.provides.push(prop.key.value);
+      iface.provides.push([prop.key.value, prop.value.name]);
     }
   }
 }
