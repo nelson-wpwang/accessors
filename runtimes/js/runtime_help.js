@@ -3,17 +3,25 @@
 
 rt = require('./runtime_web.js');
 
-_do_port_call=function  (port, value) {
+_do_port_call=function (port, value, done_fn) {
 	rt.log.debug("before port call of " + port + "(" + value + ")");
 	var r = port(value);
 	rt.log.debug("after port call, r: " + r);
 	if (r && typeof r.next == 'function') {
+		var def = Q.async(function* () {
+			yield* port(value);
+		});
+
+		def().then(done_fn);
+
+		/*
 		console.log("-----------------------------------------------------");
 		var state;
-		state = r.next();
-		console.log("State first: "); console.log(state);
+		state = r.next("WHAT IF IT IS HERE");
+		console.log("State first: ");
+		console.log(state);
 		while (state.done == false) {
-			state = r.next();
+			state = r.next("THIS IS A TEST");
 			console.log("State next: "); console.log(state);
 		}
 		console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
@@ -22,8 +30,10 @@ _do_port_call=function  (port, value) {
 		//r = r.next().value;
 		rt.log.debug("after port call .next, r: " + state.value);
 		return state.value;
+		*/
+	} else {
+		done_fn();
 	}
-	return r;
 }
 module.exports['_do_port_call'] = _do_port_call;
 

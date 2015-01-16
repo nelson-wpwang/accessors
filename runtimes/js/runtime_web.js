@@ -6,7 +6,7 @@ var request = require('request');
 var tinycolor = require('tinycolor2');
 var atob = require('atob');
 var btoa = require('btoa');
-var color = require('color');
+// var color = require('color');
 
 
 /*
@@ -97,7 +97,7 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 	var options = {
 		url: url,
 		method: method,
-		json: body,
+		body: body,
 		timeout: timeout
 	}
 
@@ -107,6 +107,7 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 		if (!error) {
 			if (response.statusCode == 200) {
 				rt.log.debug("got response " + body);
+				console.log(body);
 				request_defer.resolve(body);
 			} else {
 				throw "httpRequest failed with code " + request.statusCode + " at URL: " + url;
@@ -116,22 +117,24 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 		}
 	});
 
-	rt.log.debug('wwwwwoah');
-
-	yield request_defer.promise;
+	rt.log.debug('before yield in rt.http.request');
+	console.log(request_defer.promise);
+	return yield request_defer.promise;
 }
 
 //This is just GET. Don't know why it's called readURL...
 rt.http.readURL = function* readURL(url) {
-	yield* rt.http.request(url, 'GET', null, null, 0);
+	rt.log.debug("runtime_web::readURL before yield*");
+	return yield* rt.http.request(url, 'GET', null, null, 0);
+	rt.log.debug("runtime_web::readURL after yield*");
 }
 
 rt.http.post = function* post(url, body) {
-	yield* rt.http.request(url, 'POST', null, body, 0);
+	return yield* rt.http.request(url, 'POST', null, body, 0);
 }
 
 rt.http.put = function* put(url, body) {
-	yield* rt.http.request(url, 'PUT', null, body, 0);
+	return yield* rt.http.request(url, 'PUT', null, body, 0);
 }
 
 /*** COLOR FUNCTIONS ***/
@@ -140,7 +143,7 @@ rt.http.put = function* put(url, body) {
 rt.color = Object();
 
 rt.color.hex_to_hsv = function hex_to_hsv (hex_code) {
-	c = tinycolor(hex_code);
+	c = tinycolor('#'+hex_code);
 	return c.toHsv();
 }
 

@@ -1,6 +1,7 @@
 // w for "web server"
 var request = require('request');
-var w = require('express')()
+var w = require('express')();
+var bodyParser = require('body-parser');
 var dir = require('node-dir');
 
 var aruntime = require('./accessors');
@@ -9,14 +10,16 @@ w.get('/', function (req, res) {
   res.send('Hello World!');
 });
 
-var a = ['/hello', '/hi'];
+w.use(bodyParser.text());
+
+// var a = ['/hello', '/hi'];
 
 
-  for (var i=0; i<a.length; i++) {
-  	w.get(a[i], function (req, res) {
-  		res.send('woah');
-  	});
-  }
+//   for (var i=0; i<a.length; i++) {
+//   	w.get(a[i], function (req, res) {
+//   		res.send('woah');
+//   	});
+//   }
 
 // Keep state of all the paths we are serving. Maybe there is a better way
 // to do this, but what we are doing is a bit strange given how web servers
@@ -71,7 +74,8 @@ dir.readFiles('../../groups',
 							parameters: item.parameters,
 							item_name: item.name,
 							item_path: item.path,
-							port: port.name
+							port: port.name,
+							port_type: port.type
 						}
 
 						w.get(path, function (req, res) {
@@ -89,23 +93,22 @@ dir.readFiles('../../groups',
 									console.log('USING NEW ACC');
 									console.log(item.accessor)
 
-									res.send(item.accessor.get(p));
+									var port = p.split(item.item_name)[1];
+									res.send(item.accessor.get(port));
 								});
 							} else {
 
-								console.log('USING ACCESSSSOOORRRR');
-								console.log(item.accessor);
-								console.log(p);
+								// console.log('USING ACCESSSSOOORRRR');
+								// console.log(item.accessor);
+								// console.log(p);
 
-								item.accessor.power(false);
-
-								// TODO: this will break if the name is in the port
-								// or something weird
+								// item.accessor.power(false, function () {
+								// // TODO: this will break if the name is in the port
+								// // or something weird
 								var port = p.split(item.item_name)[1];
 
-
-
 								res.send(item.accessor.get(port));
+								// });
 							}
 						});
 
@@ -126,9 +129,18 @@ dir.readFiles('../../groups',
 
 									var port = p.split(item.item_name)[1];
 
-									item.accessor[port](req.body);
+									var arg = null;
+									if (item.port_type == 'bool') {
+										arg = (req.body == 'true');
+									} else {
+										arg = req.body;
+									}
 
-									res.send('did it');
+									item.accessor[port](arg, function () {
+										res.send('did it');
+									});
+
+									
 								});
 							} else {
 
@@ -136,14 +148,24 @@ dir.readFiles('../../groups',
 								console.log(item.accessor);
 								console.log(p);
 
-								item.accessor.power(false);
+								// item.accessor.power(false);
 
 								// TODO: this will break if the name is in the port
 								// or something weird
 								var port = p.split(item.item_name)[1];
+								console.log("IN BODY: " + req.body);
 
-								item.accessor[port](req.body);
-								res.send('did it!!!');
+								var arg = null;
+								if (item.port_type == 'bool') {
+									arg = (req.body == 'true');
+								} else {
+									arg = req.body;
+								}
+
+								item.accessor[port](arg, function () {
+									res.send('did it');
+								});
+
 							}
 						});
 					}

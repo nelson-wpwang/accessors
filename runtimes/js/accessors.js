@@ -55,7 +55,7 @@ console.log(path);
 
     	//XXX: Implement something to figure out the runtime imports neccessary
     	//	Some of these are from runtime and some are from Hue
-    	var requires = "var Q = require('q');\nvar request = require('request');\nvar tinycolor = require('tinycolor2');\nvar atob = require('atob');\nvar btoa = require('btoa');\nvar color = require('color');var rt = require('./runtime_web.js');\n";
+    	var requires = "var Q = require('q');\nvar request = require('request');\nvar tinycolor = require('tinycolor2');\nvar atob = require('atob');\nvar btoa = require('btoa');\nvar rt = require('./runtime_web.js');\n";
     	//XXX: autogenerate these
     	//	Also figure out what their default values should be
     	var ports_str = "var ports = "+JSON.stringify(ports)+";\n";
@@ -76,9 +76,10 @@ console.log(path);
 
       console.log(device);
 
-      device.init();
-
-      cb(device);
+      device.init(function () {
+        console.log("post-init callback start");
+        cb(device);
+      });
 
     }
 
@@ -113,14 +114,15 @@ function get_exports (accessor) {
       var name = port.name;
       var func = port.function;
 
-      // var wrapper = 'function () {set("'+name+'", arguments[0]); _do_port_call.apply(this, [' + name + '].concat(Array.prototype.slice.call(arguments)))};\n'
-      var wrapper = 'function () { console.log("cool"); _do_port_call.apply(this, [' + func + '].concat(Array.prototype.slice.call(arguments)))}; console.log("cooler");\n'
+      // var wrapper = 'function () {set("'+name+'", arguments[0]); _do_port_call.apply(this, [' + func + '].concat(Array.prototype.slice.call(arguments)))};\n'
+      var wrapper = 'function () {set("'+name+'", arguments[0]); _do_port_call.apply(this, [' + func + ', arguments[0], arguments[1]])};\n'
+      //var wrapper = 'function () { console.log("cool"); _do_port_call.apply(this, [' + func + '].concat(Array.prototype.slice.call(arguments)))}; console.log("cooler");\n'
 
       export_str += 'module.exports["'+name+'"] = ' + wrapper;
       export_str += 'module.exports["'+func+'"] = ' + wrapper;
     }
 
-    export_str += 'module.exports.init= function () { _do_port_call(init); };\n';
+    export_str += 'module.exports.init= function (cb) { _do_port_call(init, null, cb); };\n';
 
 
 
