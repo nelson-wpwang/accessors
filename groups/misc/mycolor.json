@@ -4,9 +4,9 @@
 			"name": "umhue01",
 			"path": "/lighting/hue/huesingle",
 			"parameters": {
-				"bridge_url": "http://4908hue.eecs.umich.edu",
+				"bridge_url": "http://192.168.2.12",
 				"username": "lab11in4908",
-				"bulb_name": "Brad"
+				"bulb_name": "Branden"
 			}
 		}
 	]

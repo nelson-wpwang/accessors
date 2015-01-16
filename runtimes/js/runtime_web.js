@@ -100,9 +100,13 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 		json: body,
 		timeout: timeout
 	}
+
+	rt.log.debug('DOES THIS HAPPEN');
+
 	var req = request(options, function (error, response, body) {
 		if (!error) {
 			if (response.statusCode == 200) {
+				rt.log.debug("got response " + body);
 				request_defer.resolve(body);
 			} else {
 				throw "httpRequest failed with code " + request.statusCode + " at URL: " + url;
@@ -111,6 +115,8 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 			throw "httpRequest at URL: " + url + " had an error: \n" + error;
 		}
 	});
+
+	rt.log.debug('wwwwwoah');
 
 	yield request_defer.promise;
 }

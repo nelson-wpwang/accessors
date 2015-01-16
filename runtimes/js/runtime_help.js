@@ -8,9 +8,20 @@ _do_port_call=function  (port, value) {
 	var r = port(value);
 	rt.log.debug("after port call, r: " + r);
 	if (r && typeof r.next == 'function') {
-		r = r.next().value;
-		rt.log.debug("after port call .next, r: " + r);
-		return r;
+		console.log("-----------------------------------------------------");
+		var state;
+		state = r.next();
+		console.log("State first: "); console.log(state);
+		while (state.done == false) {
+			state = r.next();
+			console.log("State next: "); console.log(state);
+		}
+		console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+		//console.log(r.next());
+		//throw "foo";
+		//r = r.next().value;
+		rt.log.debug("after port call .next, r: " + state.value);
+		return state.value;
 	}
 	return r;
 }

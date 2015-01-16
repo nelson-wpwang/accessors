@@ -99,10 +99,51 @@ dir.readFiles('../../groups',
 
 								item.accessor.power(false);
 
-								// p IS NOT CORRECT HERE
+								// TODO: this will break if the name is in the port
+								// or something weird
+								var port = p.split(item.item_name)[1];
 
 
-								res.send(item.accessor.get(p));
+
+								res.send(item.accessor.get(port));
+							}
+						});
+
+						w.post(path, function (req, res) {
+							var p = req.path;
+							var item = serve[p];
+
+
+							// Check if we have already instantiated an
+							// accessor for this particular device
+							if (!('accessor' in item)) {
+								console.log('CREATING ACCESSOr')
+								aruntime.create_accessor(item.item_path, item.parameters, function (device) {
+									item.accessor = device;
+
+									console.log('USING NEW ACC');
+									console.log(item.accessor);
+
+									var port = p.split(item.item_name)[1];
+
+									item.accessor[port](req.body);
+
+									res.send('did it');
+								});
+							} else {
+
+								console.log('USING ACCESSSSOOORRRR');
+								console.log(item.accessor);
+								console.log(p);
+
+								item.accessor.power(false);
+
+								// TODO: this will break if the name is in the port
+								// or something weird
+								var port = p.split(item.item_name)[1];
+
+								item.accessor[port](req.body);
+								res.send('did it!!!');
 							}
 						});
 					}
