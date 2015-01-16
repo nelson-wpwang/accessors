@@ -18,22 +18,22 @@ module.exports['_do_port_call'] = _do_port_call;
 
 
 
-create_port = function() {}; // Apparently don't need to fill this one in
-provide_interface = function() {}; // Apparently don't need to fill this one in
+var create_port = function() {}; // Apparently don't need to fill this one in
+var provide_interface = function() {}; // Apparently don't need to fill this one in
 
-get = function (port_name) {
+var get = function (port_name) {
 	return ports[port_name];
 }
 
-set = function (port_name, val) {
+var set = function (port_name, val) {
 	ports[port_name] = val;
 }
 
-get_parameter = function (parameter_name) {
+var get_parameter = function (parameter_name) {
 	return parameters[parameter_name];
 }
 
-load_dependency = function (path, parameters) {
+var load_dependency = function (path, parameters) {
 	if(typeof(parameters)==='undefined') parameters = null;
 
 	throw new AccessorRuntimeException("That was optimistic");

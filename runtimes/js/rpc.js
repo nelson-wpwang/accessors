@@ -78,6 +78,7 @@ dir.readFiles('../../groups',
 							var p = req.path;
 							var item = serve[p];
 
+
 							// Check if we have already instantiated an
 							// accessor for this particular device
 							if (!('accessor' in item)) {
@@ -88,16 +89,20 @@ dir.readFiles('../../groups',
 									console.log('USING NEW ACC');
 									console.log(item.accessor)
 
-									res.send(item.accessor);
+									res.send(item.accessor.get(p));
 								});
 							} else {
 
 								console.log('USING ACCESSSSOOORRRR');
-								console.log(item.accessor)
+								console.log(item.accessor);
+								console.log(p);
 
 								item.accessor.power(false);
 
-								res.send(item.accessor);
+								// p IS NOT CORRECT HERE
+
+
+								res.send(item.accessor.get(p));
 							}
 						});
 					}

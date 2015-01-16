@@ -46,8 +46,9 @@ console.log(path);
 
       var ports = {};
       for (var i=0; i<accessor.ports.length; i++) {
-        ports[accessor.ports[i].name] = '';
+        ports[accessor.ports[i].name] = 'on';
       }
+      // console.log(ports);
     
 
     	//console.log("JSON Data:\n", json_data.code);
@@ -67,11 +68,13 @@ console.log(path);
     	var accessor_code = fix_functions(accessor.code);
 
     	// turn the code into a module
-    	var device = requireFromString(requires + ports_str + params + accessor_code + runtime_code);
+    	var device = requireFromString(requires + ports_str + params + runtime_code + accessor_code);
 
-      console.log(device._do_port_call);
+      console.log(requires + ports_str + params +  runtime_code + accessor_code);
 
-      device._do_port_call(device.init, null);
+      console.log(device);
+
+      device.init();
 
       cb(device);
 
@@ -93,30 +96,44 @@ function requireFromString(src) {
 
 function fix_functions(code) {
 	// need to keep a list of module exports for toplevel to call
-		var export_str = "module.exports = {"
+    // var export_str = "module.exports = {};\n";
+		var export_str = "";
 
     // behold the power of regular expressions!
     var functions_list = code.match(/(function)\*? \w+/g);
     
+    // TODO: only export port functions
+    //       need to make sure that accessor has the mapped function names
+
+
     if (functions_list) {
         for (var i=0; i<functions_list.length; i++) {
             decl = functions_list[i];
             func_name = decl.split(' ')[1];
-						if (decl.indexOf('*') > -1) {
-							new_decl = 'var ' + func_name + ' = function*';
-						} else {
-							new_decl = 'var ' + func_name + ' = function*';
-						}
-            code = code.replace(decl, new_decl);
-						export_str += func_name + ': ' + func_name + ', ';
+
+            // YYY: what did this do?
+
+      //       if (func_name == '')
+						// if (decl.indexOf('*') > -1) {
+						// 	new_decl = 'var ' + func_name + ' = function*';
+						// } else {
+						// 	new_decl = 'var ' + func_name + ' = function*';
+						// }
+            // code = code.replace(decl, new_decl);
+						export_str += 'module.exports["'+func_name + '"]= function () {set("'+func_name+'", arguments[0]); _do_port_call.apply(this, [' + func_name + '].concat(Array.prototype.slice.call(arguments)))};\n';
         }
     }
+    
+    export_str += 'module.exports.get= get;\n';
+    export_str += 'module.exports.set= set;\n';
 
-		export_str += '};\n'
+		// export_str += '};\n'
 		code += export_str;
 
 		//console.log(code);
     code = 'var rt = require("./runtime_web.js");\n' + code;
+
+    // console.log(code);
     return code;
 }
 
