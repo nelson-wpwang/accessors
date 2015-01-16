@@ -275,7 +275,7 @@ class Interface():
 	def get_port_detail(self, port, function_name):
 		name = port.split('.')[-1]
 		if port in self.ports:
-			detail = self.json['ports'][name]
+			detail = copy.deepcopy(self.json['ports'][name])
 			detail['name'] = '/' + '/'.join(port.split('.'))
 			detail['function'] = function_name
 			return detail
@@ -595,6 +595,7 @@ load_interface_tree(args.interfaces_path)
 find_accessors(args.accessor_path, None)
 
 #pprint.pprint(accessor_tree, depth=2)
+pprint.pprint(accessor_tree['/lighting/hue/huesingle.js'])
 
 # # Start a monitor to watch for any changes to accessors
 # class AccessorChangeHandler (watchdog.events.FileSystemEventHandler):
