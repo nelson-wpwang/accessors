@@ -278,6 +278,8 @@ class Interface():
 			detail = copy.deepcopy(self.json['ports'][name])
 			detail['name'] = '/' + '/'.join(port.split('.'))
 			detail['function'] = function_name
+			if 'type' not in detail:
+				detail['type'] = 'string'
 			return detail
 		iface = '/' + '/'.join(port.split('.')[:-1])
 		log.debug(iface)
