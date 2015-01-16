@@ -30,6 +30,8 @@ public class AccessorRuntime {
 			runtimeLog.level = log.level;
 		}
 
+		/* legacy accessor lookup
+
 		// Get accessor list for location
 		URL loc_url = new URL(args.server_host + "/accessors" + args.location + "accessors.xml");
 		log.Debug("GET " + loc_url.toString());
@@ -107,6 +109,34 @@ public class AccessorRuntime {
 			log.Error("Could not find accessor " + args.accessor);
 			throw new Exception();
 		}
+		*/
+
+		/* Grab accessor by direct path for now */
+		Element accessorElement = null;
+		{
+			String accessor_url = args.url + ".xml?language=traceur";
+			URL get_url = new URL(args.server_host + "/accessor" + accessor_url);
+			log.Debug("GET " + get_url.toString());
+
+			HttpURLConnection get_url_connection = (HttpURLConnection) get_url.openConnection();
+			try {
+				int responseCode = get_url_connection.getResponseCode();
+				if (responseCode != get_url_connection.HTTP_OK) {
+					log.Error("Attempted request for " + get_url.toString());
+					log.Error("Error GET-ing URL. Exiting.");
+					System.exit(2);
+				}
+
+				DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+				DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+				Document doc = dBuilder.parse(get_url.openStream());
+				doc.getDocumentElement().normalize();
+
+				accessorElement = doc.getDocumentElement();
+			} finally {
+				get_url_connection.disconnect();
+			}
+		}
 
 		// Okay, now we have the accessor, parse out the interesting bits
 		parameters = new HashMap<String, String>();
@@ -129,6 +159,8 @@ public class AccessorRuntime {
 			}
 		}
 
+		/* No parameter support at the moment either
+
 		// Override any default parameters as requested
 		for (int i = 0; i < accessorParameters.getLength(); i++) {
 			Node parameterNode = accessorParameters.item(i);
@@ -145,6 +177,7 @@ public class AccessorRuntime {
 				parameters.put(name, value);
 			}
 		}
+		*/
 
 
 		ports = new HashMap<String, Port>();

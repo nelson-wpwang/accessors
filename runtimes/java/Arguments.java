@@ -4,6 +4,7 @@ public class Arguments {
 	String server_host = "http://localhost:6565";
 	String location = "/usa/michigan/annarbor/universityofmichigan/bbb/4908/";
 	String accessor = "XXX_UNDEFINED_XXX"; // TODO: I think I can write a property getter that traps this?
+	String url = "XXX_TEMP_XXX"; // TODO: need to un-break lookup
 
 	Arguments(String[] args) {
 		// Parse Arguments
