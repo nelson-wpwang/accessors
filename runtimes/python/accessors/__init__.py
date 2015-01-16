@@ -702,6 +702,21 @@ def get_accessor_by_location(server, location, name):
 		pprint.pprint(accessors)
 		raise
 
+def get_accessor_from_server(server, url, parameters={}):
+	server = format_accessor_server(server)
+
+	accessor_path = url + '.json'
+	get_url = '{}/accessor{}'.format(server, accessor_path)
+	logging.debug("GET {}".format(get_url))
+	r2 = requests.get(get_url)
+	if r2.status_code == 200:
+		accessor = Accessor(accessor_path, r2.json(), parameters)
+	else:
+		log.error("Failed to get accessor: {}".format(get_url))
+		raise NotImplementedError("get_accessor error case")
+
+	return accessor
+
 #accessors = {}
 #for location in get_known_locations():
 #	logging.debug('{} :: {}'.format(location['name'], location['path']))
