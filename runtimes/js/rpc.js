@@ -41,6 +41,10 @@ dir.readFiles('../../groups',
 	var group = JSON.parse(content);
 	// console.log(group);
 
+	w.get(group_name, function (req, res) {
+		res.send(group);
+	});
+
 	// for each (var accessor in group.accessors) {
 	for (var i=0; i<group.accessors.length; i++) {
 		var item = group.accessors[i];
