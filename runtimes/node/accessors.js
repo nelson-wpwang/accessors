@@ -141,7 +141,6 @@ function get_exports (accessor) {
 	export_str += '\nmodule.exports.init = function (succ_cb, err_cb) {\n';
 	export_str += '  rt.log.debug("About to init ' + accessor.name + '");\n';
 	export_str += '  _do_port_call(init, null, succ_cb, err_cb);\n';
-	export_str += '  rt.log.debug("Done with init for ' + accessor.name + '");\n';
 	export_str += '};\n';
 
 	// if (functions_list) {

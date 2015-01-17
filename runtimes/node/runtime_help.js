@@ -8,7 +8,6 @@ _do_port_call=function (port, value, done_fn, error_fn) {
 	var r;
 
 	rt.log.debug("before port call of " + port + "(" + value + ")");
-	rt.log.debug("typeof port: " + typeof port);
 
 	try {
 		r = port(value);
@@ -22,7 +21,8 @@ _do_port_call=function (port, value, done_fn, error_fn) {
 		var def = Q.async(function* () {
 			yield* port(value);
 		});
-		def().then(done_fn, error_fn);
+		def().done(done_fn, error_fn);
+		rt.log.debug("port call running asynchronously");
 	} else {
 		done_fn();
 	}
