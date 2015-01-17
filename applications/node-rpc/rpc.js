@@ -63,7 +63,7 @@ dir.readFiles('../../groups',
 
 		if (!('name' in new_device)) {
 			console.log('Skipping device because it is not named.');
-			continue;
+			return;
 		}
 
 		// Retrieve the full accessor from the host server
