@@ -116,9 +116,10 @@ dir.readFiles('../../groups',
 
 						// Handle GET requests for this port
 						w.get(device_port_path, function (req, res) {
+							console.log("GET " + device_port_path + ": (req: " + req + ", res: " + res + ")");
 								// // TODO: this will break if the name is in the port
 								// // or something weird
-							res.send(''+accessor_runtime.get(port));
+							res.send(''+accessor_runtime.get(port.name));
 						});
 
 						w.post(device_port_path, function (req, res) {

@@ -35,10 +35,12 @@ var create_port = function() {}; // Apparently don't need to fill this one in
 var provide_interface = function() {}; // Apparently don't need to fill this one in
 
 var get = function (port_name) {
+	console.log("PORT GET: " + port_name + " => " + ports[port_name]);
 	return ports[port_name];
 }
 
 var set = function (port_name, val) {
+	console.log("SET: " + port_name + " <= " + val);
 	ports[port_name] = val;
 }
 
