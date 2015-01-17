@@ -1,0 +1,19 @@
+{
+  "name": "accessors-validator",
+  "version": "0.1.0",
+  "description": "Tool to help validate and create accessors.",
+  "main": "validate.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "accessors"
+  ],
+  "author": "Pat Pannuto",
+  "license": "ISC",
+  "dependencies": {
+    "fs": "^0.0.2",
+    "underscore": "^1.7.0",
+    "esprima": "ariya/esprima#harmony"
+  }
+}

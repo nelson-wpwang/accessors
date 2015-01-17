@@ -3,15 +3,24 @@ var request = require('request');
 var w = require('express')();
 var bodyParser = require('body-parser');
 var dir = require('node-dir');
+var argv = require('optimist').argv;
 
-var aruntime = require('./accessors');
+var aruntime = require('../../runtimes/node/accessors');
 
-w.get('/', function (req, res) {
-  res.send('Hello World!');
-});
+
+console.log(argv.host_server);
+
+
+if (argv.host_server == undefined) {
+	console.log('Must define --host_server');
+	process.exit(1);
+}
+
+
 
 w.use(bodyParser.text());
 
+// Remove this cross-origin policy nonsense
 w.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "X-Requested-With");
@@ -64,7 +73,7 @@ dir.readFiles('../../groups',
 
 		if ('name' in item) {
 			// console.log(item.name);
-			request('http://localhost:6565/accessor'+item.path+'.json', function (error, response, body) {
+			request(argv.host_server + '/accessor'+item.path+'.json', function (error, response, body) {
 				if (!error && response.statusCode == 200) {
 					var accessor = JSON.parse(body);
 					// console.log(accessor)
