@@ -24,8 +24,8 @@ if not semver.match(tornado.version, ">=3.1.0"):
 import watchdog.events
 import watchdog.observers
 
-sys.path.append(os.path.abspath('../tools'))
-import validate_accessor
+#sys.path.append(os.path.abspath('../tools'))
+#import validate_accessor
 
 import sh
 from sh import rm
@@ -49,7 +49,10 @@ class pushd(object):
 		os.chdir(self.cwd)
 
 
-parse_js = sh.Command(os.path.abspath('./validate.js'))
+try:
+	parse_js = sh.Command(os.path.abspath('./validate.js'))
+except sh.CommandNotFound:
+	parse_js = sh.Command(os.path.abspath('server/validate.js'))
 
 traceur = os.path.join(
 	os.getcwd(),
@@ -530,11 +533,12 @@ def find_accessors (accessor_path, tree_node):
 						accessor['ports'].append(iface.get_port_detail(req, name_map[req]))
 
 				# Run the other accessor checker concept
-				err = validate_accessor.check(accessor)
-				if err:
-					print('ERROR: Invalid accessor format.')
-					accessor['valid'] = False
-					return
+				#err = validate_accessor.check(accessor)
+				#TODO: Maybe put this back someday?
+				#if err:
+				#	print('ERROR: Invalid accessor format.')
+				#	accessor['valid'] = False
+				#	return
 
 				# Make sure that we have at least empty fields for all of the various
 				# keys in the accessor. This simplifies logic down the line.
