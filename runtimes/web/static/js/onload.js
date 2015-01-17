@@ -1,6 +1,6 @@
 /* vim: set noet ts=2 sts=2 sw=2: */
 
-var accessors = [];
+var devices = [];
 
 
 $("#group-select").change(function () {
@@ -28,7 +28,8 @@ $("#group-select").change(function () {
 
 $("#accessor-select").change(function () {
 	if ($(this).val() != "default") {
-		accessor = accessors[$(this).val()];
+		console.log(devices);
+		accessor = devices[$(this).val()];
 		$("#accessor-interface").html(accessor.html);
 
 		// Activate all sliders
@@ -50,11 +51,22 @@ $("#accessor-select").change(function () {
 
 		// Setup callbacks for buttons and check boxes
 		$('#accessor-'+accessor.uuid).on('click', '.accessor-arbitrary-input-button', function () {
-			var port = $(this).siblings('.port');
+			console.log($(this));
+			var port = $(this).parents('.port-html-group').find('.port');
+			console.log(port);
 			post_accessor(accessor.uuid, port.attr('data-port'), port.val());
 		});
 
+
+		$('#accessor-'+accessor.uuid).on('click', '.accessor-get', function () {
+			console.log($(this).parents('.port-html-group'));
+			var port = $(this).parents('.port-html-group').find('.output-port');
+			console.log(port);
+			get_accessor(accessor.uuid, port.attr('data-port'));
+		});
+
 		$('#accessor-'+accessor.uuid).on('click', '.accessor-checkbox', function () {
+
 			post_accessor(accessor.uuid, $(this).attr('data-port'), $(this).is(':checked'));
 		});
 
@@ -70,12 +82,59 @@ function post_accessor (uuid, port, arg) {
 	var accessor = $('#accessor-'+uuid);
 	var device_name = accessor.attr('data-device-name');
 	var device_group = accessor.attr('data-device-group');
+console.log(accessor_runtime_server);
+console.log(device_group);
+	// url = accessor_runtime_server + '/' + device_group + '/' + device_name + '/' + port;
 
-	url = accessor_runtime_server + '/' + device_group + '/' + device_name + '/' + port;
+	var slash = '';
+	if (port.substring(0,1) != '/') {
+		slash = '/';
+	}
+
+	url = device_group + '/' + device_name + slash + port;
+
+
 
 	console.log(url);
+	console.log(arg);
+
+
+	$.post(url, arg);
+
+	var request = $.ajax({
+url: url,
+type: "POST",
+data: arg,
+dataType: "text",
+contentType:"text/plain"
+});
 
 	// Q.spawn(function* () {
 	// 	yield* window[accessor_name][accessor_func](arg);
 	// });
+}
+
+function get_accessor (uuid, port) {
+	var accessor = $('#accessor-'+uuid);
+	var device_name = accessor.attr('data-device-name');
+	var device_group = accessor.attr('data-device-group');
+console.log(accessor_runtime_server);
+console.log(device_group);
+	// url = accessor_runtime_server + '/' + device_group + '/' + device_name + '/' + port;
+
+	var slash = '';
+	if (port.substring(0,1) != '/') {
+		slash = '/';
+	}
+
+	url = device_group + '/' + device_name + slash + port;
+
+
+
+	console.log(url);
+
+
+	$.get(url, function (data) {
+		$('#'+port).text(data);
+	});
 }

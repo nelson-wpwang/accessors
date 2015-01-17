@@ -327,24 +327,24 @@ def nsp(s):
 
 def get_devices (url):
 
-	# r = requests.get(url)
-	# if r.status_code != 200:
-	# 	return flask.jsonify(**{'status': 'error'})
+	r = requests.get(url)
+	if r.status_code != 200:
+		return flask.jsonify(**{'status': 'error'})
 
-	# device_list = r.json()
+	device_list = r.json()['accessors']
 
 
-	device_list = [
-		{
-			"name": "umhue01",
-			"path": "/lighting/hue/huesingle",
-			"parameters": {
-				"bridge_url": "http://4908hue.eecs.umich.edu",
-				"username": "lab11in4908",
-				"name": "Brad"
-			}
-		}
-	]
+	# device_list = [
+	# 	{
+	# 		"name": "umhue01",
+	# 		"path": "/lighting/hue/huesingle",
+	# 		"parameters": {
+	# 			"bridge_url": "http://4908hue.eecs.umich.edu",
+	# 			"username": "lab11in4908",
+	# 			"bulb_name": "Brad"
+	# 		}
+	# 	}
+	# ]
 
 	devices = []
 
@@ -364,6 +364,8 @@ def get_devices (url):
 			accessor['device_name'] = device['name']
 			accessor['device_group'] = url
 			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
+
+			print(accessor)
 
 			devices.append(accessor)
 
@@ -434,8 +436,8 @@ def accessor():
 	groups = []
 	groups.append({'name': 'My Color Demo',
 	               'path': '/misc/mycolor'})
-	groups.append({'name': 'Anywhere',
-	               'path': '/'})
+	groups.append({'name': 'Web',
+	               'path': '/misc/web'})
 
 	return flask.render_template('accessors.jinja',
 	                             groups=groups,

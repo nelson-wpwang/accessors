@@ -16,11 +16,26 @@ function receiver_get_key (xml, key_name) {
 }
 
 function* init () {
+
+  // INTERFACES
+
+  // This audio receiver implements the audio device interface.
+  // This essentially means that we can turn it on and off and adjust its volume.
+  provide_interface('/av/audiodevice', {
+    'onoff.Power': Power,
+    'av.audiodevice.Volume': Volume,
+  });
+
+  // PORTS
+
+  // This receiver has a stored name. This port lets you see that name.
   create_port('output', 'Name');
+  // Select the input from a list specific to this receiver.
   create_port('inout', 'Input', {
     type: 'select',
     options: ['PC', 'Apple TV', 'Internet']
   });
+  // Choose the audio mode.
   create_port('inout', 'AudioMode', {
     type: 'select',
     options: ['Multi Channel Stereo', 'Stereo']
@@ -64,10 +79,10 @@ function* Volume (volume) {
 	rt.log.debug(volume);
 }
 
-function Input (input_setting_choice) {
+function* Input (input_setting_choice) {
 
 }
 
-function wrapup () {
-
+function* AudioMode (audio_setting_choice) {
+  
 }

@@ -13,7 +13,9 @@ var bulb_layout;
 
 function* prefetch_bulb_layout () {
 	var url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights';
+	rt.log.debug('got here');
 	bulb_layout = JSON.parse(yield* rt.http.readURL(url));
+	rt.log.debug(bulb_layout);
 }
 
 function get_bulb_id () {
@@ -35,11 +37,11 @@ function* set_bulb_paramter (params) {
 
 function* init () {
 	provide_interface('/lighting/light', {
-			'lighting.light.Power': power,
+			'/lighting/light.Power': power,
 			});
 	provide_interface('/lighting/hue', {
-			'lighting.rgb.color': color,
-			'lighting.brightness.Brightness': brightness,
+			'/lighting/rgb.Color': color,
+			'/lighting/brightness.Brightness': brightness,
 			});
 
 	yield* prefetch_bulb_layout();

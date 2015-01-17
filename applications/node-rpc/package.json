@@ -1,0 +1,21 @@
+{
+  "name": "node-rpc",
+  "version": "0.1.0",
+  "description": "HTTP webserver interface for running accessors.",
+  "main": "rpc.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "accessors"
+  ],
+  "author": "Brad Campbell, Branden Ghena",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.10.1",
+    "express": "^4.11.0",
+    "node-dir": "^0.1.6",
+    "optimist": "^0.6.1",
+    "request": "^2.51.0"
+  }
+}

@@ -1,0 +1,10 @@
+{
+	"ports": {
+		"Power": {
+			"display_name": "Power Usage",
+			"type": "numeric",
+			"unit": "watts",
+			"direction": "output"
+		}
+	}
+}
