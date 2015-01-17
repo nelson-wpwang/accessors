@@ -1,3 +1,5 @@
+// vim: set ts=2 sts=2 sw=2 noet:
+
 // w for "web server"
 var request = require('request');
 var w = require('express')();
