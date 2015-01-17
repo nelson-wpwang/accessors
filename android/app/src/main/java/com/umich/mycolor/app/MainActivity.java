@@ -30,7 +30,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -60,7 +59,7 @@ public class MainActivity extends Activity implements ColorPicker.OnColorChanged
     private HashMap<String, ArrayList<Integer>> rssi_bank; //used for the rssi max stuff
 
     private static int maxCalcDelayMS = 10000; //milliseconds
-    private String cur_url = "http://requestb.in/u6khsiu6";
+    private String cur_url = "http://requestb.in/1bxt9ut1";
     private Handler h;
 
     private Integer NUM_OLD_RSSI_CHART = 15;
@@ -195,11 +194,11 @@ public class MainActivity extends Activity implements ColorPicker.OnColorChanged
                 String responseBody = "";
                 HttpResponse response = null;
                 try {
-                    httppost.setHeader(HTTP.CONTENT_TYPE, "application/json");
+                    httppost.setHeader(HTTP.CONTENT_TYPE, "text/plain");
                     String truncated_color = color.substring(2);
-                    jsComm.put("color", String.valueOf(truncated_color));
-                    Log.w("POST data:", truncated_color);
-                    httppost.setEntity(new StringEntity(jsComm.toString(), "UTF-8"));
+                    //jsComm.put("color", String.valueOf(truncated_color));
+                   // Log.w("POST data:", truncated_color);
+                    httppost.setEntity(new StringEntity(truncated_color, "UTF-8"));
                     response = httpclient.execute(httppost);
 
                     if (response.getStatusLine().getStatusCode() == 200) {
@@ -215,8 +214,6 @@ public class MainActivity extends Activity implements ColorPicker.OnColorChanged
                 } catch (ClientProtocolException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
