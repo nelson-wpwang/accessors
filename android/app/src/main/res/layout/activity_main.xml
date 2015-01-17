@@ -11,40 +11,51 @@
     <RelativeLayout
             android:layout_width="fill_parent"
             android:layout_height="25dp"
-            android:layout_alignParentTop="true">
+
+            android:layout_alignParentTop="true" android:id="@+id/relativeLayout">
     </RelativeLayout>
+
+
+
+
     <LinearLayout
             android:orientation="vertical"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent" android:weightSum="1">
+
         <RelativeLayout
                 android:layout_width="fill_parent"
-                android:layout_height="108dp">
+                android:layout_height="372dp" android:layout_weight="0.93">
             <ImageView
-                    android:layout_width="100dp"
+                    android:layout_width="107dp"
                     android:layout_height="70dp"
-                    android:id="@+id/imageView" android:background="@drawable/lab11_1000px" android:layout_row="6"
-                    android:layout_column="11"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_centerHorizontal="true" android:layout_alignParentBottom="true"/>
-        </RelativeLayout>
-        <RelativeLayout
-                android:layout_width="fill_parent"
-                android:layout_height="372dp">
+                    android:id="@+id/imageView2"
+                    android:background="@drawable/blockm"
+                    android:layout_marginTop="40dp"
+                    android:layout_alignParentTop="true" android:layout_centerHorizontal="true"/>
             <com.larswerkman.holocolorpicker.ColorPicker
                 android:id="@+id/colorPicker"
+                android:color="@android:color/white"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true" android:layout_centerHorizontal="true"/>
+                android:layout_below="@+id/imageView2" android:layout_centerHorizontal="true"
+                android:layout_marginTop="50dp"/>
+            <Button
+                    android:id="@+id/setColorBTN"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Update Color"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_below="@+id/colorPicker" android:layout_centerHorizontal="true"/>
+            <ImageButton
+                    android:id="@+id/voiceBTN"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:src="@android:drawable/ic_btn_speak_now" android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp" android:layout_alignParentBottom="true"
+                    android:layout_centerHorizontal="true">
+            </ImageButton>
         </RelativeLayout>
-        <Button
-                android:id="@+id/setColorBTN"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Update Color"
-                android:layout_gravity="center_horizontal"
-                android:layout_centerHorizontal="true"
-                android:layout_alignBottom="@+id/colorPicker"/>
     </LinearLayout>
 
 

@@ -83,9 +83,19 @@
     </content>
     <orderEntry type="jdk" jdkName="Android API 21 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" exported="" name="apache-mime4j-dom-0.7.2" level="project" />
+    <orderEntry type="library" exported="" name="support-v4-21.0.2" level="project" />
+    <orderEntry type="library" exported="" name="httpcore-4.4" level="project" />
+    <orderEntry type="library" exported="" name="acra-4.5.0" level="project" />
+    <orderEntry type="library" exported="" name="apache-mime4j-storage-0.7.2" level="project" />
+    <orderEntry type="library" exported="" name="apache-mime4j-examples-0.7.2" level="project" />
+    <orderEntry type="library" exported="" name="commons-io-1.4" level="project" />
     <orderEntry type="library" exported="" name="support-annotations-21.0.2" level="project" />
     <orderEntry type="library" exported="" name="HoloColorPicker-1.4" level="project" />
-    <orderEntry type="library" exported="" name="support-v4-21.0.2" level="project" />
+    <orderEntry type="library" exported="" name="androidplot-core-0.6.1" level="project" />
+    <orderEntry type="library" exported="" name="apache-mime4j-core-0.7.2" level="project" />
+    <orderEntry type="library" exported="" name="httpmime-4.4-beta1" level="project" />
+    <orderEntry type="library" exported="" name="apache-mime4j-benchmark-0.7.2" level="project" />
     <orderEntry type="library" exported="" name="appcompat-v7-21.0.2" level="project" />
   </component>
 </module>

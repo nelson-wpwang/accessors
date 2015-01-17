@@ -2,31 +2,71 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.umich.mycolor.app" >
 
+
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:name=".Main"
+        android:label="@string/app_name">
+
+    <activity android:name="org.acra.CrashReportDialog"
+              android:launchMode="singleInstance"
+              android:excludeFromRecents="true"
+              android:finishOnTaskLaunch="true" />
+
+        <activity android:name="com.umich.mycolor.app.Grapher"
+                  android:parentActivityName="com.umich.mycolor.app.MainActivity" >
+            >
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+        </activity>
+
         <activity
             android:name="com.umich.mycolor.app.MainActivity"
+            android:screenOrientation="portrait"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
+
+
+
 
     <com.larswerkman.holocolorpicker.ColorPicker
             android:id="@+id/picker"
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+
+    <TextView
+            android:id="@+id/text1"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            />
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="132dp"
+            android:text="..." ></TextView>
+
+    <ImageButton
+            android:id="@+id/voiceBTN"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/text1"
+            android:layout_centerHorizontal="true"
+            android:layout_margin="10dp"
+            android:layout_marginTop="37dp"
+            android:src="@android:drawable/ic_btn_speak_now" ></ImageButton>
+    </application>
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
-    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.INTERNET" android:required="true"></uses-permission>
 
 </manifest>
