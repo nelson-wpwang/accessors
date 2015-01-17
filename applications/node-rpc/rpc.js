@@ -6,7 +6,8 @@ var dir = require('node-dir');
 var argv = require('optimist').argv;
 var s = require('underscore.string');
 
-var aruntime = require('../../runtimes/node/accessors');
+//var aruntime = require('../../runtimes/node/accessors');
+var aruntime = require('accessors');
 
 var GROUP_FOLDER = '../../groups'
 
@@ -14,6 +15,9 @@ var GROUP_FOLDER = '../../groups'
 if (argv.host_server == undefined) {
 	console.log('Must define --host_server');
 	process.exit(1);
+}
+if (argv.host_server.slice(0, 7) != 'http://') {
+	argv.host_server = 'http://' + argv.host_server;
 }
 if (argv.port == undefined) {
 	console.log('Must define --port');
@@ -53,6 +57,7 @@ dir.readFiles('../../groups',
 
 	// Create a route for retrieving all of the group information
 	w.get(group_name, function (req, res) {
+		console.log("GET " + group_name + ": (req: " + req + ", res: " + res + ")");
 		res.send(group);
 	});
 
@@ -64,6 +69,8 @@ dir.readFiles('../../groups',
 		if (!('name' in new_device)) {
 			console.log('Skipping device because it is not named.');
 			return;
+		} else {
+			console.log('Not skipping ' + new_device.name);
 		}
 
 		// Retrieve the full accessor from the host server
@@ -79,13 +86,11 @@ dir.readFiles('../../groups',
 				// Generate an object for the accessor that we can actually
 				// call and execute.
 				aruntime.create_accessor(new_device.path, new_device.parameters, function (accessor_runtime) {
+					// Success callback
 
 					// Iterate through all ports so we can create routes
 					// for all ports.
 					accessor.ports.forEach(function (port, port_index, port_array) {
-					// for (var j=0; j<accessor.ports.length; j++) {
-						// var port = accessor.ports[j];
-
 						console.log('Adding port ' + port.name);
 
 						var slash = '';
@@ -94,6 +99,7 @@ dir.readFiles('../../groups',
 						}
 						var port_path = slash + port.name;
 						var device_port_path = device_base_path + port_path;
+						console.log(device_port_path);
 
 						// Save information about this particular device in a
 						// global structure so we can keep track of it when
@@ -110,108 +116,33 @@ dir.readFiles('../../groups',
 
 						// Handle GET requests for this port
 						w.get(device_port_path, function (req, res) {
-							// var device_info = device_info;
-
-
-							// Check if we have already instantiated an
-							// accessor for this particular device
-							// if (!('accessor' in item)) {
-							// 	console.log('CREATING ACCESSOr')
-							// 	aruntime.create_accessor(item.item_path, item.parameters, function (device) {
-							// 		item.accessor = device;
-
-							// 		console.log('USING NEW ACC');
-							// 		console.log(item.accessor)
-
-							// 		res.send(''+item.accessor.get(port));
-							// 	});
-							// } else {
-
-								// console.log('USING ACCESSSSOOORRRR');
-								// console.log(item.accessor);
-								// console.log(p);
-
-								// item.accessor.power(false, function () {
 								// // TODO: this will break if the name is in the port
 								// // or something weird
-
 							res.send(''+accessor_runtime.get(port));
-								// });
-							// }
 						});
 
-						w.post(path, function (req, res) {
-							// var p = req.path;
-
-							// var d = p.split('/');
-							// var this_accessor = '/' + d[1] + '/' + d[2] + '/' + d[3];
-
-							// var item = serve[this_accessor];
-
-							// var port = p.split(item.item_name)[1];
-							// if ((port.match(/\//g) || []).length == 1) {
-							// 	port = port.substring(1,port.length);
-							// }
-
-
-
-
-							// Check if we have already instantiated an
-							// accessor for this particular device
-							// if (!('accessor' in item)) {
-							// 	console.log('CREATING ACCESSOr')
-							// 	aruntime.create_accessor(item.item_path, item.parameters, function (device) {
-							// 		item.accessor = device;
-
-							// 		console.log('USING NEW ACC');
-							// 		console.log(item.accessor);
-
+						w.post(device_port_path, function (req, res) {
 							var arg = null;
 							if (port.type == 'bool') {
 								arg = (req.body == 'true');
 							} else {
 								arg = req.body;
 							}
-									
 
 							accessor_runtime[port.name](arg, function () {
 								res.send('did it');
 							});
-
-									
-							// 	});
-							// } else {
-
-							// 	console.log('USING ACCESSSSOOORRRR');
-							// 	console.log(item.accessor);
-							// 	console.log(p);
-
-							// 	// item.accessor.power(false);
-
-							// 	// TODO: this will break if the name is in the port
-							// 	// or something weird
-							// 	console.log("IN BODY: " + req.body);
-
-							// 	var arg = null;
-							// 	if (item.port_type == 'bool') {
-							// 		arg = (req.body == 'true');
-							// 	} else {
-							// 		arg = req.body;
-							// 	}
-
-							// 	item.accessor[port](arg, function () {
-							// 		res.send('did it');
-							// 	});
-
-							// }
 						});
 					});
+				}, function () {
+					// Error callback
+					console.log("error creating accessor: " + accessor_url);
 				});
 			} else {
-				console.log('err');
+				console.log("error requesting accessor: " + accessor_url);
+				console.log(error);
 			}
 		});
-
 	});
 
 	next();
