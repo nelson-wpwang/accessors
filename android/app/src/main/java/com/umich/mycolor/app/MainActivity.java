@@ -419,7 +419,9 @@ public class MainActivity extends Activity implements ColorPicker.OnColorChanged
                 }
                 colorPicker.setOldCenterColor(colorPicker.getColor());
                 colorPicker.setNewCenterColor(colorPicker.getColor());
-
+                Transmitter transmitter = new Transmitter();
+                TransmitterType toTransmit = new TransmitterType(cur_url, COLOR_HEX);
+                transmitter.execute(toTransmit);
             }
         });
     }
