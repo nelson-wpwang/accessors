@@ -1,12 +1,57 @@
 {
 	"accessors": [
 		{
-			"name": "umhue01",
+			"name": "umhue02",
 			"path": "/lighting/hue/huesingle",
 			"parameters": {
-				"bridge_url": "http://192.168.2.12",
+				"bridge_url": "http://169.229.223.147",
+				"username": "lab11in4908",
+				"bulb_name": "Noah"
+			}
+		},
+		{
+			"name": "umhue03",
+			"path": "/lighting/hue/huesingle",
+			"parameters": {
+				"bridge_url": "http://169.229.223.147",
 				"username": "lab11in4908",
 				"bulb_name": "Branden"
+			}
+		},
+		{
+			"name": "umhue04",
+			"path": "/lighting/hue/huesingle",
+			"parameters": {
+				"bridge_url": "http://169.229.223.147",
+				"username": "lab11in4908",
+				"bulb_name": "Will"
+			}
+		},
+		{
+			"name": "umhue05",
+			"path": "/lighting/hue/huesingle",
+			"parameters": {
+				"bridge_url": "http://169.229.223.147",
+				"username": "lab11in4908",
+				"bulb_name": "Pat"
+			}
+		},
+		{
+			"name": "umhue06",
+			"path": "/lighting/hue/huesingle",
+			"parameters": {
+				"bridge_url": "http://169.229.223.147",
+				"username": "lab11in4908",
+				"bulb_name": "Spare 1"
+			}
+		},
+		{
+			"name": "umhue07",
+			"path": "/lighting/hue/huesingle",
+			"parameters": {
+				"bridge_url": "http://169.229.223.147",
+				"username": "lab11in4908",
+				"bulb_name": "Brad"
 			}
 		}
 	]
