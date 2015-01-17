@@ -133,6 +133,9 @@ public class MainActivity extends Activity implements ColorPicker.OnColorChanged
                                 int color = colorPicker.getColor();
                                 COLOR_HEX = Integer.toHexString(color);
                                 Log.i("BLE: COLOR", COLOR_HEX);
+                                if (rssi_bank.get(url) == null) {
+                                    rssi_bank.put(url, new ArrayList<Integer>());
+                                }
                                 if (rssi_bank.get(url).size() >= NUM_OLD_RSSI_CHART){
                                     rssi_bank.get(url).remove(0);
                                 }
