@@ -436,8 +436,8 @@ def accessor():
 	groups = []
 	groups.append({'name': 'My Color Demo',
 	               'path': '/misc/mycolor'})
-	groups.append({'name': 'Anywhere',
-	               'path': '/'})
+	groups.append({'name': 'Web',
+	               'path': '/misc/web'})
 
 	return flask.render_template('accessors.jinja',
 	                             groups=groups,

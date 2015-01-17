@@ -12,6 +12,12 @@ w.get('/', function (req, res) {
 
 w.use(bodyParser.text());
 
+w.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "X-Requested-With");
+  next();
+});
+
 // var a = ['/hello', '/hi'];
 
 
@@ -104,6 +110,10 @@ dir.readFiles('../../groups',
 
 							console.log('port ' + port)
 
+							console.log(item);
+
+							console.log(item.accessor.ports)
+
 
 							// Check if we have already instantiated an
 							// accessor for this particular device
@@ -146,6 +156,8 @@ dir.readFiles('../../groups',
 							}
 
 
+
+
 							// Check if we have already instantiated an
 							// accessor for this particular device
 							if (!('accessor' in item)) {
@@ -156,13 +168,13 @@ dir.readFiles('../../groups',
 									console.log('USING NEW ACC');
 									console.log(item.accessor);
 
-
 									var arg = null;
 									if (item.port_type == 'bool') {
 										arg = (req.body == 'true');
 									} else {
 										arg = req.body;
 									}
+									
 
 									item.accessor[port](arg, function () {
 										res.send('did it');
