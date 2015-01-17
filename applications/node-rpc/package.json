@@ -17,6 +17,7 @@
     "node-dir": "^0.1.6",
     "optimist": "^0.6.1",
     "request": "^2.51.0",
+    "semver": "^4.2.0",
     "underscore.string": "^3.0.0"
   }
 }

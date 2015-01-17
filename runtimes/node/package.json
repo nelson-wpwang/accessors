@@ -4,6 +4,7 @@
   "description": "An Accessor Runtime written for node.js",
   "main": "accessors.js",
   "dependencies": {
+    "semver": "^4.2.0",
     "request": "^2.51.0"
   },
   "devDependencies": {},

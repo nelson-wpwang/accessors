@@ -1,1 +1,1 @@
-runtimes/web/Dockerfile
+applications/node-rpc/Dockerfile
