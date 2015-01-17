@@ -110,15 +110,14 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 				console.log(body);
 				request_defer.resolve(body);
 			} else {
-				throw "httpRequest failed with code " + request.statusCode + " at URL: " + url;
+				request_defer.reject("httpRequest failed with code " + request.statusCode + " at URL: " + url);
 			}
 		} else {
-			throw "httpRequest at URL: " + url + " had an error: \n" + error;
+			request_defer.reject("httpRequest at URL: " + url + " had an error: \n" + error);
 		}
 	});
 
 	rt.log.debug('before yield in rt.http.request');
-	console.log(request_defer.promise);
 	return yield request_defer.promise;
 }
 
