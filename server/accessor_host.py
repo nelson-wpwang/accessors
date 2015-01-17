@@ -13,6 +13,11 @@ import sys
 import os
 import re
 
+# All I want is the terminal title to change; oh well.
+import setproctitle
+setproctitle.setproctitle("accessors:host_server")
+sys.stdout.write("\x1b]2;accessors:host_server\x07")
+
 import semver
 
 import tornado

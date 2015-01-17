@@ -8,3 +8,4 @@ websockets
 sh
 python-bond
 semver
+setproctitle
