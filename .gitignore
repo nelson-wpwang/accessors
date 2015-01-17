@@ -32,6 +32,9 @@ var/
 pip-log.txt
 pip-delete-this-directory.txt
 
+# node/npm modules
+node_modules
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
