@@ -44,7 +44,9 @@ function* init () {
 			'/lighting/brightness.Brightness': brightness,
 			});
 
+	rt.log.debug("Accessor::hue_single init before prefetch");
 	yield* prefetch_bulb_layout();
+	rt.log.debug("Accessor::hue_single init after prefetch (end of init)");
 }
 
 function* power (on) {
