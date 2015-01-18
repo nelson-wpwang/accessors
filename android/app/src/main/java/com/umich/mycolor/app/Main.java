@@ -8,12 +8,10 @@ import org.acra.ReportingInteractionMode;
 import org.acra.annotation.ReportsCrashes;
 import org.acra.sender.HttpSender;
 
-/*
-package com.umich.mycolor.app;
-*/
- class Private {
-        public final static String user_name = "fdsafd";
-        public final static String password = "fuck noah";
+
+class Private {
+        public final static String user_name = "Username";
+        public final static String password = "Password";
 }
 
 
