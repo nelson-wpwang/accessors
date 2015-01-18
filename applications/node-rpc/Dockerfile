@@ -7,12 +7,13 @@ RUN	apt-get install -y --force-yes -q curl
 RUN	curl -sL https://deb.nodesource.com/setup | sudo bash -
 RUN	sudo apt-get install -y nodejs
 
-# Install nvm and use new node
-RUN	curl https://raw.githubusercontent.com/creationix/nvm/v0.22.2/install.sh | bash
-RUN	bash -c "source ~/.nvm/nvm.sh && nvm install 0.11"
-
 # Seems we have to install git as well (let's err on the side of caution w/ b-e too)
 RUN	sudo apt-get install -y git build-essential
+
+# Install nvm and use new node
+RUN	mkdir /nvm
+RUN	curl https://raw.githubusercontent.com/creationix/nvm/v0.22.2/install.sh | NVM_DIR=nvm bash
+RUN	bash -c "source /nvm/nvm.sh && nvm install 0.11"
 
 # Copy my app source code
 COPY	groups			/groups
@@ -31,6 +32,6 @@ RUN	cd /app/node_modules && rm -f accessors && ln -s ../../node-runtime accessor
 EXPOSE	3000:3000
 
 # Hack around directory specificity of node_modules
-RUN	echo '#!/bin/bash\nset -e\nsource ~/.nvm/nvm.sh\nnvm use 0.11\ncd /app\nnode rpc.js "$@"' > run.sh && chmod +x run.sh
+RUN	echo '#!/bin/bash\nset -e\nsource /nvm/nvm.sh\nnvm use 0.11\ncd /app\nnode rpc.js "$@"' > run.sh && chmod +x run.sh
 
 ENTRYPOINT ["bash", "run.sh"]

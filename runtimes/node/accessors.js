@@ -44,7 +44,8 @@ function create_accessor (path, parameters, success_cb, error_cb) {
 	if (parameters == undefined) {
 		parameters = {};
 	}
-	request('http://localhost:6565/accessor'+path+'.json', function (error, response, body) {
+	// console.log(path+)
+	request(path, function (error, response, body) {
 			if (!error && response.statusCode == 200) {
 				var accessor = JSON.parse(body);
 				// console.log(accessor)
@@ -91,13 +92,15 @@ function create_accessor (path, parameters, success_cb, error_cb) {
 				console.log("art::create_accessor before requireFromString " + accessor.name);
 				var device = requireFromString(module_as_string);
 
-				console.log(device);
+				console.log('device: ' +device);
 
 				console.log("art::create_accessor before init-ing " + accessor.name);
 				device.init(function () {
 					console.log("post-init callback start");
 					success_cb(device);
 				}, error_cb);
+			} else {
+				console.log('no acc')
 			}
 });
 

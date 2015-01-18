@@ -84,11 +84,14 @@ dir.readFiles('../../groups',
 				var accessor = JSON.parse(body);
 
 				console.log('Adding accessor ' + accessor.name);
+				console.log(new_device.path)
 
 				// Generate an object for the accessor that we can actually
 				// call and execute.
-				aruntime.create_accessor(new_device.path, new_device.parameters, function (accessor_runtime) {
+				// aruntime.create_accessor(new_device.path, new_device.parameters, function (accessor_runtime) {
+				aruntime.create_accessor(accessor_url, new_device.parameters, function (accessor_runtime) {
 					// Success callback
+
 
 					// Iterate through all ports so we can create routes
 					// for all ports.
@@ -123,6 +126,8 @@ dir.readFiles('../../groups',
 								// // or something weird
 							res.send(''+accessor_runtime.get(port.name));
 						});
+
+						console.log('GET THE PATHHTHHTJKDSHKJFJDSLKJ ' + device_port_path);
 
 						w.post(device_port_path, function (req, res) {
 							var arg = null;
