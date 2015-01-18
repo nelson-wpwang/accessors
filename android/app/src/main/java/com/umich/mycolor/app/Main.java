@@ -10,12 +10,12 @@ import org.acra.sender.HttpSender;
 
 /*
 package com.umich.mycolor.app;
-
-public class Private {
-        public final static String user_name = <YOUR USERNAME HERE>;
-        public final static String password = <YOUR PASSWORD HERE>;
+*/
+ class Private {
+        public final static String user_name = "fdsafd";
+        public final static String password = "fuck noah";
 }
- */
+
 
 
 @ReportsCrashes(

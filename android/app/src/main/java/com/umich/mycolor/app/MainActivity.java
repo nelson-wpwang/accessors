@@ -116,6 +116,24 @@ public class MainActivity extends Activity implements ColorPicker.OnColorChanged
                     Integer dec_size = Integer.parseInt(hex_size, 16) - 3;
                     String data = byte_str.substring(index + 4, index + 4 + (dec_size * 2));
                     String url = convertHexToString(data);
+                    if (url.indexOf("umhue02") != -1) {
+                        url = "http://169.229.223.74:3000/misc/mycolor/umhue02/lighting/rgb/Color";
+                    }
+                    if (url.indexOf("umhue03") != -1) {
+                        url = "http://169.229.223.74:3000/misc/mycolor/umhue03/lighting/rgb/Color";
+                    }
+                    if (url.indexOf("umhue04") != -1) {
+                        url = "http://169.229.223.74:3000/misc/mycolor/umhue04/lighting/rgb/Color";
+                    }
+                    if (url.indexOf("umhue05") != -1) {
+                        url = "http://169.229.223.74:3000/misc/mycolor/umhue05/lighting/rgb/Color";
+                    }
+                    if (url.indexOf("umhue06") != -1) {
+                        url = "http://169.229.223.74:3000/misc/mycolor/umhue06/lighting/rgb/Color";
+                    }
+                    if (url.indexOf("umhue07") != -1) {
+                        url = "http://169.229.223.74:3000/misc/mycolor/umhue07/lighting/rgb/Color";
+                    }
                     if (ble_debug) {
                         //Log.i("BLE:HIT", "##################");
                         //Log.i("BLE: RRSI", String.valueOf(rssi));
