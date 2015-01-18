@@ -32,6 +32,6 @@ RUN	cd /app/node_modules && rm -f accessors && ln -s ../../node-runtime accessor
 EXPOSE	3000:3000
 
 # Hack around directory specificity of node_modules
-RUN	echo '#!/bin/bash\nset -e\nsource /nvm/nvm.sh\nnvm use 0.11\ncd /app\nnode rpc.js "$@"' > run.sh && chmod +x run.sh
+RUN	echo '#!/bin/bash\nset -e\nsource /nvm/nvm.sh\nnvm use 0.11\ncd /app\nnode --harmony rpc.js "$@"' > run.sh && chmod +x run.sh
 
 ENTRYPOINT ["bash", "run.sh"]
