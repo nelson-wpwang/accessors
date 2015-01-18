@@ -7,54 +7,31 @@ if (!semver.satisfies(process.version, '>=0.11.0')) {
 	throw "Your node version (" + process.version + ") is too old. Need >=0.11";
 }
 
-//XXX: Should include actual dependencies somehow and only push these into the module
 
-// var json_data = '';
+module.exports = function (host_server) {
+	// Base path to a source of accessor files.
+	var host_server = host_server;
 
-/*
-//XXX This can be used again when Pat gets the accessor accessor working
-http.get("http://pfet-v2.eecs.umich.edu:6565/accessor/onoffdevice/light/hue/huesingle.json", function(res) {
-console.log("Got response:\n" + res.statusCode);
-var body = '';
+	function create_accessor (path, parameters, success_cb, error_cb) {
+		console.log('art::create_accessor from path: ' + path);
 
-res.on('data', function(chunk) {
-body += chunk;
-});
-
-res.on('end', function() {
-json_data = JSON.parse(body);
-});
-}).on('error', function(e) {
-console.log("Got error: " + e.message);
-});
-*/
-
-// --- for testing offline ---
-// var json_str = fs.readFileSync('huesingle.json', 'utf8');
-//var json_str = fs.readFileSync('test.json', 'utf8');
-// ---------------------------
-
-// var hue = create_accessor(JSON.parse(json_str));
-// var promise = hue.init().next().value;
-// promise.then(function(){promise = hue.get_buld_id().next().value;});
-
-function create_accessor (path, parameters, success_cb, error_cb) {
-	console.log('art::create_accessor from path: ' + path);
-
-	if (parameters == undefined) {
-		parameters = {};
-	}
-	// console.log(path+)
-	request(path, function (error, response, body) {
+		if (parameters == undefined) {
+			parameters = {};
+		}
+		// Get the accessor file and actually load the object
+		request(host_server + path, function (error, response, body) {
 			if (!error && response.statusCode == 200) {
 				var accessor = JSON.parse(body);
-				// console.log(accessor)
 
 				var ports = {};
 				for (var i=0; i<accessor.ports.length; i++) {
-					ports[accessor.ports[i].name] = '';
+					var port = accessor.ports[i];
+					var value = '';
+					if ('default' in port) {
+						value = port['default'];
+					}
+					ports[port.name] = value;
 				}
-				// console.log(ports);
 
 				//XXX: Implement something to figure out the runtime imports neccessary
 				//	Some of these are from runtime and some are from Hue
@@ -67,13 +44,9 @@ function create_accessor (path, parameters, success_cb, error_cb) {
 				requires += "var btoa = require('btoa');\n";
 				requires += "var rt = require('"+runtime_web_file+"');\n";
 
-				//XXX: autogenerate these
-				//	Also figure out what their default values should be
 				var ports_str = "var ports = "+JSON.stringify(ports)+";\n";
 				console.log('art::create_accessor Ports string: ' + ports_str);
 
-				//XXX: autogenerate these
-				//	Also figure out what their default values should be
 				var params = "var parameters = "+JSON.stringify(parameters)+";\n";
 				console.log('art::create_accessor Parameters: ' + params);
 
@@ -100,77 +73,54 @@ function create_accessor (path, parameters, success_cb, error_cb) {
 					success_cb(device);
 				}, error_cb);
 			} else {
-				console.log('no acc')
+				console.log('Could not get accessor file from host server.');
+				if (error) {
+					console.log(error);
+				}
 			}
-});
+		});
 
-}
-
-function requireFromString(src) {
-	// turns a code string into a loaded module
-	var Module = module.constructor;
-	var m = new Module();
-	m.paths = module.paths;
-	m._compile(src);
-	//console.log(m);
-	return m.exports;
-}
-
-function get_exports (accessor) {
-	// need to keep a list of module exports for toplevel to call
-	// var export_str = "module.exports = {};\n";
-	var export_str = "";
-
-	// behold the power of regular expressions!
-	// var functions_list = code.match(/(function)\*? \w+/g);
-
-	// TODO: only export port functions
-	//       need to make sure that accessor has the mapped function names
-
-
-	for (var i=0; i<accessor.ports.length; i++) {
-		var port = accessor.ports[i];
-		var name = port.name;
-
-		var func = port.function || port.name;
-
-		// var wrapper = 'function () {set("'+name+'", arguments[0]); _do_port_call.apply(this, [' + func + '].concat(Array.prototype.slice.call(arguments)))};\n'
-		var wrapper = 'function () {set("'+name+'", arguments[0]); _do_port_call.apply(this, [' + func + ', arguments[0], arguments[1]])};\n'
-
-		export_str += 'module.exports["'+name+'"] = ' + wrapper;
-		export_str += 'module.exports["'+func+'"] = ' + wrapper;
 	}
 
-	export_str += '\nmodule.exports.init = function (succ_cb, err_cb) {\n';
-	export_str += '  rt.log.debug("About to init ' + accessor.name + '");\n';
-	export_str += '  _do_port_call(init, null, succ_cb, err_cb);\n';
-	export_str += '};\n';
+	function requireFromString(src) {
+		// turns a code string into a loaded module
+		var Module = module.constructor;
+		var m = new Module();
+		m.paths = module.paths;
+		m._compile(src);
+		return m.exports;
+	}
 
-	// if (functions_list) {
-	//     for (var i=0; i<functions_list.length; i++) {
-	//         decl = functions_list[i];
-	//         func_name = decl.split(' ')[1];
+	function get_exports (accessor) {
+		// need to keep a list of module exports for toplevel to call
+		// var export_str = "module.exports = {};\n";
+		var export_str = "";
 
-	//         // YYY: what did this do?
+		for (var i=0; i<accessor.ports.length; i++) {
+			var port = accessor.ports[i];
+			var name = port.name;
 
-	//   //       if (func_name == '')
-	// 		// if (decl.indexOf('*') > -1) {
-	// 		// 	new_decl = 'var ' + func_name + ' = function*';
-	// 		// } else {
-	// 		// 	new_decl = 'var ' + func_name + ' = function*';
-	// 		// }
-	//         // code = code.replace(decl, new_decl);
-	//         export_str += 'module.exports["'+func_name + '"]= function () {set("'+func_name+'", arguments[0]); _do_port_call.apply(this, [' + func_name + '].concat(Array.prototype.slice.call(arguments)))};\n';
-	// 		export_str += 'module.exports["'+func_name + '"]= function () {set("'+func_name+'", arguments[0]); _do_port_call.apply(this, [' + func_name + '].concat(Array.prototype.slice.call(arguments)))};\n';
-	//     }
-	// }
+			var func = port.function || port.name;
 
-	export_str += 'module.exports.get= get;\n';
-	export_str += 'module.exports.set= set;\n';
+			var wrapper = 'function () {set("'+name+'", arguments[0]); _do_port_call.apply(this, [' + func + ', arguments[0], arguments[1]])};\n'
 
-	// console.log(code);
-	return export_str;
-}
+			export_str += 'module.exports["'+name+'"] = ' + wrapper;
+			export_str += 'module.exports["'+func+'"] = ' + wrapper;
+		}
 
-exports.create_accessor = create_accessor;
+		export_str += '\nmodule.exports.init = function (succ_cb, err_cb) {\n';
+		export_str += '  rt.log.debug("About to init ' + accessor.name + '");\n';
+		export_str += '  _do_port_call(init, null, succ_cb, err_cb);\n';
+		export_str += '};\n';
+
+		export_str += 'module.exports.get= get;\n';
+		export_str += 'module.exports.set= set;\n';
+
+		return export_str;
+	}
+
+	return {
+		create_accessor: create_accessor
+	}
+};
 

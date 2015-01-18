@@ -1,5 +1,3 @@
-// vim: set ts=2 sts=2 sw=2 noet:
-
 // w for "web server"
 var request = require('request');
 var w = require('express')();
@@ -8,8 +6,7 @@ var dir = require('node-dir');
 var argv = require('optimist').argv;
 var s = require('underscore.string');
 
-//var aruntime = require('../../runtimes/node/accessors');
-var aruntime = require('accessors');
+
 
 var GROUP_FOLDER = '../../groups'
 
@@ -25,6 +22,8 @@ if (argv.port == undefined) {
 	console.log('Must define --port');
 	process.exit(1);
 }
+
+var aruntime = require('accessors')(argv.host_server);
 
 // Setup express
 w.use(bodyParser.text());
@@ -88,8 +87,7 @@ dir.readFiles('../../groups',
 
 				// Generate an object for the accessor that we can actually
 				// call and execute.
-				// aruntime.create_accessor(new_device.path, new_device.parameters, function (accessor_runtime) {
-				aruntime.create_accessor(accessor_url, new_device.parameters, function (accessor_runtime) {
+				aruntime.create_accessor(new_device.path, new_device.parameters, function (accessor_runtime) {
 					// Success callback
 
 
