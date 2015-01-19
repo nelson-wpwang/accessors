@@ -9,9 +9,11 @@ This abstraction allows for higher level applications to interact with the
 physical world without having to directly interface with the myriad of
 protocols present in real-world devices.
 
-More concretely, accessors are JSON files that contain both an interface
-and code. The interface is specified much like HTML forms are: as a series
-of I/O elements with names. Each element can be an input, output, or both.
+More concretely, accessors are Javascript files that both describe an
+interface and supply code to use it. The Javascript is parsed to generate JSON
+(and XML) objects that express accessor capabilities and requirements.
+Accessors present an interface much like HTML forms: a series of I/O elements
+with names. Each element can be an input, output, or both.
 
 - **Input**: Accepts an action or data from the user but can only send that
 to the device being accessed. There is no state that can then be displayed to
@@ -25,28 +27,12 @@ providing it cannot be changed.
 - **Input/Output**: An element that can do both. For instance, the volume level
 can both be set (an input) or queried (output of an accessor).
 
-Following the interface and other meta information (name, author, etc.),
-is a block of code that allows whatever system is using the accessor to actually
-do something with the interface elements. There are three required functions
-that must be instantiated (even if they are empty): `init()`, `fire()`, and
-`wrapup()`.
-
-- **`init()`**: `init()` is called when the accessor is first loaded. Any
-preliminary code should be put here. Also, it may be useful to prepopulate the
-output and i/o fields to show the user.
-
-- **`fire()`**: `fire()` is responsible for performing all actions. The function
-must act on all fields either by querying the state of the device or sending
-the user-configured data to the device. The accessor runtime (the system
-that has loaded the accessor) can assume that calling `fire()` will completely
-synchronize the accessor with the device.
-
-- **`wrapup()`**: `wrapup()` performs any cleanup when the accessor is unloaded.
-
-Further, to provide a more responsive accessor and to reduce overhead, the
-accessor may also specify functions for each of the input and i/o interface
-elements. These functions are responsible for performing an action when its
-corresponding interface element has changed.
+Following the interface and other meta information (name, author, etc.), is a
+block of code that allows whatever system is using the accessor to actually do
+something with the interface elements. There are two meta-functions, `init()`
+and `wrapup()`, that run when an accessor is instantiated and destroyed
+respectively. Input (and inout) ports define port functions that are called
+whenever their input value changes.
 
 Accessor Runtime
 ----------------
@@ -59,57 +45,88 @@ the execution environment, such as logging and socket access.
 Accessor Example
 ----------------
 
-The following is the structure of an accessor for a light bulb.
+The following is and example accessor and the JSON that is generated for a
+basic media player:
+
+```javascript
+// name: Network Stereo
+// author: Network Stereos Inc.
+// email: netstereo@example.com
+//
+// Network Stereo
+// ==============
+//
+// An example accessor for a networked stereo.
+
+function init() {
+	provide_interface('/av/audiodevice', {
+		'/av/audiodevice.Power': power,
+		'/av/audiodevice.Seek': next_track,
+		[...]
+		});
+}
+
+function power(onoff) {
+	params = {'power': onoff};
+	url = get_parameter('url') + '/api/' + get_parameter('api_key') + '/state';
+	yield* rt.http.request(url, 'PUT', null, rt.json.stringify(params), 3000);
+	set('/av/audiodevice.Power', true);
+}
+
+function next_track() {
+	if (get('/av/audiodevice.Power') != true) {
+		power(true);
+	}
+	params = {'next_track': true};
+	url = get_parameter('url') + '/api/' + get_parameter('api_key') + '/action';
+	resp = yield* rt.http.request(url, 'PUT', null, rt.json.stringify(params), 3000);
+	resp = rt.json.from_string(resp);
+	set('/av/audiodevice.NowPlaying', resp.track);
+}
+```
 
 ```json
 {
   "accessor": {
-    "name":    "Light Bulb",
+    "name":    "Network Stereo",
     "version": "0.1",
-    "author":  {"name": "General Electric", "email": "ge@ge.com"},
+    "author":  {"name": "Network Stereos Inc.", "email": "netstereo@example.com"},
     "description": "
-Light Bulb
-=======================
+Network Stereo
+==============
 
-Turn a light bulb on and off.
+An example accessor for a networked stereo.
 ",
-
+    "dependencies": [],
+    "runtime_imports": ["http", "json"],
     "ports": [
               {
                 "direction": "inout",
                 "name":      "Power",
                 "type":      "bool"
+              },
+              {
+                "direction": "input",
+                "name":      "Seek",
+                "type":      "button"
+              },
+              {
+                "direction":    "output",
+                "name":         "NowPlaying",
+                "display_name": "Now Playing",
+                "type":         "string"
               }
     ],
 
-    "code": {
-              "javascript": {
-                              "code": "
-
-function init () {
-// Not needed
-}
-
-function Power (power_setting) {
-  switch_light_bulb(power_setting);
-}
-
-function fire (input_setting_choice) {
-  Power(get('Power'));
-}
-
-function wrapup () {
-// Not needed
-}
-"
-                            }
-
-    }
+    "code": "
+              [ the above javascript ]
+    "
+  }
 }
 ```
 
-Accessor Hierarchy
-------------------
+Interfaces
+----------
 
 To make creating accessors easier and to aid in discovering accessors, they
 can be compiled in a hierarchical fashion to avoid redundancy and create
