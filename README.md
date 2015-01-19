@@ -45,8 +45,8 @@ the execution environment, such as logging and socket access.
 Accessor Example
 ----------------
 
-The following is and example accessor and the JSON that is generated for a
-basic media player:
+Continuing with the media player example, let's add a new device-specific
+feature "Skip 15 seconds" and look at an example accessor and its generated JSON:
 
 ```javascript
 // name: Network Stereo
@@ -64,16 +64,20 @@ function init() {
 		'/av/audiodevice.Seek': next_track,
 		[...]
 		});
+	create_port('input', 'Seek15', {
+		type: 'button',
+		display_name: 'Skip Forward 15 Seconds'
+	});
 }
 
-function power(onoff) {
+function* power(onoff) {
 	params = {'power': onoff};
 	url = get_parameter('url') + '/api/' + get_parameter('api_key') + '/state';
 	yield* rt.http.request(url, 'PUT', null, rt.json.stringify(params), 3000);
 	set('/av/audiodevice.Power', true);
 }
 
-function next_track() {
+function* next_track() {
 	if (get('/av/audiodevice.Power') != true) {
 		power(true);
 	}
@@ -83,6 +87,8 @@ function next_track() {
 	resp = rt.json.from_string(resp);
 	set('/av/audiodevice.NowPlaying', resp.track);
 }
+
+function* Skip15() { ... }
 ```
 
 ```json
@@ -125,8 +131,10 @@ An example accessor for a networked stereo.
 }
 ```
 
-Interfaces
-----------
+Port and Interfaces
+-------------------
+
+
 
 To make creating accessors easier and to aid in discovering accessors, they
 can be compiled in a hierarchical fashion to avoid redundancy and create
