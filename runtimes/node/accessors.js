@@ -12,6 +12,8 @@ module.exports = function (host_server) {
 	// Base path to a source of accessor files.
 	var host_server = host_server;
 
+	console.log('Using host server ' + host_server + ' for accessors.');
+
 	function create_accessor (path, parameters, success_cb, error_cb) {
 		console.log('art::create_accessor from path: ' + path);
 
@@ -19,7 +21,9 @@ module.exports = function (host_server) {
 			parameters = {};
 		}
 		// Get the accessor file and actually load the object
-		request(host_server + path, function (error, response, body) {
+		var url = host_server + '/accessor' + path + '.json';
+		console.log('Retrieving '  + url);
+		request(url, function (error, response, body) {
 			if (!error && response.statusCode == 200) {
 				var accessor = JSON.parse(body);
 
