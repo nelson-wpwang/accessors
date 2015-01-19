@@ -131,30 +131,31 @@ An example accessor for a networked stereo.
 }
 ```
 
-Port and Interfaces
--------------------
+Ports and Interfaces
+--------------------
 
+Interfaces are a global ontology for intelligent things. That is, they attempt
+to take all the capabilities of all devices and map them into a single, unified
+API. A key insight of our interface design is treating extensions as aliases.
 
+Consider, many devices fall into the simple categorey of `/onoff` devices, which
+expose a `Power(bool)` capability. The basic `/lighting/light` interface
+`extends /onoff/Power`, and more advanced lights such as `/lighting/dimmable`
+`extends /lighting/light`. When an accessor for a dimmable light
+`provides /lighting/dimmable`, the geo-fencing app that turns off all of your
+home appliances (all `/onoff/Power`), the home automation service that turns off
+all your lights (`/lighting/light`) when your personal health tracker signals
+that you're going to sleep, and the home theater app (`/lighting/dimmable`) that
+sets movie mode will all work with your new light.
 
-To make creating accessors easier and to aid in discovering accessors, they
-can be compiled in a hierarchical fashion to avoid redundancy and create
-structure. We use a folder based tree to provide structure. For example:
-
-```
-                OnOffDevice
-               /         \
-            Light        VideoDisplay
-            /               \
-          Hue             Projector
-                              \
-                            Panasonic Projector
-```
-
-This allows someone using accessors to control all projectors without knowing
-that there was a particular one made by Panasonic nearby. It also allows
-for inheriting interface elements. For example, the OnOffDevice interface
-provides the "Power" control, so that all lights and projectors don't need
-to copy it. Each subsequent interface must only provide more detailed
-interfaces.
+While composed interfaces may cover the majority of devices, the imperfect
+coverage of a standard API impedes its adoption. Consider our stereo example.
+If a manufacutrer adds the "Skip 15 seconds" feature to differentiate itself,
+but our interfaces do not expose this feature, then the manufacturer is
+disincentivized to use our API. To remedy this, we allow accessors to explicitly
+`create_port` to expose capabilities not expressed by any interface. This creates
+a roadmap towards new interfaces. If a critical mass of devices create the same
+port, it motivates the standardization of a new interface, while permitting for
+the immediate uptake of new features.
 
 
