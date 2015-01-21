@@ -1,11 +1,11 @@
-Accessor Format
-===============
+Accessor JSON Format
+====================
 
-
-Accessors are written by accessor authors as `JSON` files. The following specifies
-how to write an accessor. Note that the following is how to write a raw accessor.
-Full, completed accessors retreived from an accessor host server will vary
-slightly from the following syntax.
+Accessors are written by accessor authors as `Javascript` files. These files
+are processed by the accessor host server to generate a JSON file the
+expresses the accessor interface, dependencies, imports, and other key
+information. The JSON file includes the original accessor under a `code` key.
+This document specifies the JSON format.
 
 The basic format is:
 
@@ -18,19 +18,19 @@ The basic format is:
 Accessor Fields
 ---------------
 
-Here is the list of valid keys, some of which are required.
-Any other keys will be ignored.
+Here is the list of valid keys. All keys are required, however the arrays may
+be empty. Runtimes should ignore unknown keys.
 
-| KEY            | Required | Type          | Description |
-| ---            | -------- | ------        | ----------- |
-| `name`         | yes      | string        | The name of the accessor. |
-| `version`      | yes      | string        | The version number of the accessor. |
-| `author`       | yes      | object        | Information about the author. Must be an object with the keys: `name`, `email`, `website`. |
-| `description`  | no       | string        | Description of the accessor written in Markdown syntax. |
-| `ports`        | no       | array         | Input and output fields for this accessor. See the "Ports" section below. |
-| `parameters`   | no       | array         | Values which must be specified for a particular instantiation of this accessor. These are set when the accessor is retrieved from the accessor host server. |
-| `code`         | no       | object        | Code that makes the accessor run. See the "Code" section for more details. |
-| `dependencies` | no       | array         | Other accessors that must be loaded in order for this accessor to run. See the "Accessor Dependencies" section for more details. |
+| KEY            | Type          | Description |
+| ---            | ------        | ----------- |
+| `name`         | string        | The name of the accessor. |
+| `version`      | string        | The version number of the accessor format. |
+| `author`       | object        | Information about the author. Must be an object with the keys: `name`, `email`, `website`. |
+| `description`  | string        | Description of the accessor written in Markdown syntax. |
+| `ports`        | array         | Input and output fields for this accessor. See the "Ports" section below. |
+| `parameters`   | array         | Values which must be specified for a particular instantiation of this accessor. These are set when the accessor is retrieved from the accessor host server. |
+| `code`         | object        | Code that makes the accessor run. See the "Code" section for more details. |
+| `dependencies` | array         | Other accessors that must be loaded in order for this accessor to run. See the "Accessor Dependencies" section for more details. |
 
 
 ### Ports
@@ -43,12 +43,12 @@ are valid in the port object:
 | ---            | -------- | ------        | ----------- |
 | `direction`    | yes      | string        | Specifies if this port takes data from the user, displays data to the user, or both. Valid choices are: `input`, `output`, and `inout`. |
 | `name`         | yes      | string        | Port name. Valid characters are `A-Z`, `a-z`, `0-9`, and `_`. |
-| `display_name` | no       | string        | A preferred format for the port name in UI elements. |
+| `display_name` | yes      | string        | A preferred format for the port name in UI elements. |
 | `description`  | no       | string        | A description of the port for use in UIs (like a tagline, or tooltip). |
-| `type`         | no       | string        | Specifies the data type of the port. Defaults to "string". See "Port Types" below for more information. |
+| `type`         | yes      | string        | Specifies the data type of the port. Defaults to "string". See "Port Types" below for more information. |
 | `units`        | no       | string        | Specifies how the data should be interpreted. See "Units" below for more information. |
 | `default`      | no       | `<type>`      | Specify a default value for the port |
-| `options`      | no       | array         | Only valid when `type` == "select". Specifies the list of valid options the user can select from. |
+| `options`      | for select | array         | Required and only valid when `type` == "select". Specifies the list of valid options the user can select from. |
 | `min`          | no       | number        | Only valid when `type` == "integer" or "numeric". Allows the accessor runtime to limit input values. |
 | `max`          | no       | number        | Only valid when `type` == "integer" or "numeric". Allows the accessor runtime to limit input values. |
 
@@ -84,37 +84,6 @@ type can be applied to an `integer`, but not vice-versa).
   - **(TODO, idea):** The accessor `/anywhere/utility/currency/convert` can be
     used to convert between currency types.
 
-#### Ports Example
-
-```json
-"ports": [
-	{
-		"direction": "output",
-		"name":      "Name"
-	},
-	{
-		"direction": "inout",
-		"name":      "Input",
-		"type":      "select",
-		"options":   ["PC", "Apple TV", "Internet"]
-	},
-	{
-		"direction": "inout",
-		"name":      "Front LED Color",
-		"type":      "color"
-	},
-	{
-		"direction": "inout",
-		"name":      "Volume",
-		"type":      "integer",
-		"min":       0,
-		"max":       100
-	}
-]
-```
-
-
-
 
 ### Parameters
 
@@ -125,23 +94,27 @@ keys in an accessor parameter object:
 | KEY            | Required | Type          | Description |
 | ---            | -------- | ------        | ----------- |
 | `name`         | yes      | string        | Name of the parameter. |
-| `default`      | no       | string        | Value of the parameter if it is not otherwise specified when the accessor is requested. |
-| `required`     | no       | bool          | Defaults to `true`. Specifies whether the parameter must be set when the accessor is requested. If the parameter is not specified in the request an error will be returned. |
+| `required`     | yes      | bool          | Specifies whether the parameter must be set when the accessor is requested. If the parameter is not specified an error will be returned. |
+| `default`      | if !required | string    | Value of the parameter if it is not otherwise specified when the accessor is requested. |
+
+**TODO:** Think more about required/default interaction.
 
 #### Parameters Example
 
 ```json
 "parameters": [
 	{
-		"name": "username",
-		"required": true
-	},
-	{
 		"name": "device_url",
 		"required": true
 	},
 	{
+		"name": "username",
+		"required": true,
+		"default": "user1"
+	},
+	{
 		"name": "favorite",
+		"required": false,
 		"default": "device_0"
 	}
 ]
