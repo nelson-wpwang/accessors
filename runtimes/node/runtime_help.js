@@ -4,6 +4,8 @@
 // NOTE: this line is already added by the module creator to resolve the path
 // rt = require('./runtime_web.js');
 
+var Q = require('q');
+
 _do_port_call=function (port, value, done_fn, error_fn) {
 	var r;
 

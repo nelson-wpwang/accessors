@@ -358,14 +358,20 @@ def get_devices (url):
 		if r2.status_code == 200:
 			accessor = r2.json()
 
-			print(accessor)
+			# print(accessor)
+
+
+			for port in accessor['ports']:
+				port['uuid'] = uuid.uuid4()
 
 			accessor['uuid'] = uuid.uuid4()
 			accessor['device_name'] = device['name']
 			accessor['device_group'] = url
 			accessor['html'] = flask.render_template('ports.jinja', accessor=accessor)
 
-			print(accessor)
+
+
+			print(accessor['ports'])
 
 			devices.append(accessor)
 
@@ -438,6 +444,8 @@ def accessor():
 	               'path': '/misc/mycolor'})
 	groups.append({'name': 'Web',
 	               'path': '/misc/web'})
+	groups.append({'name': '4908 Hues',
+	               'path': '/location/usa/michigan/annarbor/universityofmichigan/bbb/4908_hues'})
 
 	return flask.render_template('accessors.jinja',
 	                             groups=groups,

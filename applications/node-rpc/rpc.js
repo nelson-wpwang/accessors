@@ -130,6 +130,7 @@ dir.readFiles('../../groups',
 						w.post(device_port_path, function (req, res) {
 							var arg = null;
 							if (port.type == 'bool') {
+								console.log('REQ BODY: ' + req.body);
 								arg = (req.body == 'true');
 							} else {
 								arg = req.body;

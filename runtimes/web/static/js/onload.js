@@ -17,7 +17,7 @@ $("#group-select").change(function () {
 					$("#accessor-select option[data-temp='true']").remove();
 
 					for (i=0; i<devices.length; i++) {
-						$("#accessor-select").append('<option value="'+i+'" data-temp="true">'+devices[i].name+'</option>')
+						$("#accessor-select").append('<option value="'+i+'" data-temp="true">'+devices[i].name+' - '+devices[i].device_name+'</option>')
 					}
 					$("#accessor-select").show();
 
@@ -35,7 +35,7 @@ $("#accessor-select").change(function () {
 		// Activate all sliders
 		$('#accessor-'+accessor.uuid+' .slider').each(function () {
 			$(this).slider().on('slideStop', function (slide_event) {
-				post_accessor(accessor.uuid, $(this).attr('data-port'), slide_event.value);
+				post_accessor(accessor.uuid, $(this).attr('id'), slide_event.value);
 			});
 		});
 
@@ -45,7 +45,7 @@ $("#accessor-select").change(function () {
 			layout: 'hex',
 			submit: 0,
 			onChange: function (hsb, hex, rgb, el, bySetColor) {
-				post_accessor(accessor.uuid, $(this).attr('data-port'), hex);
+				post_accessor(accessor.uuid, $(this).attr('id'), hex);
 			}
 		});
 
@@ -54,7 +54,7 @@ $("#accessor-select").change(function () {
 			console.log($(this));
 			var port = $(this).parents('.port-html-group').find('.port');
 			console.log(port);
-			post_accessor(accessor.uuid, port.attr('data-port'), port.val());
+			post_accessor(accessor.uuid, port.attr('id'), port.val());
 		});
 
 
@@ -62,79 +62,83 @@ $("#accessor-select").change(function () {
 			console.log($(this).parents('.port-html-group'));
 			var port = $(this).parents('.port-html-group').find('.output-port');
 			console.log(port);
-			get_accessor(accessor.uuid, port.attr('data-port'));
+			get_accessor(accessor.uuid, port.attr('id'));
 		});
 
 		$('#accessor-'+accessor.uuid).on('click', '.accessor-checkbox', function () {
-
-			post_accessor(accessor.uuid, $(this).attr('data-port'), $(this).is(':checked'));
+			console.log('check' + $(this).is(':checked'));
+			post_accessor(accessor.uuid, $(this).attr('id'), $(this).is(':checked'));
 		});
 
 		$('#accessor-'+accessor.uuid).on('click', '.accessor-button', function () {
-			post_accessor(accessor.uuid, $(this).attr('data-port'), null);
+			post_accessor(accessor.uuid, $(this).attr('id'), null);
 		});
 
 		// init all with GET
+		console.log(accessor.ports);
+		for (var i=0; i<accessor.ports.length; i++) {
+			console.log(accessor.ports[i].name)
+			get_accessor(accessor.uuid, accessor.ports[i].uuid, accessor.ports[i].type);
+		}
 	}
 });
 
-function post_accessor (uuid, port, arg) {
+function post_accessor (uuid, port_uuid, arg) {
 	var accessor = $('#accessor-'+uuid);
 	var device_name = accessor.attr('data-device-name');
 	var device_group = accessor.attr('data-device-group');
-console.log(accessor_runtime_server);
-console.log(device_group);
-	// url = accessor_runtime_server + '/' + device_group + '/' + device_name + '/' + port;
+	var port = $('#port-'+port_uuid);
+	var port_name = port.attr('data-port');
 
 	var slash = '';
-	if (port.substring(0,1) != '/') {
+	if (port_name.substring(0,1) != '/') {
 		slash = '/';
 	}
 
-	url = device_group + '/' + device_name + slash + port;
+	url = device_group + '/' + device_name + slash + port_name;
 
+	// Force arg to be a string
+	arg = '' + arg;
 
-
-	console.log(url);
-	console.log(arg);
-
-
-	$.post(url, arg);
-
+	// Issue the POST request
 	var request = $.ajax({
-url: url,
-type: "POST",
-data: arg,
-dataType: "text",
-contentType:"text/plain"
-});
-
-	// Q.spawn(function* () {
-	// 	yield* window[accessor_name][accessor_func](arg);
-	// });
+		url: url,
+		type: "POST",
+		data: arg,
+		dataType: "text",
+		contentType:"text/plain"
+	});
 }
 
-function get_accessor (uuid, port) {
+function get_accessor (uuid, port_uuid, port_type) {
 	var accessor = $('#accessor-'+uuid);
 	var device_name = accessor.attr('data-device-name');
 	var device_group = accessor.attr('data-device-group');
-console.log(accessor_runtime_server);
-console.log(device_group);
-	// url = accessor_runtime_server + '/' + device_group + '/' + device_name + '/' + port;
+	var port = $('#port-'+port_uuid);
+	console.log(port)
+	var port_name = port.attr('data-port');
 
 	var slash = '';
-	if (port.substring(0,1) != '/') {
+	if (port_name.substring(0,1) != '/') {
 		slash = '/';
 	}
 
-	url = device_group + '/' + device_name + slash + port;
+	url = device_group + '/' + device_name + slash + port_name;
 
 
-
-	console.log(url);
-
-
+	console.log('Get: ' + url);
 	$.get(url, function (data) {
-		$('#'+port).text(data);
+		console.log(data);
+		if (port_type == 'output') {
+			port.text(data);
+		} else if (port_type == 'bool') {
+			port.prop('checked', data=='true');
+		} else if (port_type == 'select') {
+			port.val(data);
+		} else if (port_type == 'color') {
+			port.colpickSetColor(data, true);
+		} else {
+			port.val(data);
+		}
 	});
 }

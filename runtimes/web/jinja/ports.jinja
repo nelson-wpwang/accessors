@@ -16,7 +16,7 @@
 
           {% if port.direction == "output" %}
           <div class="col-sm-10 port-html-group">
-            <p id="{{ port.name }}" class="form-control-static output-port" data-portdirection="output" data-porttype="{{ port.type }}" data-port="{{ port.name }}">not set</p>
+            <p id="{{ port.name }}" id="port-{{ port.uuid }}" class="form-control-static output-port" data-portdirection="output" data-porttype="{{ port.type }}" data-port="{{ port.name }}">not set</p>
             <button type="button" class="form-control accessor-get">Get</button>
           </div>
 
@@ -24,7 +24,7 @@
           <div class="col-sm-10">
             <div class="checkbox">
               <label>
-                <input type="checkbox" class="accessor-checkbox" data-port="{{ port.name }}" data-portdirection="{{ port.direction }}">
+                <input type="checkbox" id="port-{{ port.uuid }}" class="accessor-checkbox" data-port="{{ port.name }}" data-portdirection="{{ port.direction }}">
               </label>
             </div>
           </div>
@@ -34,7 +34,7 @@
           {% if 'min' in port and 'max' in port %}
           {# Do a slider #}
           <div class="col-sm-10">
-            <input type="text" class="slider" data-slider-id='{{ fieldname }}-slider' data-slider-min="{{ port.min }}" data-slider-max="{{ port.max }}" data-slider-step="1" data-slider-value="{{ port.min }}" data-port="{{ port.name }}"/>
+            <input type="text" id="port-{{ port.uuid }}" class="slider" data-slider-id='{{ fieldname }}-slider' data-slider-min="{{ port.min }}" data-slider-max="{{ port.max }}" data-slider-step="1" data-slider-value="{{ port.min }}" data-port="{{ port.name }}"/>
           </div>
 
           {% else %}
@@ -42,7 +42,7 @@
           <div class="col-sm-10 port-html-group">
             <div class="row">
               <div class="col-xs-8">
-                <input type="text" class="form-control port" {% if 'default' in port %} value="{{ port.default }}"{% endif %} data-port="{{ port.name }}"></input>
+                <input type="text" id="port-{{ port.uuid }}" class="form-control port" {% if 'default' in port %} value="{{ port.default }}"{% endif %} data-port="{{ port.name }}"></input>
               </div>
               <div class="col-xs-4">
                 <button type="button" class="form-control accessor-arbitrary-input-button">Update</button>
@@ -55,7 +55,7 @@
           <div class="col-sm-10 port-html-group">
             <div class="row">
               <div class="{% if port.has_function %}col-xs-8{% else %}col-xs-12{% endif %}">
-                <input type="text" class="form-control port" {% if 'default' in port %} value="{{ port.default }}"{% endif %} data-port="{{ port.name }}"></input>
+                <input type="text" id="port-{{ port.uuid }}" class="form-control port" {% if 'default' in port %} value="{{ port.default }}"{% endif %} data-port="{{ port.name }}"></input>
               </div>
 
               {#{% if port.has_function %}#}
@@ -68,7 +68,7 @@
 
           {% elif port.type == "select" %}
           <div class="col-sm-10">
-            <select class="form-control port-select">
+            <select id="port-{{ port.uuid }}" class="form-control port-select">
               {% for opt in port.options %}
               <option value="{{ loop.index }}"{% if 'default' in port and port.default == 'opt' %} selected="selected"{% endif %}>{{ opt }}</option>
               {% endfor %}
@@ -77,18 +77,18 @@
 
           {% elif port.type == "button" %}
           <div class="col-sm-3">
-            <button type="button" class="form-control accessor-button" data-port="{{ port.name }}">Execute</button>
+            <button type="button" id="port-{{ port.uuid }}" class="form-control accessor-button" data-port="{{ port.name }}">Execute</button>
           </div>
 
           {% elif port.type == "color" %}
           {# color picker #}
           <div class="col-sm-10">
-            <div class="colorpicker" data-port="{{ fieldname }}"></div>
+            <div class="colorpicker" id="port-{{ port.uuid }}" data-port="{{ port.name }}"></div>
           </div>
 
           {% else %}
           <div class="col-lg-10">
-            <p class="from-control-static" data-port="{{ port.name }}">unknown</p>
+            <p class="from-control-static" id="port-{{ port.uuid }}" data-port="{{ port.name }}">unknown</p>
           </div>
 
           {% endif %}

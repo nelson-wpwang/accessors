@@ -14,15 +14,25 @@ module.exports = function (host_server) {
 
 	console.log('Using host server ' + host_server + ' for accessors.');
 
+	// Call this function to create an object that can be used as an accessor
+	//
+	// On success you get a callback:
+	//     success_cb(device)
+	//
+	// On failure you get a callback:
+	//     error_cb(error_msg)
+	//
 	function create_accessor (path, parameters, success_cb, error_cb) {
 		console.log('art::create_accessor from path: ' + path);
 
 		if (parameters == undefined) {
 			parameters = {};
 		}
+
 		// Get the accessor file and actually load the object
 		var url = host_server + '/accessor' + path + '.json';
 		console.log('Retrieving '  + url);
+
 		request(url, function (error, response, body) {
 			if (!error && response.statusCode == 200) {
 				var accessor = JSON.parse(body);
@@ -41,11 +51,11 @@ module.exports = function (host_server) {
 				//	Some of these are from runtime and some are from Hue
 				var runtime_web_file = path_module.join(__dirname, 'runtime_web.js');
 				var requires = "";
-				requires += "var Q = require('q');\n";
-				requires += "var request = require('request');\n";
-				requires += "var tinycolor = require('tinycolor2');\n";
-				requires += "var atob = require('atob');\n";
-				requires += "var btoa = require('btoa');\n";
+				// requires += "var Q = require('q');\n";
+				// requires += "var request = require('request');\n";
+				// requires += "var tinycolor = require('tinycolor2');\n";
+				// requires += "var atob = require('atob');\n";
+				// requires += "var btoa = require('btoa');\n";
 				requires += "var rt = require('"+runtime_web_file+"');\n";
 
 				var ports_str = "var ports = "+JSON.stringify(ports)+";\n";
@@ -56,7 +66,7 @@ module.exports = function (host_server) {
 
 				var runtime_help_file = path_module.join(__dirname, 'runtime_help.js');
 				var runtime_help_code = fs.readFileSync(runtime_help_file);
-				runtime_help_code = "rt = require('"+runtime_web_file+"');\n" + runtime_help_code;
+				// runtime_help_code = "rt = require('"+runtime_web_file+"');\n" + runtime_help_code;
 
 				var exports = get_exports(accessor);
 

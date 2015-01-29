@@ -1,7 +1,16 @@
 {
 	"accessors": [
 		{
-			"name": "umhue02",
+			"name": "hue-josh",
+			"path": "/lighting/hue/huesingle",
+			"parameters": {
+				"bridge_url": "http://4908hue.eecs.umich.edu",
+				"username": "lab11in4908",
+				"bulb_name": "Json"
+			}
+		},
+		{
+			"name": "hue-noah",
 			"path": "/lighting/hue/huesingle",
 			"parameters": {
 				"bridge_url": "http://4908hue.eecs.umich.edu",
@@ -10,25 +19,16 @@
 			}
 		},
 		{
-			"name": "umhue03",
+			"name": "hue-brad",
 			"path": "/lighting/hue/huesingle",
 			"parameters": {
 				"bridge_url": "http://4908hue.eecs.umich.edu",
 				"username": "lab11in4908",
-				"bulb_name": "Branden"
+				"bulb_name": "Brad"
 			}
 		},
 		{
-			"name": "umhue04",
-			"path": "/lighting/hue/huesingle",
-			"parameters": {
-				"bridge_url": "http://4908hue.eecs.umich.edu",
-				"username": "lab11in4908",
-				"bulb_name": "Will"
-			}
-		},
-		{
-			"name": "umhue05",
+			"name": "hue-pat",
 			"path": "/lighting/hue/huesingle",
 			"parameters": {
 				"bridge_url": "http://4908hue.eecs.umich.edu",
@@ -37,21 +37,30 @@
 			}
 		},
 		{
-			"name": "umhue06",
+			"name": "hue-sam",
 			"path": "/lighting/hue/huesingle",
 			"parameters": {
 				"bridge_url": "http://4908hue.eecs.umich.edu",
 				"username": "lab11in4908",
-				"bulb_name": "Spare 1"
+				"bulb_name": "Sam"
 			}
 		},
 		{
-			"name": "umhue07",
+			"name": "hue-yesheng",
 			"path": "/lighting/hue/huesingle",
 			"parameters": {
 				"bridge_url": "http://4908hue.eecs.umich.edu",
 				"username": "lab11in4908",
-				"bulb_name": "Brad"
+				"bulb_name": "Ye-Sheng"
+			}
+		},
+		{
+			"name": "hue-branden",
+			"path": "/lighting/hue/huesingle",
+			"parameters": {
+				"bridge_url": "http://4908hue.eecs.umich.edu",
+				"username": "lab11in4908",
+				"bulb_name": "Branden"
 			}
 		}
 	]
