@@ -22,6 +22,7 @@ public class AccessorRuntime {
 	Map<String, Port> ports;
 
 	ScriptEngine engine;
+	String code;
 
 	AccessorRuntime(Arguments args) throws Exception {
 		log = Log.GetLog("AccessorRuntime");
@@ -188,7 +189,14 @@ public class AccessorRuntime {
 		NodeList inoutList = accessorElement.getElementsByTagName("inout");
 		MakePortsFromNodeList(inoutList, "inout", ports);
 
+		// Load accessor code
+		log.Debug("Loading accessor code");
+		NodeList script = accessorElement.getElementsByTagName("script");
+		Element wtf = (Element) script.item(0);
+		code = getCharacterDataFromElement(wtf);
+	}
 
+	public void init() throws Exception {
 		// create a script engine manager
 		ScriptEngineManager factory = new ScriptEngineManager();
 		// create JavaScript engine
@@ -273,16 +281,10 @@ public class AccessorRuntime {
 		engine.eval("$traceurRuntime.ModuleStore.getAnonymousModule(function() { 'use strict'; rt.http.readURL = $traceurRuntime.initGeneratorFunction(function $__0(url) { return $traceurRuntime.createGeneratorInstance(function($ctx) { while (true) switch ($ctx.state) { case 0: $ctx.returnValue = _http_readURL(url); $ctx.state = -2; break; default: return $ctx.end(); } }, $__0, this); }); return {}; });");
 
 		// TODO color
-
-		// Load accessor code
-		log.Debug("Loading accessor code");
-		NodeList script = accessorElement.getElementsByTagName("script");
-		Element wtf = (Element) script.item(0);
-		String code = getCharacterDataFromElement(wtf);
 		engine.eval(code);
 
 		// Call accessor init
-		log.Info("Initializing new accessor: " + args.accessor);
+		//log.Info("Initializing new accessor: " + args.accessor);
 		engine.eval("_port_call(init, null)");
 	}
 

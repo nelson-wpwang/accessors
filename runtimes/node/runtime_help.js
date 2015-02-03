@@ -7,7 +7,7 @@
 _do_port_call=function (port, value, done_fn, error_fn) {
 	var r;
 
-	rt.log.debug("before port call of " + port + "(" + value + ")");
+	//rt.log.debug("before port call of " + port + "(" + value + ")");
 
 	try {
 		r = port(value);
@@ -16,13 +16,13 @@ _do_port_call=function (port, value, done_fn, error_fn) {
 		error_fn();
 		return;
 	}
-	rt.log.debug("after port call, r: " + r);
+	//rt.log.debug("after port call, r: " + r);
 	if (r && typeof r.next == 'function') {
 		var def = Q.async(function* () {
 			yield* port(value);
 		});
 		def().done(done_fn, error_fn);
-		rt.log.debug("port call running asynchronously");
+		//rt.log.debug("port call running asynchronously");
 	} else {
 		done_fn();
 	}
@@ -35,12 +35,12 @@ var create_port = function() {}; // Apparently don't need to fill this one in
 var provide_interface = function() {}; // Apparently don't need to fill this one in
 
 var get = function (port_name) {
-	console.log("PORT GET: " + port_name + " => " + ports[port_name]);
+	//console.log("PORT GET: " + port_name + " => " + ports[port_name]);
 	return ports[port_name];
 }
 
 var set = function (port_name, val) {
-	console.log("SET: " + port_name + " <= " + val);
+	//console.log("SET: " + port_name + " <= " + val);
 	ports[port_name] = val;
 }
 

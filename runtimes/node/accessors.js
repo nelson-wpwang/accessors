@@ -12,17 +12,17 @@ module.exports = function (host_server) {
 	// Base path to a source of accessor files.
 	var host_server = host_server;
 
-	console.log('Using host server ' + host_server + ' for accessors.');
+	//console.log('Using host server ' + host_server + ' for accessors.');
 
 	function create_accessor (path, parameters, success_cb, error_cb) {
-		console.log('art::create_accessor from path: ' + path);
+		//console.log('art::create_accessor from path: ' + path);
 
 		if (parameters == undefined) {
 			parameters = {};
 		}
 		// Get the accessor file and actually load the object
 		var url = host_server + '/accessor' + path + '.json';
-		console.log('Retrieving '  + url);
+		//console.log('Retrieving '  + url);
 		request(url, function (error, response, body) {
 			if (!error && response.statusCode == 200) {
 				var accessor = JSON.parse(body);
@@ -49,10 +49,10 @@ module.exports = function (host_server) {
 				requires += "var rt = require('"+runtime_web_file+"');\n";
 
 				var ports_str = "var ports = "+JSON.stringify(ports)+";\n";
-				console.log('art::create_accessor Ports string: ' + ports_str);
+				//console.log('art::create_accessor Ports string: ' + ports_str);
 
 				var params = "var parameters = "+JSON.stringify(parameters)+";\n";
-				console.log('art::create_accessor Parameters: ' + params);
+				//console.log('art::create_accessor Parameters: ' + params);
 
 				var runtime_help_file = path_module.join(__dirname, 'runtime_help.js');
 				var runtime_help_code = fs.readFileSync(runtime_help_file);
@@ -63,17 +63,17 @@ module.exports = function (host_server) {
 				// turn the code into a module
 				var module_as_string = requires + ports_str + params + runtime_help_code + accessor.code + exports;
 				if (typeof module_as_string !== 'string') {
-					console.log("something isn't a string in " + accessor.name);
+					//console.log("something isn't a string in " + accessor.name);
 					throw "This accessor won't work";
 				}
-				console.log("art::create_accessor before requireFromString " + accessor.name);
+				//console.log("art::create_accessor before requireFromString " + accessor.name);
 				var device = requireFromString(module_as_string);
 
-				console.log('device: ' +device);
+				//console.log('device: ' +device);
 
-				console.log("art::create_accessor before init-ing " + accessor.name);
+				//console.log("art::create_accessor before init-ing " + accessor.name);
 				device.init(function () {
-					console.log("post-init callback start");
+					//console.log("post-init callback start");
 					success_cb(device);
 				}, error_cb);
 			} else {
@@ -113,7 +113,7 @@ module.exports = function (host_server) {
 		}
 
 		export_str += '\nmodule.exports.init = function (succ_cb, err_cb) {\n';
-		export_str += '  rt.log.debug("About to init ' + accessor.name + '");\n';
+		//export_str += '  rt.log.debug("About to init ' + accessor.name + '");\n';
 		export_str += '  _do_port_call(init, null, succ_cb, err_cb);\n';
 		export_str += '};\n';
 

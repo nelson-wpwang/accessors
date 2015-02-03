@@ -78,6 +78,7 @@ rt.socket.socket = function* (family, sock_type) {
 rt.http = Object();
 
 rt.http.request = function* request_fn(url, method, properties, body, timeout) {
+	/*
 	rt.log.debug("httpRequest("
 				+ (function(obj) {
 					result=[];
@@ -87,6 +88,7 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 					return result;
 				})(arguments)
 				+ ")");
+				*/
 
 	if (properties != null) {
 		throw new AccessorRuntimeException("Don't know what to do with properties...");
@@ -101,13 +103,13 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 		timeout: timeout
 	}
 
-	rt.log.debug('DOES THIS HAPPEN');
+	//rt.log.debug('DOES THIS HAPPEN');
 
 	var req = request(options, function (error, response, body) {
 		if (!error) {
 			if (response.statusCode == 200) {
-				rt.log.debug("got response " + body);
-				console.log(body);
+				//rt.log.debug("got response " + body);
+				//console.log(body);
 				request_defer.resolve(body);
 			} else {
 				request_defer.reject("httpRequest failed with code " + request.statusCode + " at URL: " + url);
@@ -117,15 +119,15 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 		}
 	});
 
-	rt.log.debug('before yield in rt.http.request');
+	//rt.log.debug('before yield in rt.http.request');
 	return yield request_defer.promise;
 }
 
 //This is just GET. Don't know why it's called readURL...
 rt.http.readURL = function* readURL(url) {
-	rt.log.debug("runtime_web::readURL before yield*");
+	//rt.log.debug("runtime_web::readURL before yield*");
 	return yield* rt.http.request(url, 'GET', null, null, 0);
-	rt.log.debug("runtime_web::readURL after yield*");
+	//rt.log.debug("runtime_web::readURL after yield*");
 }
 
 rt.http.post = function* post(url, body) {
