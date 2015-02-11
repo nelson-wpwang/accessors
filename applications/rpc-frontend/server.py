@@ -59,10 +59,10 @@ for them.
 
 parser = argparse.ArgumentParser(description=DESC)
 parser.add_argument('-s', '--accessor-host-server',
-		required=True,
+		default='http://localhost:6565',
 		help='Server to load accessors from')
 parser.add_argument('-r', '--accessor-runtime-server',
-		required=True,
+	default='http://localhost:6566',
 		help='Server that can execute servers')
 args = parser.parse_args()
 

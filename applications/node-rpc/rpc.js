@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // w for "web server"
 var request = require('request');
 var w = require('express')();
@@ -12,15 +14,21 @@ var GROUP_FOLDER = '../../groups'
 
 // Check command line arguments
 if (argv.host_server == undefined) {
-	console.log('Must define --host_server');
-	process.exit(1);
-}
-if (argv.host_server.slice(0, 7) != 'http://') {
-	argv.host_server = 'http://' + argv.host_server;
+	argv.host_server = 'http://localhost:6565';
+	console.log('Using default Accessor Host Server: ' + argv.host_server);
+	console.log('To specify, use option --host_server');
+} else {
+	if (argv.host_server.slice(0, 7) != 'http://') {
+		argv.host_server = 'http://' + argv.host_server;
+	}
+	console.log('Using Accessor Host Server: ' + argv.host_server);
 }
 if (argv.port == undefined) {
-	console.log('Must define --port');
-	process.exit(1);
+	argv.port = 6566;
+	console.log('Using default port for RPC commands: ' + argv.port);
+	console.log('To specify, use option --port');
+} else {
+	console.log('Using port ' + argv.port + ' for RPC commands');
 }
 
 var aruntime = require('accessors')(argv.host_server);

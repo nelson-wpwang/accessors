@@ -91,6 +91,8 @@ function* next_track() {
 function* Skip15() { ... }
 ```
 
+The JavaScript file gets expanded to a full JSON representation as shown:
+
 ```json
 {
   "accessor": {
@@ -134,7 +136,7 @@ An example accessor for a networked stereo.
 Ports and Interfaces
 --------------------
 
-Interfaces are a global ontology for intelligent things. That is, they attempt
+Interfaces are a global ontology for devices. That is, they attempt
 to take all the capabilities of all devices and map them into a single, unified
 API. A key insight of our interface design is treating extensions as aliases.
 
@@ -157,5 +159,38 @@ disincentivized to use our API. To remedy this, we allow accessors to explicitly
 a roadmap towards new interfaces. If a critical mass of devices create the same
 port, it motivates the standardization of a new interface, while permitting for
 the immediate uptake of new features.
+
+
+Getting Started
+---------------
+
+There's a lot going on in this accessors repository, but you should be able
+to get started by following these steps:
+
+1. Run the Accessor Host Server. This is a webserver that parses the raw
+JavaScript accessors, converts them to the full JSON representation, and serves
+them to any interested clients.
+
+        cd server
+        ./accessor_host.py
+
+2. Run the RPC example application. This instantiates an Accessor Runtime (in
+Node.js) where accessors execute. It then makes the ports accessible via a RESTful
+web API.
+
+        cd applications/node-rpc
+        ./rpc.js
+
+3. Run a front-end to the RPC application. This provides a web interface for
+interacting with the accessors running in the RPC server.
+
+        cd applications/rpc-frontend
+        ./server.py
+
+4. Go to [http://localhost:5000](http://localhost:5000). You can now interact
+with the accessors that were loaded in the RPC runtime.
+
+
+
 
 
