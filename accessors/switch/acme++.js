@@ -9,8 +9,6 @@
 //
 
 var ip_addr;
-var control_socket;
-var meter_socket;
 
 function init () {
 	// INTERFACES
@@ -23,19 +21,20 @@ function init () {
 
 	ip_addr = get_parameter('ipv6_address');
 
-	try {
-		control_socket = yield* rt.socket.socket('AF_INET6', 'SOCK_DGRAM');
-		meter_socket = yield* rt.socket.socket('AF_INET6', 'SOCK_DGRAM');
-	} catch (err) {
-		rt.log.err(err);
+	// Initialize the relay power state
+	var response = yield* rt.coap.get('coap://['+ip_addr+']/onoffdevice/Power');
+	if (response == 'true') {
+		set('PowerControl', true);
+	} else {
+		set('PowerControl', false);
 	}
 }
 
 function* PowerControl (state) {
 	if (state) {
-		yield* control_socket.sendto('\x01', [ip_addr, 47652]);
+		yield* rt.coap.post('coap://['+ip_addr+']/onoffdevice/Power', 'true');
 	} else {
-		yield* control_socket.sendto('\x02', [ip_addr, 47652]);
+		yield* rt.coap.post('coap://['+ip_addr+']/onoffdevice/Power', 'false');
 	}
 }
 

@@ -136,6 +136,23 @@ rt.http.put = function* put(url, body) {
 	return yield* rt.http.request(url, 'PUT', null, body, 0);
 }
 
+/*** COAP REQUESTS ***/
+
+rt.coap = Object();
+
+rt.coap.request = function* request_fn(url, method, properties, body) {
+
+}
+
+rt.coap.get = function* coapGet(url) {
+
+}
+
+rt.coap.post = function* coapPost(url, body) {
+
+}
+
+
 /*** COLOR FUNCTIONS ***/
 
 // need to npm install tinycolor2 for this. Not tinycolor. Because _javascript_
