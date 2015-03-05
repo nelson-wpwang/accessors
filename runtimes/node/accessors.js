@@ -36,6 +36,7 @@ module.exports = function (host_server) {
 		request(url, function (error, response, body) {
 			if (!error && response.statusCode == 200) {
 				var accessor = JSON.parse(body);
+				console.log('art::create_accessor starting to create ' + accessor.name);
 
 				var ports = {};
 				for (var i=0; i<accessor.ports.length; i++) {
@@ -78,8 +79,6 @@ module.exports = function (host_server) {
 				}
 				console.log("art::create_accessor before requireFromString " + accessor.name);
 				var device = requireFromString(module_as_string);
-
-				console.log('device: ' +device);
 
 				console.log("art::create_accessor before init-ing " + accessor.name);
 				device.init(function () {

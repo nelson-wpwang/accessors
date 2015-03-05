@@ -10,7 +10,7 @@
 
 var ip_addr;
 
-function init () {
+function* init () {
 	// INTERFACES
 	provide_interface('/onoff', {
 		'/onoff.Power': PowerControl
@@ -19,7 +19,7 @@ function init () {
 		'/sensor/power.Power': PowerMeter
 	});
 
-	ip_addr = get_parameter('ipv6_address');
+	ip_addr = get_parameter('ip_addr');
 
 	// Initialize the relay power state
 	var response = yield* rt.coap.get('coap://['+ip_addr+']/onoffdevice/Power');

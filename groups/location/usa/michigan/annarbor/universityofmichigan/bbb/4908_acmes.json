@@ -1,0 +1,11 @@
+{
+	"accessors": [
+		{
+			"name": "acme-behind-brad",
+			"path": "/switch/acme++",
+			"parameters": {
+				"ip_addr": "2607:f018:800:10f:c298:e541:4310:a"
+			}
+		}
+	]
+}

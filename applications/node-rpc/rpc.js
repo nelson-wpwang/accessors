@@ -24,7 +24,7 @@ if (argv.host_server == undefined) {
 	console.log('Using Accessor Host Server: ' + argv.host_server);
 }
 if (argv.port == undefined) {
-	argv.port = 6566;
+	argv.port = 5577;
 	console.log('Using default port for RPC commands: ' + argv.port);
 	console.log('To specify, use option --port');
 } else {
@@ -66,7 +66,7 @@ dir.readFiles('../../groups',
 
 	// Create a route for retrieving all of the group information
 	w.get(group_name, function (req, res) {
-		console.log("GET " + group_name + ": (req: " + req + ", res: " + res + ")");
+		console.log("GET " + group_name + ": (req: %j, res: %j)", req, res);
 		res.send(group);
 	});
 
@@ -132,8 +132,6 @@ dir.readFiles('../../groups',
 								// // or something weird
 							res.send(''+accessor_runtime.get(port.name));
 						});
-
-						console.log('GET THE PATHHTHHTJKDSHKJFJDSLKJ ' + device_port_path);
 
 						w.post(device_port_path, function (req, res) {
 							var arg = null;

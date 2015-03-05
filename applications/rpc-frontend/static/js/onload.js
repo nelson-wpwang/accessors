@@ -35,7 +35,7 @@ $("#accessor-select").change(function () {
 		// Activate all sliders
 		$('#accessor-'+accessor.uuid+' .slider').each(function () {
 			$(this).slider().on('slideStop', function (slide_event) {
-				post_accessor(accessor.uuid, $(this).attr('id'), slide_event.value);
+				rpc_post(accessor.uuid, $(this).attr('id'), slide_event.value);
 			});
 		});
 
@@ -45,38 +45,38 @@ $("#accessor-select").change(function () {
 			layout: 'hex',
 			submit: 0,
 			onChange: function (hsb, hex, rgb, el, bySetColor) {
-				post_accessor(accessor.uuid, $(this).attr('id'), hex);
+				rpc_post(accessor.uuid, $(this).attr('id'), hex);
 			}
 		});
 
 		// Setup callbacks for buttons and check boxes
 		$('#accessor-'+accessor.uuid).on('click', '.accessor-arbitrary-input-button', function () {
 			var port = $(this).parents('.port-html-group').find('.port');
-			post_accessor(accessor.uuid, port.attr('id'), port.val());
+			rpc_post(accessor.uuid, port.attr('id'), port.val());
 		});
 
 
 		$('#accessor-'+accessor.uuid).on('click', '.accessor-get', function () {
 			var port = $(this).parents('.port-html-group').find('.output-port');
-			get_accessor(accessor.uuid, port.attr('id'));
+			rpc_get(accessor.uuid, port.attr('id'));
 		});
 
 		$('#accessor-'+accessor.uuid).on('click', '.accessor-checkbox', function () {
-			post_accessor(accessor.uuid, $(this).attr('id'), $(this).is(':checked'));
+			rpc_post(accessor.uuid, $(this).attr('id'), $(this).is(':checked'));
 		});
 
 		$('#accessor-'+accessor.uuid).on('click', '.accessor-button', function () {
-			post_accessor(accessor.uuid, $(this).attr('id'), null);
+			rpc_post(accessor.uuid, $(this).attr('id'), null);
 		});
 
 		// init all with GET
 		for (var i=0; i<accessor.ports.length; i++) {
-			get_accessor(accessor.uuid, accessor.ports[i].uuid, accessor.ports[i].type);
+			rpc_get(accessor.uuid, accessor.ports[i].uuid, accessor.ports[i].type);
 		}
 	}
 });
 
-function post_accessor (uuid, port_uuid, arg) {
+function rpc_post (uuid, port_uuid, arg) {
 	var accessor = $('#accessor-'+uuid);
 	var device_name = accessor.attr('data-device-name');
 	var device_group = accessor.attr('data-device-group');
@@ -107,7 +107,8 @@ function post_accessor (uuid, port_uuid, arg) {
 	});
 }
 
-function get_accessor (uuid, port_uuid, port_type) {
+function rpc_get (uuid, port_uuid, port_type) {
+	console.log("rpc_get (" + uuid + ", " + port_uuid + ", " + port_type + ")");
 	var accessor = $('#accessor-'+uuid);
 	var device_name = accessor.attr('data-device-name');
 	var device_group = accessor.attr('data-device-group');

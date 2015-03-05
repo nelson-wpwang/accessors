@@ -6,6 +6,8 @@ var request = require('request');
 var tinycolor = require('tinycolor2');
 var atob = require('atob');
 var btoa = require('btoa');
+var coap = require('coap');
+var urllib = require('url');
 // var color = require('color');
 
 
@@ -106,8 +108,6 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 	var req = request(options, function (error, response, body) {
 		if (!error) {
 			if (response.statusCode == 200) {
-				rt.log.debug("got response " + body);
-				console.log(body);
 				request_defer.resolve(body);
 			} else {
 				request_defer.reject("httpRequest failed with code " + request.statusCode + " at URL: " + url);
@@ -140,16 +140,34 @@ rt.http.put = function* put(url, body) {
 
 rt.coap = Object();
 
-rt.coap.request = function* request_fn(url, method, properties, body) {
-
+function* _coapCommon(ogm) {
+	var defer = Q.defer();
+	ogm.on('response', function (resp) {
+		rt.log.debug("CoAP complete, resp payload: " + resp.payload);
+		defer.resolve(resp.payload);
+	});
+	rt.log.debug("CoAP yielding for I/O operation");
+	return yield defer.promise;
 }
 
 rt.coap.get = function* coapGet(url) {
-
+	rt.log.debug("CoAP GET: " + url);
+	var params = urllib.parse(url);
+	params.method = 'GET';
+	var ogm = coap.request(params);
+	ogm.end();
+	yield* _coapCommon(ogm);
 }
 
 rt.coap.post = function* coapPost(url, body) {
-
+	rt.log.debug("CoAP POST: " + url + " -- with body:");
+	rt.log.debug(body);
+	var params = urllib.parse(url);
+	params.method = 'POST';
+	var ogm = coap.request(params);
+	ogm.write(body);
+	ogm.end();
+	yield* _coapCommon(ogm);
 }
 
 
@@ -199,9 +217,11 @@ function getElementValueById (html, id) {
 }
 
 
+exports.version = rt.version;
 exports.log = rt.log;
 exports.time = rt.time;
 exports.socket = rt.socket;
 exports.http = rt.http;
+exports.coap = rt.coap;
 exports.color = rt.color;
 exports.encode = rt.encode;
