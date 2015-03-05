@@ -6,7 +6,7 @@ var config = require('./config');
  * Pull packets from AMQP queue and put them in the system
  */
 
-function BLE () {
+function BLE (parameters, finished) {
 
 	var outputs = new Array(1);
 	this.outputs = outputs;
@@ -19,13 +19,14 @@ function BLE () {
 				q.bind(config.rabbitmq.exchange, "scanner.#", function () {
 					q.subscribe(function (message, headers, deliveryInfo, messageObject) {
 						var pkt = JSON.parse(message.data);
-						console.log(pkt.name);
 						outputs[0]({'event_str': pkt.name});
 					});
 				});
 			});
 		});
 	}
+
+	finished();
 
 }
 

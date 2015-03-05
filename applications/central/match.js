@@ -14,7 +14,7 @@ var _ = require('lodash');
  * callbacks: an array of callback functions. The one that corresponds to the
  *            matched value will be called with `true`.
  */
-function Match (parameters) {
+function Match (parameters, finished) {
 
 	var outputs = new Array(parameters.matches.length);
 	this.outputs = outputs;
@@ -42,6 +42,8 @@ function Match (parameters) {
 
 	]
 	this.inputs = inputs;
+
+	finished();
 
 }
 

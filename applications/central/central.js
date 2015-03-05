@@ -2,6 +2,7 @@
 var util = require('util');
 
 var _ = require('lodash');
+var async = require('async');
 
 
 var match = require('./match');
@@ -27,43 +28,51 @@ function Central (profile_desc) {
 	}
 
 	// Create an object for each block
+	var calls = [];
 	_.forEach(profile_desc.blocks, function (block, index) {
 		if (block.type == 'accessor') {
-			profile.blocks[block.uuid] = new accessor(block.path, block.parameters);
+			calls.push(function (callback) {
+				profile.blocks[block.uuid] = new accessor(block.path, block.parameters, callback);
+			});
 		} else {
-			profile.blocks[block.uuid] = new block_names[block.type](block.parameters);
+			calls.push(function (callback) {
+				profile.blocks[block.uuid] = new block_names[block.type](block.parameters, callback);
+			});
 		}
 	});
 
-	// Insert all of the correct calls
-	_.forEach(profile_desc.connections, function (conn, index) {
-		src = conn.src.split('.');
-		if (src.length == 2) {
-			src_block = src[0];
-			src_port = parseInt(src[1]);
-		} else {
-			src_block = src[0];
-			src_port = 0;
-		}
+	async.parallel(calls, function (err, result) {
 
-		dst = conn.dst.split('.');
-		if (dst.length == 2) {
-			dst_block = dst[0];
-			dst_port = parseInt(dst[1]);
-		} else {
-			dst_block = dst[0];
-			dst_port = 0;
-		}
+		// Insert all of the correct calls
+		_.forEach(profile_desc.connections, function (conn, index) {
+			src = conn.src.split('.');
+			if (src.length == 2) {
+				src_block = src[0];
+				src_port = parseInt(src[1]);
+			} else {
+				src_block = src[0];
+				src_port = 0;
+			}
 
-		console.log('Connecting ' + conn.src + ' to ' + conn.dst);
-		profile.blocks[src_block].outputs[src_port] = profile.blocks[dst_block].inputs[dst_port];
-	});
+			dst = conn.dst.split('.');
+			if (dst.length == 2) {
+				dst_block = dst[0];
+				dst_port = parseInt(dst[1]);
+			} else {
+				dst_block = dst[0];
+				dst_port = 0;
+			}
 
-	// Call run
-	_.forEach(profile.blocks, function (block, index) {
-		if (typeof block.run === 'function') {
-			block.run();
-		}
+			console.log('Connecting ' + conn.src + ' to ' + conn.dst);
+			profile.blocks[src_block].outputs[src_port] = profile.blocks[dst_block].inputs[dst_port];
+		});
+
+		// Call run
+		_.forEach(profile.blocks, function (block, index) {
+			if (typeof block.run === 'function') {
+				block.run();
+			}
+		});
 	});
 }
 

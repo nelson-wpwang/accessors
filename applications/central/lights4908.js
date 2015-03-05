@@ -1,5 +1,5 @@
 
-function Lights4908 (parameters) {
+function Lights4908 (parameters, finished) {
 
 	var inputs = [
 
@@ -14,6 +14,7 @@ function Lights4908 (parameters) {
 	]
 	this.inputs = inputs;
 
+	finished();
 }
 
 module.exports = Lights4908;

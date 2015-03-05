@@ -8,7 +8,7 @@ var _ = require('lodash');
 
 /* callback: what to call with the inverted value
  */
-function Not () {
+function Not (parameters, finished) {
 
 	var outputs = new Array(1);
 	this.outputs = outputs;
@@ -25,6 +25,8 @@ function Not () {
 
 	]
 	this.inputs = inputs;
+
+	finished();
 
 }
 

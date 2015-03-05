@@ -17,7 +17,7 @@ var profile_desc = {
 			parameters: {
 				key: 'event_str',
 				matches: [
-					'in',
+					'Monoxalyze',
 					'squall',
 					'huh?'
 				]
