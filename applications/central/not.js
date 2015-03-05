@@ -25,10 +25,7 @@ function Not () {
 
 	]
 	this.inputs = inputs;
-
-	// this.config = {
-	// 	input_ports: ['input'],
-	// }
+	
 }
 
 module.exports = Not;
