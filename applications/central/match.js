@@ -24,7 +24,6 @@ function Match (parameters) {
 		function (data) {
 			if (_.has(data, parameters.key)) {
 				// Can even try to match this key
-
 				var val = data[parameters.key];
 
 				_.forEach(parameters.matches, function (match_str, n) {
@@ -43,10 +42,6 @@ function Match (parameters) {
 
 	]
 	this.inputs = inputs;
-
-	// this.config = {
-	// 	input_ports: ['input'],
-	// }
 
 }
 

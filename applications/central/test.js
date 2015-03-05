@@ -28,7 +28,8 @@ var profile_desc = {
 			uuid: '2'
 		},
 		{
-			type: 'Lights4908',
+			type: 'accessor',
+			path: '/tests/print',
 			uuid: '3'
 		}
 	],

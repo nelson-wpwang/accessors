@@ -15,7 +15,7 @@ function Not () {
 
 	var inputs = [
 
-        function (bool) {
+		function (bool) {
 			if (bool) {
 				outputs[0](false);
 			} else {
@@ -25,7 +25,7 @@ function Not () {
 
 	]
 	this.inputs = inputs;
-	
+
 }
 
 module.exports = Not;

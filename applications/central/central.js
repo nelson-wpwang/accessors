@@ -3,10 +3,13 @@ var util = require('util');
 
 var _ = require('lodash');
 
+
 var match = require('./match');
 var not = require('./not');
 var ble = require('./ble');
 var lights4908 = require('./lights4908');
+
+var accessor = require('./accessor_wrapper');
 
 
 var block_names = {
@@ -25,7 +28,11 @@ function Central (profile_desc) {
 
 	// Create an object for each block
 	_.forEach(profile_desc.blocks, function (block, index) {
-		profile.blocks[block.uuid] = new block_names[block['type']](block.parameters);
+		if (block.type == 'accessor') {
+			profile.blocks[block.uuid] = new accessor(block.path, block.parameters);
+		} else {
+			profile.blocks[block.uuid] = new block_names[block.type](block.parameters);
+		}
 	});
 
 	// Insert all of the correct calls
@@ -48,13 +55,14 @@ function Central (profile_desc) {
 			dst_port = 0;
 		}
 
+		console.log('Connecting ' + conn.src + ' to ' + conn.dst);
 		profile.blocks[src_block].outputs[src_port] = profile.blocks[dst_block].inputs[dst_port];
 	});
 
-	// Call init
+	// Call run
 	_.forEach(profile.blocks, function (block, index) {
-		if (typeof block.init === 'function') {
-			block.init();
+		if (typeof block.run === 'function') {
+			block.run();
 		}
 	});
 }

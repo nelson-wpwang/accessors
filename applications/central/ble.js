@@ -11,7 +11,7 @@ function BLE () {
 	var outputs = new Array(1);
 	this.outputs = outputs;
 
-	this.init = function () {
+	this.run = function () {
 		var rmq = amqp.createConnection(config.rabbitmq);
 		rmq.on('ready', function () {
 
@@ -19,7 +19,7 @@ function BLE () {
 				q.bind(config.rabbitmq.exchange, "scanner.#", function () {
 					q.subscribe(function (message, headers, deliveryInfo, messageObject) {
 						var pkt = JSON.parse(message.data);
-						// console.log(pkt.name);
+						console.log(pkt.name);
 						outputs[0]({'event_str': pkt.name});
 					});
 				});
