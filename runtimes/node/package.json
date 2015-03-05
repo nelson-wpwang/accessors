@@ -4,8 +4,16 @@
   "description": "An Accessor Runtime written for node.js",
   "main": "accessors.js",
   "dependencies": {
-    "semver": "^4.2.0",
-    "request": "^2.51.0"
+    "atob": "^1.1.2",
+    "body-parser": "^1.12.0",
+    "btoa": "^1.1.2",
+    "coap": "^0.9.1",
+    "express": "^4.12.2",
+    "node-dir": "^0.1.6",
+    "q": "^1.2.0",
+    "request": "^2.53.0",
+    "semver": "^4.3.1",
+    "tinycolor2": "^1.1.1"
   },
   "devDependencies": {},
   "scripts": {
