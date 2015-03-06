@@ -1,0 +1,18 @@
+{
+  "name": "central",
+  "version": "1.0.0",
+  "description": "Visual accessor data flow.",
+  "main": "central.js",
+  "dependencies": {
+    "amqp": "^0.2.4",
+    "async": "^0.9.0",
+    "coap": "^0.9.1",
+    "lodash": "^3.3.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
