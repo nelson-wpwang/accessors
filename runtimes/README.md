@@ -191,10 +191,10 @@ should use [blobs](https://developer.mozilla.org/en-US/docs/Web/API/Blob)?
 This method is only valid for `SOCK_DGRAM` sockets. It sends the message to the
 specified host.
 
-- `void <socket::tcp>.connect([<string> host, <int> port])`:
+- _Blocking_ `void <socket::tcp>.connect([<string> host, <int> port])`:
 Open a TCP connection to the specified host.
 
-- `void <socket::tcp>.send(<string> message)`:
+- _Blocking_ `void <socket::tcp>.send(<string> message)`:
 Send data on an open TCP connection. It is an error to call `send` before
 calling `connect`.
 
