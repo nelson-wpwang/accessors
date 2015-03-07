@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/* vim: set noet ts=2 sts=2 sw=2: */
+
 // w for "web server"
 var request = require('request');
 var w = require('express')();
