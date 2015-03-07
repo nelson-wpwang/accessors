@@ -182,6 +182,11 @@ should use [blobs](https://developer.mozilla.org/en-US/docs/Web/API/Blob)?
 This method is only valid for `SOCK_DGRAM` sockets. It sends the message to the
 specified host.
 
+- `void <socket>.bind (<function> callback(<string> message))`:
+This function configures a callback to be called when a message is received on
+the socket. Note that this function is only valid on udp sockets or connected
+tcp sockets. Accessors can only act as clients to avoid port conflicts for now.
+
 ### HTTP Requests
 
 All HTTP related functions are scoped under the `http` object.

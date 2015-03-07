@@ -8,6 +8,7 @@ var atob = require('atob');
 var btoa = require('btoa');
 var coap = require('coap');
 var urllib = require('url');
+var dgram = require('dgram');
 // var color = require('color');
 
 
@@ -71,7 +72,46 @@ rt.time.run_later = function (time_in_ms, fn_to_run, args) {
 rt.socket = Object();
 
 rt.socket.socket = function* (family, sock_type) {
-	throw new AccessorRuntimeException("Not implemented");
+	var s = Object();
+
+	if (sock_type == 'SOCK_DGRAM') {
+		var type;
+		var socket;
+
+		if (family == 'AF_INET') type = 'udp4';
+		else if (family == 'AF_INET6') type = 'udp6';
+		else throw new AccessorRuntimeException("Bad family");
+
+		socket = dgram.createSocket(type, null);
+
+		s.sendto = function* (message, destination) {
+			var defer = Q.defer();
+			socket.send(message, 0, message.length, destination[1], destination[0],
+					function(err) {
+						rt.log.debug("rt.<socket::udp>.send done");
+						if (err == 0) {
+							defer.resolve();
+						} else {
+							defer.reject(err);
+						}
+					});
+			return yield defer.promise;
+		}
+
+		s.bind = function (cb) {
+			socket.bind();
+
+			socket.on('message', function(msg, rinfo) {
+				console.log("rt.<socket::udp>.on('message'): msg %s from %s:%d",
+						msg, rinfo.address, rinfo.port);
+				cb(msg);
+			});
+		}
+
+		return s;
+	} else {
+		throw new AccessorRuntimeException("Not implemented");
+	}
 }
 
 
