@@ -9,6 +9,7 @@ var btoa = require('btoa');
 var coap = require('coap');
 var urllib = require('url');
 var dgram = require('dgram');
+var net = require('net');
 // var color = require('color');
 
 
@@ -107,11 +108,44 @@ rt.socket.socket = function* (family, sock_type) {
 				cb(msg);
 			});
 		}
+	} else if (sock_type == 'SOCK_STREAM') {
+		var socket;
 
-		return s;
+		socket = new net.Socket();
+
+		socket.on('error', function(err) {
+			console.log("rt.<socket::tcp>.on('error') [\\n]:");
+			console.log(err);
+			throw new AccessorRuntimeException("Unhandled tcp socket error");
+		});
+
+		s.connect = function* (destination) {
+			var defer = Q.defer();
+			socket.connect(destination[1], destination[0],
+					function connect_succ() {
+						defer.resolve();
+					});
+			return yield defer.promise;
+		}
+
+		s.bind = function (cb) {
+			socket.on('data', cb);
+		}
+
+		s.send = function* (message) {
+			var defer = Q.defer();
+			socket.write(message, 'utf8',
+					function write_done() {
+						defer.resolve();
+					});
+			return yield defer.promise;
+		}
+
 	} else {
 		throw new AccessorRuntimeException("Not implemented");
 	}
+
+	return s;
 }
 
 

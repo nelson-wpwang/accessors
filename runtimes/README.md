@@ -176,16 +176,27 @@ be a standard socket name (e.g. `SOCK_DGRAM` or `SOCK_STREAM`).
 
 The remaining functions are all members of the returned socket object.
 
+- `void <socket>.bind (<function> callback(<string> message))`:
+This function configures a callback to be called when a message is received on
+the socket. Note that this function takes no arguments other than the callback.
+This means that accessors can only act as clients (they can only bind to
+emphemeral ports). This restriction is in place to avoid port conflicts if
+multiple devices needed accessor runtime to act as a server on the same port.
+Implementations should call `bind` before any methods (`sendto`, `connect`) that
+could result in incoming data to ensure that data is not dropped.
+
 **TODO:** How should data be passed into the send/recv functions? Perhaps they
 should use [blobs](https://developer.mozilla.org/en-US/docs/Web/API/Blob)?
-- _Blocking_ `void <socket>.sendto (<string> message, [<string> host, <int> port])`:
+- _Blocking_ `void <socket::udp>.sendto (<string> message, [<string> host, <int> port])`:
 This method is only valid for `SOCK_DGRAM` sockets. It sends the message to the
 specified host.
 
-- `void <socket>.bind (<function> callback(<string> message))`:
-This function configures a callback to be called when a message is received on
-the socket. Note that this function is only valid on udp sockets or connected
-tcp sockets. Accessors can only act as clients to avoid port conflicts for now.
+- `void <socket::tcp>.connect([<string> host, <int> port])`:
+Open a TCP connection to the specified host.
+
+- `void <socket::tcp>.send(<string> message)`:
+Send data on an open TCP connection. It is an error to call `send` before
+calling `connect`.
 
 ### HTTP Requests
 
