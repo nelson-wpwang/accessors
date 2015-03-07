@@ -81,6 +81,9 @@ module.exports = function (host_server) {
 				console.log("art::create_accessor before requireFromString " + accessor.name);
 				var device = requireFromString(module_as_string);
 
+				// Provide access to the JSON metadata via _meta
+				device._meta = accessor;
+
 				console.log("art::create_accessor before init-ing " + accessor.name);
 				device.init(function () {
 					console.log("post-init callback start");
