@@ -123,9 +123,9 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 
 //This is just GET. Don't know why it's called readURL...
 rt.http.readURL = function* readURL(url) {
-	rt.log.debug("runtime_web::readURL before yield*");
+	rt.log.debug("runtime_lib::readURL before yield*");
 	return yield* rt.http.request(url, 'GET', null, null, 0);
-	rt.log.debug("runtime_web::readURL after yield*");
+	rt.log.debug("runtime_lib::readURL after yield*");
 }
 
 rt.http.post = function* post(url, body) {

@@ -1,3 +1,5 @@
+/* vim: set noet ts=2 sts=2 sw=2: */
+
 var path_module = require('path');
 var request = require('request');
 var fs = require('fs');
@@ -50,14 +52,14 @@ module.exports = function (host_server) {
 
 				//XXX: Implement something to figure out the runtime imports neccessary
 				//	Some of these are from runtime and some are from Hue
-				var runtime_web_file = path_module.join(__dirname, 'runtime_web.js');
+				var runtime_lib_file = path_module.join(__dirname, 'runtime_lib.js');
 				var requires = "";
 				// requires += "var Q = require('q');\n";
 				// requires += "var request = require('request');\n";
 				// requires += "var tinycolor = require('tinycolor2');\n";
 				// requires += "var atob = require('atob');\n";
 				// requires += "var btoa = require('btoa');\n";
-				requires += "var rt = require('"+runtime_web_file+"');\n";
+				requires += "var rt = require('"+runtime_lib_file+"');\n";
 
 				var ports_str = "var ports = "+JSON.stringify(ports)+";\n";
 				console.log('art::create_accessor Ports string: ' + ports_str);
@@ -65,14 +67,13 @@ module.exports = function (host_server) {
 				var params = "var parameters = "+JSON.stringify(parameters)+";\n";
 				console.log('art::create_accessor Parameters: ' + params);
 
-				var runtime_help_file = path_module.join(__dirname, 'runtime_help.js');
-				var runtime_help_code = fs.readFileSync(runtime_help_file);
-				// runtime_help_code = "rt = require('"+runtime_web_file+"');\n" + runtime_help_code;
+				var runtime_file = path_module.join(__dirname, 'runtime.js');
+				var runtime_code = fs.readFileSync(runtime_file);
 
 				var exports = get_exports(accessor);
 
 				// turn the code into a module
-				var module_as_string = requires + ports_str + params + runtime_help_code + accessor.code + exports;
+				var module_as_string = requires + ports_str + params + runtime_code + accessor.code + exports;
 				if (typeof module_as_string !== 'string') {
 					console.log("something isn't a string in " + accessor.name);
 					throw "This accessor won't work";

@@ -1,8 +1,10 @@
+/* vim: set noet ts=2 sts=2 sw=2: */
+
 /*** Core Functions ***/
 //Not in the namespace
 
 // NOTE: this line is already added by the module creator to resolve the path
-// rt = require('./runtime_web.js');
+// rt = require('./runtime_lib.js');
 
 var Q = require('q');
 

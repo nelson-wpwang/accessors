@@ -95,7 +95,7 @@ class ServeAccessor (tornado.web.RequestHandler):
 		self.set_header("Access-Control-Allow-Origin", "*")
 
 	def get (self):
-		print("get accessor {}".format(self))
+		log.debug("get accessor {}".format(self))
 
 		# Look for any parameters that change how we will respond
 		language = self.get_argument('language', 'es6')
@@ -182,7 +182,7 @@ class ServeAccessorXML (ServeAccessor):
 			if 'default' in port:
 				props['value'] = str(port['default'])
 			if 'options' in port:
-				print("WARN: json -> xml: should probably make options elements");
+				log.warn("json -> xml: should probably make options elements");
 				props['options'] = port['options']
 			if 'min' in port:
 				props['min'] = str(port['min'])
@@ -207,7 +207,7 @@ class ServeAccessorXML (ServeAccessor):
 			.text = '\n{}\n'.format(accessor['code'])
 
 		if 'dependencies' in accessor:
-			print("WARN: json -> xml: dependencies")
+			log.warn("json -> xml: dependencies")
 
 		# This is legacy xml for v0 accessors, we don't use it
 		doc = ET.SubElement(top, 'documentation', attrib={'type': 'text/html'})
@@ -247,7 +247,6 @@ class Interface():
 			self.ports = []
 			if 'ports' in self.json:
 				for port in self.json['ports']:
-					print(port)
 					self.ports.append(self.path[1:].replace('/', '.') + '.' + port)
 
 			self.extends = []
@@ -373,8 +372,8 @@ def create_servable_objects_from_accessor (accessor, path):
 	server_path_tuples.append((json_path, json_serve_class))
 	server_path_tuples.append((xml_path, xml_serve_class))
 	accessors_by_path[json_path] = json_serve_class
-	print('Adding accessor {}'.format(json_path))
-	print('Adding accessor {}'.format(xml_path))
+	log.info('Adding accessor {}'.format(json_path))
+	log.info('Adding accessor {}'.format(xml_path))
 
 
 accessor_tree = {}
@@ -503,7 +502,7 @@ def find_accessors (accessor_path, tree_node):
 					analyzed = parse_js("." + path)
 				except sh.ErrorReturnCode as e:
 					log.debug('-'*50)
-					print(e.stderr.decode("unicode_escape"))
+					log.error(e.stderr.decode("unicode_escape"))
 					raise
 				analyzed = json.loads(analyzed.stdout.decode('utf-8'))
 
@@ -575,9 +574,6 @@ def find_accessors (accessor_path, tree_node):
 
 				create_servable_objects_from_accessor(accessor, path)
 
-				if accessor['name'] == 'Hue Single':
-					pprint.pprint(accessor)
-
 
 
 DESC = """
@@ -611,7 +607,7 @@ load_interface_tree(args.interfaces_path)
 find_accessors(args.accessor_path, None)
 
 #pprint.pprint(accessor_tree, depth=2)
-pprint.pprint(accessor_tree['/lighting/hue/huesingle.js'])
+#pprint.pprint(accessor_tree['/lighting/hue/huesingle.js'])
 
 # # Start a monitor to watch for any changes to accessors
 # class AccessorChangeHandler (watchdog.events.FileSystemEventHandler):
