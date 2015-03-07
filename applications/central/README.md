@@ -25,7 +25,7 @@ Other npm installs
 
 Need new Node
 
-    nvm 0.11
+    nvm use 0.11
 
 Run 
 
