@@ -10,21 +10,21 @@ var _ = require('lodash');
  */
 function Not (parameters, finished) {
 
-	var outputs = new Array(1);
+	// var outputs = new Array(1);
+	var outputs = {};
 	this.outputs = outputs;
 
-	var inputs = [
-
-		function (bool) {
-			if (bool) {
-				outputs[0](false);
-			} else {
-				outputs[0](true);
-			}
-		}
-
-	]
+	var inputs = {};
 	this.inputs = inputs;
+
+	inputs[0] = 
+	function (bool) {
+		if (bool) {
+			outputs[0](false);
+		} else {
+			outputs[0](true);
+		}
+	};	
 
 	finished();
 

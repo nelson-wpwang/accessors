@@ -7,16 +7,17 @@ var _ = require('lodash');
  *
  */
 
-/* parameters[key]:       the match block will use the value that corresponds to this key
- *            in the incoming dict when performing the match.
- * parameters[matches]:   an array of strings that the match block will compare the value
- *            against.
- * callbacks: an array of callback functions. The one that corresponds to the
- *            matched value will be called with `true`.
+/* parameters {
+ *  key:     the match block will use the value that corresponds to this key
+ *           in the incoming dict when performing the match.
+ *  matches: an array of strings that the match block will compare the value
+ *           against.
+ * }
  */
 function Match (parameters, finished) {
 
-	var outputs = new Array(parameters.matches.length);
+	// var outputs = new Array(parameters.matches.length);
+	var outputs = {};
 	this.outputs = outputs;
 
 	var inputs = [
