@@ -8,27 +8,27 @@ var config = require('./config');
 // block, which will be an accessor some day.
 var profile_desc = {
 	blocks: [
-		// {
-		// 	type: 'accessor',
-		// 	path: '/webquery/RabbitMQ',
-		// 	parameters: {
-		// 		amqp_url: 'amqp://' + config.rabbitmq.login + ':' + \
-		// 		           config.rabbitmq.password + '@' + \
-		// 		           config.rabbitmq.host + '/' + config.rabbitmq.vhost,
-		// 		amqp_exchange: config.rabbitmq.exchange,
-		// 		amqp_routing_key: 'scanner.#'
-		// 	}
-		// 	uuid: '00'
-		// },
 		{
-			type: 'BLE',
+			type: 'accessor',
+			path: '/webquery/RabbitMQ',
+			parameters: {
+				amqp_url: 'amqp://' + config.rabbitmq.login + ':' +
+				           config.rabbitmq.password + '@' +
+				           config.rabbitmq.host + '/' + config.rabbitmq.vhost,
+				amqp_exchange: config.rabbitmq.exchange,
+				amqp_routing_key: 'scanner.#',
+			},
 			uuid: '00'
 		},
+		// {
+		// 	type: 'BLE',
+		// 	uuid: '00'
+		// },
 		{
 			type: 'Match',
 			uuid: '1',
 			parameters: {
-				key: 'event_str',
+				key: 'name',
 				matches: [
 					'Monoxalyze',
 					'squall',
@@ -56,7 +56,7 @@ var profile_desc = {
 	],
 	connections: [
 		{
-			src: '00.0',
+			src: '00.Data',
 			dst: '1.0'
 		},
 		{
