@@ -7,6 +7,7 @@
 // rt = require('./runtime_lib.js');
 
 var Q = require('q');
+var AcessorRuntimeException = Error;
 
 _do_port_call=function (port, value, done_fn, error_fn) {
 	var r;
@@ -57,5 +58,3 @@ var load_dependency = function (path, parameters) {
 
 	throw new AccessorRuntimeException("That was optimistic");
 }
-
-var AcessorRuntimeException = Error;

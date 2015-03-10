@@ -44,6 +44,14 @@ var profile_desc = {
 			type: 'accessor',
 			path: '/tests/print',
 			uuid: '3'
+		},
+		{
+			type: 'accessor',
+			path: '/switch/acme++',
+			parameters: {
+				ip_addr: config.acme.ip_addr,
+			},
+			uuid: 'acme_workbench'
 		}
 	],
 	connections: [
@@ -53,7 +61,7 @@ var profile_desc = {
 		},
 		{
 			src: '1.0',
-			dst: '3'
+			dst: '3.Print'
 		},
 		{
 			src: '1.1',
@@ -61,8 +69,16 @@ var profile_desc = {
 		},
 		{
 			src: '2',
-			dst: '3'
-		}
+			dst: '3.Print'
+		},
+		// {
+		// 	src: '2',
+		// 	dst: 'acme_workbench.PowerControl'
+		// },
+		// {
+		// 	src: '1.0',
+		// 	dst: 'acme_workbench.PowerControl'
+		// }
 	]
 }
 

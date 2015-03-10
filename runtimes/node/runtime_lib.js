@@ -12,6 +12,7 @@ var dgram = require('dgram');
 var net = require('net');
 // var color = require('color');
 
+var AcessorRuntimeException = Error;
 
 /*
  * Create the over-arching runtime object that lets us scope all of this
@@ -164,15 +165,16 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 				})(arguments)
 				+ ")");
 
-	if (properties != null) {
-		throw new AccessorRuntimeException("Don't know what to do with properties...");
-	}
+	// if (properties != null) {
+	// 	throw new AccessorRuntimeException("Don't know what to do with properties...");
+	// }
 
 	var request_defer = Q.defer();
 
 	var options = {
 		url: url,
 		method: method,
+		headers: properties,
 		body: body,
 		timeout: timeout
 	}

@@ -16,6 +16,25 @@ module.exports = function (host_server) {
 
 	console.log('Using host server ' + host_server + ' for accessors.');
 
+	// Ask for an accessor from the accessor host server and return the
+	// Accessor Intermediate Representation object.
+	function get_accessor_ir (path, success_cb, error_cb) {
+		console.log('art::get_accessor_ir from path: ' + path);
+
+		var url = host_server + '/accessor' + path + '.json';
+		console.log('art::gair Retrieving ' + url);
+
+		request(url, function (error, response, body) {
+			if (!error && response.statusCode == 200) {
+				var accessor = JSON.parse(body);
+				success_cb(accessor);
+			} else {
+				error_cb('Could not retreive accessor from host server');
+			}
+		});
+	}
+
+
 	// Call this function to create an object that can be used as an accessor
 	//
 	// On success you get a callback:
@@ -137,7 +156,8 @@ module.exports = function (host_server) {
 	}
 
 	return {
-		create_accessor: create_accessor
+		create_accessor: create_accessor,
+		get_accessor_ir: get_accessor_ir
 	}
 };
 

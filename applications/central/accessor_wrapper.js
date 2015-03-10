@@ -9,10 +9,10 @@ var accessors = require('accessors')(config.accessors.host_server);
 function AccessorWrapper (path, parameters, finished) {
 
 	var accessor;
-	var inputs = [];
+	var inputs = {};
 	this.inputs = inputs;
 
-	var outputs = [];
+	var outputs = {};
 	this.outputs = outputs;
 
 	accessors.create_accessor(path, parameters, function (acc) {
@@ -22,18 +22,18 @@ function AccessorWrapper (path, parameters, finished) {
 
 		// Iterate all ports
 		_.forEach(acc._meta.ports, function (port, index) {
-			if (port.direction == 'input') {
+			if (port.direction == 'input' || port.direction == 'inout') {
 				// Map each input port to the correct function inside of the
 				// accessor.
-				inputs.push(function (input) {
-					acc[port.name](input);
-				});
+				inputs[port.function] = function (input) {
+					acc[port.function](input);
+				};
 
 			} else if (port.direction == 'observable') {
 				// Create intermediate callback function to call the correct
 				// output callback function.
-				acc[port.name](function (data) {
-					outputs[port.name](data);
+				acc[port.function](function (data) {
+					outputs[port.function](data);
 				});
 			}
 

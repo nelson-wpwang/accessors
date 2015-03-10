@@ -48,7 +48,13 @@ function* get_power_state () {
 	headers['Content-Type'] = 'text/xml; charset="utf-8"';
 
 	var response = yield* rt.http.request(url+':'+port+'/upnp/control/basicevent1', 'POST', headers, get_body, 0);
-	var power_state = getXMLValue(response, 'BinaryState');
+	rt.log.log(response);
+
+	var start = response.indexOf('BinaryState');
+	var power_state = response.substr(start+12, 1);
+
+	// Put this back when the rt. library supports it
+	// var power_state = getXMLValue(response, 'BinaryState');
 
 	set('Power', (parseInt(power_state) == 1));
 }
