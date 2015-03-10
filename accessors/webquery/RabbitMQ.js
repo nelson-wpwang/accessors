@@ -23,5 +23,5 @@ function* Data (callback) {
   // Setup a simple listener that will create a queue to the given exchange
   // with the given routing key and call `callback` every time a data packet
   // comes in.
-  yield* amqp_conn.subscribe(exchange, routing_key, callback);
+  amqp_conn.subscribe(exchange, routing_key, callback);
 }
