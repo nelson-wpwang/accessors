@@ -18,6 +18,15 @@ function* on_each (body) {
 }
 
 function* init () {
+	provide_interface('/lighting/light', {
+		'/lighting/light.Power': Power,
+	});
+	provide_interface('/lighting/hue', {
+		'/onoff.Power': Power,
+		'/lighting/rgb.Color': Color,
+		'/lighting/brightness.Brightness': Brightness
+	});
+
 	create_port('output', 'Bridge');
 
 	var url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights';
@@ -66,8 +75,4 @@ function* SetAll () {
 	output.on = power;
 
 	yield* on_each(output);
-}
-
-function fire () {
-
 }

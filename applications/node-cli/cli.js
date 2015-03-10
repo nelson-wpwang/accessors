@@ -64,8 +64,6 @@ rl.question('Accessor path: ', function (path) {
 										val = true;
 									} else if (val == 'false') {
 										val = false;
-									} else if (!isNaN(parseInt(val))) {
-										val = parseInt(val);
 									}
 									accessor[accessor_ir.ports[port_index].function](val);
 									interact();
