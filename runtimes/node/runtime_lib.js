@@ -7,6 +7,7 @@ var tinycolor = require('tinycolor2');
 var atob = require('atob');
 var btoa = require('btoa');
 var coap = require('coap');
+var amqp = require('amqp');
 var urllib = require('url');
 var dgram = require('dgram');
 var net = require('net');
@@ -246,6 +247,35 @@ rt.coap.post = function* coapPost(url, body) {
 	yield* _coapCommon(ogm);
 }
 
+/*** RABBITMQ / AMQP CONNECTIONS ***/
+
+rt.amqp = Object();
+
+rt.amqp.connect = function* amqpConnect (url) {
+	var a = Object();
+	var conn;
+
+	rt.log.debug('AMQP Connect: ' + url);
+	var defer = Q.defer();
+	var conn = amqp.createConnection({url: url});
+	conn.on('ready', function () {
+		defer.resolve(a);
+	});
+
+	a.subscribe = function (exchange, routing_key, callback) {
+		conn.queue('', function (q) {
+			q.bind(exchange, routing_key, function () {
+				q.subscribe(function (message, headers, deliveryinfo, messageObject) {
+					var pkt = JSON.parse(message.data);
+					callback(pkt);
+				});
+			});
+		});
+	}
+
+	return yield defer.promise;
+}
+
 
 /*** COLOR FUNCTIONS ***/
 
@@ -299,5 +329,6 @@ exports.time = rt.time;
 exports.socket = rt.socket;
 exports.http = rt.http;
 exports.coap = rt.coap;
+exports.amqp = rt.amqp;
 exports.color = rt.color;
 exports.encode = rt.encode;
