@@ -16,31 +16,36 @@ var profile_desc = {
 				           config.rabbitmq.password + '@' +
 				           config.rabbitmq.host + '/' + config.rabbitmq.vhost,
 				amqp_exchange: config.rabbitmq.exchange,
-				amqp_routing_key: 'event.presence.UniversityofMichigan.BBB.4908.#',
+				amqp_routing_key: 'event.presence.University_of_Michigan.BBB.4908.#',
 			},
 			uuid: 'PullWearabouts'
 		},
 		{
 			type: 'Match',
 			parameters: {
-				key: 'name',
+				key: 'event_str',
 				matches: [
-					'Monoxalyze',
-					'squall',
-					'huh?'
+					'Location occupied',       // 0
+					'Location not occupied',   // 1
+					'samkuo in location',      // 2
+					'samkuo not in location'   // 3
 				]
 			},
 			uuid: 'MatchEvents',
 		},
 		{
 			type: 'Not',
-			uuid: '2'
+			uuid: 'Not0'
+		},
+		{
+			type: 'Not',
+			uuid: 'Not1'
 		},
 		{
 			type: 'accessor',
 			path: '/switch/acme++',
 			parameters: {
-				ip_addr: config.acme.ip_addr,
+				ip_addr: config.acme.workbench_right_ip_addr,
 			},
 			uuid: 'AcmeWorkbenchRight'
 		},
@@ -48,26 +53,26 @@ var profile_desc = {
 			type: 'accessor',
 			path: '/switch/acme++',
 			parameters: {
-				ip_addr: config.acme.ip_addr,
+				ip_addr: config.acme.workbench_left_ip_addr,
 			},
 			uuid: 'AcmeWorkbenchLeft'
 		},
-		{
-			type: 'accessor',
-			path: '/switch/acme++',
-			parameters: {
-				ip_addr: config.acme.ip_addr,
-			},
-			uuid: 'AcmeOverheadLights'
-		},
-		{
-			type: 'accessor',
-			path: '/switch/acme++',
-			parameters: {
-				ip_addr: config.acme.ip_addr,
-			},
-			uuid: 'AcmeYeshengLight'
-		},
+		// {
+		// 	type: 'accessor',
+		// 	path: '/switch/acme++',
+		// 	parameters: {
+		// 		ip_addr: config.acme.overhead_ip_addr,
+		// 	},
+		// 	uuid: 'AcmeOverheadLights'
+		// },
+		// {
+		// 	type: 'accessor',
+		// 	path: '/switch/acme++',
+		// 	parameters: {
+		// 		ip_addr: config.acme.yesheng_ip_addr,
+		// 	},
+		// 	uuid: 'AcmeYeshengLight'
+		// },
 		{
 			type: 'accessor',
 			path: '/lighting/hue/allbridgehues',
@@ -92,17 +97,25 @@ var profile_desc = {
 			dst: 'MatchEvents.0'
 		},
 		{
-			src: '1.0',
-			dst: '3.Print'
+			src: 'MatchEvents.1',
+			dst: 'Not0'
 		},
 		{
-			src: '1.1',
-			dst: '2'
+			src: 'Not0',
+			dst: 'AcmeWorkbenchRight.PowerControl'
 		},
 		{
-			src: '2',
-			dst: '3.Print'
+			src: 'MatchEvents.2',
+			dst: 'AcmeWorkbenchLeft.PowerControl'
 		},
+		{
+			src: 'MatchEvents.3',
+			dst: 'Not1'
+		},
+		{
+			src: 'Not1',
+			dst: 'AcmeWorkbenchLeft.PowerControl'
+		}
 		// {
 		// 	src: '2',
 		// 	dst: 'acme_workbench.PowerControl'

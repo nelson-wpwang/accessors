@@ -84,6 +84,7 @@ function Central (profile_desc) {
 			if (!_.has(profile.blocks[src_block].outputs, src_port)) {
 				profile.blocks[src_block].outputs[src_port] = (function (src_block, src_port) {
 					return function (arg) {
+						console.log('CENTRAL CONN: calling ' + profile.blocks[src_block]._connections[src_port].length + ' functions');
 						_.forEach(profile.blocks[src_block]._connections[src_port], function (conn, index) {
 							conn(arg);
 						});

@@ -17,14 +17,15 @@ function Not (parameters, finished) {
 	var inputs = {};
 	this.inputs = inputs;
 
-	inputs[0] = 
+	inputs[0] =
 	function (bool) {
+		console.log('NOT: got ' + bool);
 		if (bool) {
 			outputs[0](false);
 		} else {
 			outputs[0](true);
 		}
-	};	
+	};
 
 	finished();
 

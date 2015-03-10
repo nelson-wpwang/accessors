@@ -28,6 +28,7 @@ function Match (parameters, finished) {
 		if (_.has(data, parameters.key)) {
 			// Can even try to match this key
 			var val = data[parameters.key];
+			console.log('MATCH: trying to match ' + val);
 
 			_.forEach(parameters.matches, function (match_str, n) {
 				if (match_str == val) {
