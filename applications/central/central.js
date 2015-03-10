@@ -49,6 +49,9 @@ function Central (profile_desc) {
 			if (src.length == 2) {
 				src_block = src[0];
 				src_port = parseInt(src[1]);
+				if (isNaN(src_port)) {
+					src_port = src[1];
+				}
 			} else {
 				src_block = src[0];
 				src_port = 0;
@@ -58,13 +61,36 @@ function Central (profile_desc) {
 			if (dst.length == 2) {
 				dst_block = dst[0];
 				dst_port = parseInt(dst[1]);
+				if (isNaN(dst_port)) {
+					dst_port = dst[1];
+				}
 			} else {
 				dst_block = dst[0];
 				dst_port = 0;
 			}
 
 			console.log('Connecting ' + conn.src + ' to ' + conn.dst);
-			profile.blocks[src_block].outputs[src_port] = profile.blocks[dst_block].inputs[dst_port];
+			if (!_.has(profile.blocks[src_block], '_connections')) {
+				// create connections object for block
+				profile.blocks[src_block]._connections = {};
+			}
+			if (!_.has(profile.blocks[src_block]._connections, src_port)) {
+				profile.blocks[src_block]._connections[src_port] = [];
+			}
+			profile.blocks[src_block]._connections[src_port].push(profile.blocks[dst_block].inputs[dst_port]);
+
+			// Create function for the output that calls all the functions in
+			// the connections array.
+			if (!_.has(profile.blocks[src_block].outputs, src_port)) {
+				profile.blocks[src_block].outputs[src_port] = (function (src_block, src_port) {
+					return function (arg) {
+						_.forEach(profile.blocks[src_block]._connections[src_port], function (conn, index) {
+							conn(arg);
+						});
+					}
+				})(src_block, src_port);
+			}
+			// profile.blocks[src_block].outputs[src_port] = profile.blocks[dst_block].inputs[dst_port];
 		});
 
 		// Call run

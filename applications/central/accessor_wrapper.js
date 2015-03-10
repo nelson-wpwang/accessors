@@ -1,11 +1,13 @@
 
 var _ = require('lodash');
 
-var accessors = require('accessors')('http://localhost:6565');
+var config = require('./config');
+
+var accessors = require('accessors')(config.accessors.host_server);
 
 
 function AccessorWrapper (path, parameters, finished) {
-	
+
 	var accessor;
 	var inputs = [];
 	this.inputs = inputs;
@@ -20,29 +22,22 @@ function AccessorWrapper (path, parameters, finished) {
 
 		// Iterate all ports
 		_.forEach(acc._meta.ports, function (port, index) {
-			if (port.type == 'input') {
+			if (port.direction == 'input') {
 				// Map each input port to the correct function inside of the
 				// accessor.
 				inputs.push(function (input) {
-					acc[port.name]();
+					acc[port.name](input);
 				});
-			
-			} else if (port.type == 'observable') {
+
+			} else if (port.direction == 'observable') {
 				// Create intermediate callback function to call the correct
-				// ouput callback function.
+				// output callback function.
 				acc[port.name](function (data) {
 					outputs[port.name](data);
 				});
 			}
 
 		});
-
-
-
-		// inputs[0] = function (c) {
-		// 	// Hard coded for now
-		// 	acc.Print(c);
-		// }
 
 		// Let the setup know that we are done with initing the accessor
 		finished();

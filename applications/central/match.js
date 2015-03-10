@@ -20,34 +20,30 @@ function Match (parameters, finished) {
 	var outputs = {};
 	this.outputs = outputs;
 
-	var inputs = [
-
-		function (data) {
-			if (_.has(data, parameters.key)) {
-				// Can even try to match this key
-				var val = data[parameters.key];
-
-				_.forEach(parameters.matches, function (match_str, n) {
-					if (match_str == val) {
-						// Call the correct output
-						if (outputs[n]) {
-							outputs[n](true);
-						}
-
-						// Stop looking for matches
-						return false;
-					}
-				});
-			}
-		}
-
-	]
+	var inputs = {};
 	this.inputs = inputs;
 
+	inputs[0] =
+	function (data) {
+		if (_.has(data, parameters.key)) {
+			// Can even try to match this key
+			var val = data[parameters.key];
+
+			_.forEach(parameters.matches, function (match_str, n) {
+				if (match_str == val) {
+					// Call the correct output
+					if (outputs[n]) {
+						outputs[n](true);
+					}
+
+					// Stop looking for matches
+					return false;
+				}
+			});
+		}
+	}
+
 	finished();
-
 }
-
-
 
 module.exports = Match;

@@ -1,5 +1,6 @@
 
 var central = require('./central');
+var config = require('./config');
 
 // Define our test.
 // This pulls packets from BLE scan queue, puts them in match, feeds one
@@ -7,6 +8,18 @@ var central = require('./central');
 // block, which will be an accessor some day.
 var profile_desc = {
 	blocks: [
+		// {
+		// 	type: 'accessor',
+		// 	path: '/webquery/RabbitMQ',
+		// 	parameters: {
+		// 		amqp_url: 'amqp://' + config.rabbitmq.login + ':' + \
+		// 		           config.rabbitmq.password + '@' + \
+		// 		           config.rabbitmq.host + '/' + config.rabbitmq.vhost,
+		// 		amqp_exchange: config.rabbitmq.exchange,
+		// 		amqp_routing_key: 'scanner.#'
+		// 	}
+		// 	uuid: '00'
+		// },
 		{
 			type: 'BLE',
 			uuid: '00'
@@ -35,8 +48,8 @@ var profile_desc = {
 	],
 	connections: [
 		{
-			src: '00',
-			dst: '1'
+			src: '00.0',
+			dst: '1.0'
 		},
 		{
 			src: '1.0',
