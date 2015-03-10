@@ -382,7 +382,7 @@ function checkNewPorts(node) {
     var nameNode = node.arguments[1];
     var parametersNode = node.arguments[2];
 
-    var legal_directions = ["input", "output", "inout"];
+    var legal_directions = ["input", "output", "inout", "observable"];
     if (directionNode.type !== 'Literal') {
       throw "First argument to 'create_port' must be a fixed string";
     }
