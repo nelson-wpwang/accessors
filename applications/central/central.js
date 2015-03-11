@@ -10,6 +10,10 @@ var not = require('./not');
 var delay = require('./delay');
 var keyway = require('./keyway');
 var transistor = require('./transistor');
+var filter = require('./filter');
+var threshold = require('./threshold');
+var append = require('./append');
+var constant = require('./constant');
 
 var accessor = require('./accessor_wrapper');
 
@@ -20,6 +24,10 @@ var block_names = {
 	'Delay': delay,
 	'Keyway': keyway,
 	'Transistor': transistor,
+	'Filter': filter,
+	'Threshold': threshold,
+	'Append': append,
+	'Constant': constant,
 }
 
 

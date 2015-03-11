@@ -11,6 +11,7 @@ var amqp = require('amqp');
 var urllib = require('url');
 var dgram = require('dgram');
 var net = require('net');
+var socketio_old = require('socket.io-client');
 // var color = require('color');
 
 var AcessorRuntimeException = Error;
@@ -276,6 +277,30 @@ rt.amqp.connect = function* amqpConnect (url) {
 	return yield defer.promise;
 }
 
+/*** GATDv0.1 ***/
+
+rt.gatd_old = Object();
+
+rt.gatd_old.connect = function* gatdOldConnect (url) {
+	var g = Object();
+	var conn;
+
+	rt.log.debug('GATD OLD connecting to ' + url);
+	var defer = Q.defer();
+	var conn = socketio_old.connect(url);
+	conn.on('connect', function () {
+		console.log('GATD OLD connected');
+		defer.resolve(g);
+	});
+
+	g.query = function (query, callback) {
+		conn.emit('query', query);
+		conn.on('data', callback);
+	}
+
+	return yield defer.promise;
+}
+
 
 /*** COLOR FUNCTIONS ***/
 
@@ -330,5 +355,6 @@ exports.socket = rt.socket;
 exports.http = rt.http;
 exports.coap = rt.coap;
 exports.amqp = rt.amqp;
+exports.gatd_old = rt.gatd_old;
 exports.color = rt.color;
 exports.encode = rt.encode;
