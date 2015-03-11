@@ -33,6 +33,7 @@ function Match (parameters, finished) {
 
 			_.forEach(parameters.matches, function (match_str, n) {
 				if (match_str == val) {
+                    console.log('MATCH: Matched['+n+']');
 					// Call the correct output
 					if (outputs[n]) {
 						outputs[n](true);
