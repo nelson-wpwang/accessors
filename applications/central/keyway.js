@@ -21,9 +21,10 @@ function Keyway (parameters, finished) {
 
 	inputs[0] =
 	function (data) {
+		console.log('KEYWAY: called');
 		if (_.has(data, parameters.key)) {
 			// Key found, output the value
-			console.log('KEYWAY: forwarding ' + val);
+			console.log('KEYWAY: forwarding ' + data[parameters.key]);
 			outputs[0](data[parameters.key]);
 
 		}

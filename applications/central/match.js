@@ -25,6 +25,7 @@ function Match (parameters, finished) {
 
 	inputs[0] =
 	function (data) {
+		console.log('MATCH: called');
 		if (_.has(data, parameters.key)) {
 			// Can even try to match this key
 			var val = data[parameters.key];

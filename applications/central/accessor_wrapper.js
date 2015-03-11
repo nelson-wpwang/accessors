@@ -33,7 +33,8 @@ function AccessorWrapper (path, parameters, finished) {
 				// Create intermediate callback function to call the correct
 				// output callback function.
 				acc[port.function](function (data) {
-					console.log('ACCESSOR OBSERVE: got ' + data);
+					console.log('ACCESSOR OBSERVE: got ');
+					console.log(data);
 					outputs[port.function](data);
 				});
 			}

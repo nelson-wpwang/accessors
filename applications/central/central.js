@@ -7,8 +7,9 @@ var async = require('async');
 
 var match = require('./match');
 var not = require('./not');
-var ble = require('./ble');
-var lights4908 = require('./lights4908');
+var delay = require('./delay');
+var keyway = require('./keyway');
+var transistor = require('./transistor');
 
 var accessor = require('./accessor_wrapper');
 
@@ -16,8 +17,9 @@ var accessor = require('./accessor_wrapper');
 var block_names = {
 	'Match': match,
 	'Not': not,
-	'Lights4908': lights4908,
-	'BLE': ble
+	'Delay': delay,
+	'Keyway': keyway,
+	'Transistor': transistor,
 }
 
 

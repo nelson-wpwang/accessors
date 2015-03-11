@@ -21,6 +21,33 @@ var profile_desc = {
 			uuid: 'PullWearabouts'
 		},
 		{
+			type: 'accessor',
+			path: '/webquery/RabbitMQ',
+			parameters: {
+				amqp_url: 'amqp://' + config.rabbitmq.login + ':' +
+				           config.rabbitmq.password + '@' +
+				           config.rabbitmq.host + '/' + config.rabbitmq.vhost,
+				amqp_exchange: config.rabbitmq.exchange,
+				amqp_routing_key: 'event.override.University_of_Michigan.BBB.4908.#',
+			},
+			uuid: 'PullOverride'
+		},
+		{
+			type: 'Transistor',
+			uuid: 'WearaboutsSwitch'
+		},
+		{
+			type: 'Keyway',
+			parameters: {
+				key: 'override'
+			},
+			uuid: 'OverrideKeyway'
+		},
+		{
+			type: 'Delay',
+			uuid: 'OverrideDelay'
+		},
+		{
 			type: 'Match',
 			parameters: {
 				key: 'event_str',
@@ -28,7 +55,7 @@ var profile_desc = {
 					'Location occupied',       // 0
 					'Location not occupied',   // 1
 					'samkuo in location',      // 2
-					'samkuo not in location'   // 3
+					'samkuo not in location',  // 3
 				]
 			},
 			uuid: 'MatchEvents',
@@ -94,7 +121,31 @@ var profile_desc = {
 	connections: [
 		{
 			src: 'PullWearabouts.Data',
+			dst: 'WearaboutsSwitch.in'
+		},
+		{
+			src: 'WearaboutsSwitch.out',
 			dst: 'MatchEvents.0'
+		},
+		{
+			src: 'PullOverride.Data',
+			dst: 'OverrideKeyway'
+		},
+		{
+			src: 'PullOverride.Data',
+			dst: 'OverrideDelay.delay'
+		},
+		{
+			src: 'PullOverride.Data',
+			dst: 'MatchEvents.0'
+		},
+		{
+			src: 'OverrideKeyway.0',
+			dst: 'WearaboutsSwitch.gate'
+		},
+		{
+			src: 'OverrideDelay.0',
+			dst: 'WearaboutsSwitch.gate'
 		},
 		{
 			src: 'MatchEvents.1',
