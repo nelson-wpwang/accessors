@@ -30,32 +30,3 @@ parameters. Example:
 | ----------- | ------------             | ------- | ----------- |
 | language    | traceur, es6, javascript | es6     | Choose the language of the accessor code. By default the code is in the latest version of javascript. |
 
-
-
-Locations
----------
-
-Essential to the accessor architecture is a mechanism to retrieve valid
-accessors given a certain location. To accomplish this, the accessor host
-server can provide accessor lists based on location.
-
-Location files look like:
-
-
-    {
-      "accessors": [
-        {
-          "path": "/webquery/StockTick",
-          "parameters": {
-            "parameter1": "param value"
-          }
-        }
-      ]
-    }
-
-Again, their URLs are based on the hierarchy of their location. For example:
-
-    http://accessors.com/accessors/usa/michigan/annarbor/universityofmichigan/bbb/4908/accessors.json
-
-Once an application has the accessor list it can iterate through the list of
-accessors and retrieve the ones that it needs using the above URLs.

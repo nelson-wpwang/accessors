@@ -41,33 +41,9 @@ libraries (http, socket, etc.) to allow accessors to interact with the world.
 
 There are a couple in this repository.
 
+### Accessor Node Runtime
 
-### Accessor Web Runtime
-
-The web runtime allows you to use accessors inside of a browser. The web
-runtime has two parts: a webserver that hosts the HTML pages and retrieves
-accessor files and the in-browser javascript runtime.
-
-#### Web runtime setup
-
-The web runtime uses the browser javascript engine to run accessors.
-
-Setting up the webserver requires two servers to be running. The first is a
-websockets server. This is used by the javascript runtime to tunnel UDP and
-TCP sockets over websockets since browsers do not allow arbitrary socket
-connections. To start this:
-
-    runtimes/web/ws_server.py
-
-The next is the HTTP server that hosts the accessor pages. To run this:
-
-    runtimes/web/server.py -s localhost:6565 -w localhost:8765
-
-Note this server requires [Bower](http://bower.io/) to be installed.
-
-Now visit `http://localhost:5000` in a browser.
-
-
+You need node.js (>= 0.11) or io.js.
 
 ### Accessor Python Runtime
 

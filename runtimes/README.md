@@ -6,7 +6,7 @@ run in. The runtime is responsible for calling accessor methods, providing
 access to accessor parameters, and providing access to host resources (e.g. a
 reasonable `print` mechanism).
 
-**This document describes accesor runtime version 0.1, which is subject to
+**This document describes accessor runtime version 0.1, which is subject to
 change until its formal release.**
 
 
@@ -56,7 +56,7 @@ is omitted, the call will return immediately without actually doing anything.
 > functionality is emulated using generators that return promises.
 
 
-Meta-Accessors
+<!-- Meta-Accessors
 --------------
 
 Accessors may express dependencies on other accessors, allowing a single
@@ -98,13 +98,13 @@ This is for a few reasons:
   input/inout ports.
 
 The behavoir of any operations on the sub-accessor before calling `subinit`
-is undefined.
+is undefined. -->
 
 
 Runtime Functions
 -----------------
 
-The accessor runtime provides a small library of functions for accessors.
+The accessor runtime provides a library of functions for accessors.
 There are primarily I/O functions and serve to abstract the runtime
 environment from the accessor.
 
@@ -112,6 +112,42 @@ All accessor functions are namespaced in the `rt` namespace. This should make
 accessors easier to read by clearly identifying which functions are provided
 by the accessor runtime and not native javascript or defined in the accessor
 itself.
+
+
+### Accessor Framework Functions
+
+These functions allow the accessor to describe its features and dependencies.
+Because these are not actually library functions they are not namespaced
+under the `rt` namespace.
+
+- `<void> create_port(<string> direction, <string> name, <object> options)`:
+Create a one-off port for this accessor.
+
+- `<void> provide_interface(<string> path, <object> mapping)`: Specify that this
+accessor implements a particular interface. The mapping assigns ports, specified
+as `'/interface/path.Port': <function name>`.
+
+- `<accessor> load_dependency(<string> path, <object> parameters=null)`: Loads a
+  new accessor as a dependency. Dependencies are guaranteed to exist at
+  runtime.
+   - Dependencies are lazily init-ed, meaning that the dependency's `init`
+     method is not called until the first time the dependency is accessed.
+   - You may call a dependency's `init` method directly to force immediate
+     and predictable initialization.
+   - Attempts to call a dependency's `init` method after it has already been
+     initialized are (**TODO:** ignored / throw an exception).
+
+- `<string> get_parameter(<string> parameter_name)`: Get the value of a
+configured parameter that was passed to accessor when it was created. Parameters
+allow for configuring generic accessors to specific instances of devices.
+
+- `<T> get(<string> port_name)`: Get the cached value of an input to a given
+port.
+
+- `<void> set(<string> port_name, <T> val)`: Set the value of an output port.
+
+
+
 
 ### General Utility
 
@@ -132,33 +168,15 @@ information.
 exception, terminating the current execution. Do not use critical for transient
 errors (e.g. a 503).
 
+
+### Time
+
 - _Blocking_ `<null> rt.time.sleep(<int> time_in_ms)`: Suspends execution for at
 least the amount of time requested.
 
 - `<null> rt.time.run_later(<float> delay_in_ms, <fn> fn_to_run, <T> args)`:
 Schedules `fn_to_run` for execution in the future.
 
-
-### Accessor Interface and Properties
-
-- `<T> get(<string> port_name)`: Get the current value of an input to a given
-port.
-
-- `<void> set(<string> port_name, <T> val)`: Set the value of an output port.
-
-**TODO:** Should this return the parameter typed instead of strings?
-- `<string> get_parameter(<string> parameter_name)`: Get the value of a
-configured parameter.
-
-- `<accessor> load_dependency(<string> path, <dict> parameters=null)`: Loads a
-  new accessor as a dependency. Dependencies are guaranteed to exist at
-  runtime.
-   - Dependencies are lazily init-ed, meaning that the dependency's `init`
-     method is not called until the first time the dependency is accessed.
-   - You may call a dependency's `init` method directly to force immediate
-     and predictable initialization.
-   - Attempts to call a dependency's `init` method after it has already been
-     initialized are (**TODO:** ignored / throw an exception).
 
 ### Sockets
 
@@ -213,6 +231,34 @@ runtimes.
 - _Blocking_ `<void> rt.http.post(<string> url, <string> body)`: HTTP POST.
 
 - _Blocking_ `<void> rt.http.put(<string> url, <string> body)`: HTTP PUT.
+
+### CoAP Requests
+
+- _Blocking_ `<string> rt.coap.get(<string> url)`: Create a CoAP get request
+to the specified URL.
+
+- _Blocking_ `<string> rt.coap.post(<string> url, <string> body)`: POST via
+CoAP to a specified resource.
+
+### RabbitMQ / AMQP
+
+- _Blocking_ `<amqp_connection> rt.amqp.connect(<string> url)`: Connect
+to an AMQP server will a fully defined AMQP URL.
+
+- `<void> [amqp_connection].subscribe(<string> exchange, <string> routing_key, <function> callback)`:
+Create a queue from a RabbitMQ exchange with the given routing key call `callback`
+with all incoming data packets.
+
+### GATD v0.1
+
+For older versions of GATD that support older socket.io.
+
+- _Blocking_ `<socketio_connection> rt.gatd_old.connect(<string> url)`: Connect
+to a socket.io server (0.9).
+
+- `<void> [socketio_connection].query(<object> query, <function> callback)`:
+Query the GATD streamer with the given query and call `callback` will all
+returned data packets.
 
 ### Color Functions
 
