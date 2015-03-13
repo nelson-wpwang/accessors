@@ -108,22 +108,22 @@ var profile_desc = {
 			},
 			uuid: 'AcmeWorkbenchLeft'
 		},
-		//{
-		//	type: 'accessor',
-		//	path: '/switch/acme++',
-		//	parameters: {
-		//		ip_addr: config.acme.overhead_ip_addr,
-		//	},
-		//	uuid: 'AcmeOverheadLights'
-		//},
-		//{
-		//	type: 'accessor',
-		//	path: '/switch/acme++',
-		//	parameters: {
-		//		ip_addr: config.acme.yesheng_ip_addr,
-		//	},
-		//	uuid: 'AcmeYeshengLight'
-		//},
+		{
+			type: 'accessor',
+			path: '/switch/acme++',
+			parameters: {
+				ip_addr: config.acme.overhead_ip_addr,
+			},
+			uuid: 'AcmeOverheadLights'
+		},
+		{
+			type: 'accessor',
+			path: '/switch/acme++',
+			parameters: {
+				ip_addr: config.acme.yesheng_ip_addr,
+			},
+			uuid: 'AcmeYeshengLight'
+		},
 		{
 			type: 'accessor',
 			path: '/lighting/hue/allbridgehues',
@@ -171,10 +171,10 @@ var profile_desc = {
 			src: 'OverrideDelay.0',
 			dst: 'WearaboutsSwitch.gate'
 		},
-        //{
-        //    src: 'MatchEvents.0',
-        //    dst: 'AcmeOverheadLights.PowerControl'
-        //},
+        {
+            src: 'MatchEvents.0',
+            dst: 'AcmeOverheadLights.PowerControl'
+        },
         {
             src: 'MatchEvents.1',
             dst: 'Not0'
@@ -187,50 +187,50 @@ var profile_desc = {
             src: 'Not0',
             dst: 'AcmeWorkbenchLeft.PowerControl'
         },
-        //{
-        //    src: 'Not0',
-        //    dst: 'AcmeOverheadLights.PowerControl'
-        //},
-        //{
-        //    src: 'Not0',
-        //    dst: 'AcmeYeshengLight.PowerControl'
-        //},
-        //{
-        //    src: 'MatchEvents.2',
-        //    dst: 'AcmeYeshengLight.PowerControl'
-        //},
+        {
+            src: 'Not0',
+            dst: 'AcmeOverheadLights.PowerControl'
+        },
+        {
+            src: 'Not0',
+            dst: 'AcmeYeshengLight.PowerControl'
+        },
+        {
+            src: 'MatchEvents.2',
+            dst: 'AcmeYeshengLight.PowerControl'
+        },
         {
             src: 'MatchEvents.3',
             dst: 'Not1'
         },
-        //{
-        //    src: 'Not1',
-        //    dst: 'AcmeYeshengLight.PowerControl'
-        //},
-        //{
-        //    src: 'MatchEvents.4',
-        //    dst: 'AcmeOverheadLights.PowerControl'
-        //},
+        {
+            src: 'Not1',
+            dst: 'AcmeYeshengLight.PowerControl'
+        },
+        {
+            src: 'MatchEvents.4',
+            dst: 'AcmeOverheadLights.PowerControl'
+        },
         {
             src: 'MatchEvents.5',
             dst: 'Not2',
         },
-        //{
-        //    src: 'Not2',
-        //    dst: 'AcmeOverheadLights.PowerControl'
-        //},
-        //{
-        //    src: 'MatchEvents.6',
-        //    dst: 'AcmeYeshengLight.PowerControl'
-        //},
+        {
+            src: 'Not2',
+            dst: 'AcmeOverheadLights.PowerControl'
+        },
+        {
+            src: 'MatchEvents.6',
+            dst: 'AcmeYeshengLight.PowerControl'
+        },
         {
             src: 'MatchEvents.7',
             dst: 'Not3'
         },
-        //{
-        //    src: 'Not3',
-        //    dst: 'AcmeYeshengLight.PowerControl'
-        //},
+        {
+            src: 'Not3',
+            dst: 'AcmeYeshengLight.PowerControl'
+        },
         {
             src: 'MatchEvents.8',
             dst: 'AcmeWorkbenchRight.PowerControl'
