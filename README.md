@@ -13,9 +13,9 @@ More concretely, accessors are Javascript files that both describe an
 interface and supply code to use it. The Javascript is parsed to generate JSON
 (and XML) objects that express accessor capabilities and requirements.
 Accessors present an interface much like HTML forms: a series of I/O elements
-with names. Each element can be an input, output, or both.
+with names.
 
-- **Input**: Accepts an action or data from the user but can only send that
+<!-- - **Input**: Accepts an action or data from the user but can only send that
 to the device being accessed. There is no state that can then be displayed to
 the user. A simple example is the "seek" button on audio equipment. It is
 entirely an input control action to the system.
@@ -32,7 +32,7 @@ block of code that allows whatever system is using the accessor to actually do
 something with the interface elements. There are two meta-functions, `init()`
 and `wrapup()`, that run when an accessor is instantiated and destroyed
 respectively. Input (and inout) ports define port functions that are called
-whenever their input value changes.
+whenever their input value changes. -->
 
 Accessor Runtime
 ----------------
@@ -45,7 +45,7 @@ the execution environment, such as logging and socket access.
 Accessor Example
 ----------------
 
-Continuing with the media player example, let's add a new device-specific
+Consider a media player example, let's add a new device-specific
 feature "Skip 15 seconds" and look at an example accessor and its generated JSON:
 
 ```javascript
@@ -140,7 +140,7 @@ Interfaces are a global ontology for devices. That is, they attempt
 to take all the capabilities of all devices and map them into a single, unified
 API. A key insight of our interface design is treating extensions as aliases.
 
-Consider, many devices fall into the simple categorey of `/onoff` devices, which
+Consider, many devices fall into the simple category of `/onoff` devices, which
 expose a `Power(bool)` capability. The basic `/lighting/light` interface
 `extends /onoff/Power`, and more advanced lights such as `/lighting/dimmable`
 `extends /lighting/light`. When an accessor for a dimmable light
@@ -161,11 +161,29 @@ port, it motivates the standardization of a new interface, while permitting for
 the immediate uptake of new features.
 
 
+
 Getting Started
 ---------------
 
-There's a lot going on in this accessors repository, but you should be able
-to get started by following these steps:
+There's a lot going on in this accessors repository and a few different
+components.
+
+### Folder Structure Overview
+
+- `/accessors`: This holds the accessor `.js` files.
+- `/android`: Android apps. Not extensively used.
+- `/applications`: Various applications that use accessors.
+- `/groups`: Organized collections of devices and the accessors that each
+device uses. This may be deprecated in the future.
+- `/interfaces`: Collections of ports that accessors may expose.
+- `/runtimes`: Execution environments in different languages for accessors.
+- `/server`: The Accessor Host Server that provides the full JSON/XML versions
+of accessors.
+- `/tests`: Test code, not used currently.
+
+
+### Running a web interface for accessors
+
 
 1. Run the Accessor Host Server. This is a webserver that parses the raw
 JavaScript accessors, converts them to the full JSON representation, and serves
