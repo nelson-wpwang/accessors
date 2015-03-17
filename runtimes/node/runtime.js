@@ -6,6 +6,7 @@
 // NOTE: this line is already added by the module creator to resolve the path
 // rt = require('./runtime_lib.js');
 
+var domain = require('domain');
 var Q = require('q');
 var AcessorRuntimeException = Error;
 
@@ -31,23 +32,22 @@ _do_port_call=function (port, value, done_fn, error_fn) {
 
 	rt.log.debug("before port call of " + port + "(" + value + ")");
 
-	try {
+	var d = domain.create();
+
+	d.on('error', error_fn);
+
+	d.run(function() {
 		r = port(value);
-	} catch (err) {
-		// Exception in non-generator port fn
-		error_fn();
-		return;
-	}
-	rt.log.debug("after port call, r: " + r);
-	if (r && typeof r.next == 'function') {
-		var def = Q.async(function* () {
-			yield* port(value);
-		});
-		def().done(done_fn, error_fn);
-		rt.log.debug("port call running asynchronously");
-	} else {
-		done_fn();
-	}
+		if (r && typeof r.next == 'function') {
+			var def = Q.async(function* () {
+				yield* port(value);
+			});
+			def().done(done_fn, error_fn);
+			rt.log.debug("port call running asynchronously");
+		} else {
+			done_fn();
+		}
+	});
 }
 module.exports['_do_port_call'] = _do_port_call;
 
