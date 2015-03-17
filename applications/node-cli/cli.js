@@ -60,8 +60,7 @@ rl.question('Accessor path: ', function (path) {
 						rl.question('port index: ', function (pi) {
 							var port_index = parseInt(pi);
 							if (cmd == 'get') {
-								console.log(accessor[accessor_ir.ports[port_index].function]());
-								interact();
+								console.log(accessor[accessor_ir.ports[port_index].function](interact));
 							} else if (cmd == 'set') {
 								rl.question('value: ', function (val) {
 									if (val == 'true') {
@@ -69,8 +68,7 @@ rl.question('Accessor path: ', function (path) {
 									} else if (val == 'false') {
 										val = false;
 									}
-									accessor[accessor_ir.ports[port_index].function](val);
-									interact();
+									accessor[accessor_ir.ports[port_index].function](val, interact);
 								});
 							} else if (cmd == 'listen') {
 								accessor[accessor_ir.ports[port_index].function](subscribe_callback);

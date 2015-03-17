@@ -12,6 +12,23 @@ var AcessorRuntimeException = Error;
 _do_port_call=function (port, value, done_fn, error_fn) {
 	var r;
 
+	// function sig is (port, done, err) or (port, val, done, err) for get or set
+	if (typeof value === 'function') {
+		error_fn = done_fn;
+		done_fn = value;
+	}
+
+	if (typeof done_fn === 'undefined') {
+		done_fn = function () {
+			rt.log.warn("Port call of " + port + " finished successfully with no callback");
+		}
+	}
+	if (typeof error_fn === 'undefined') {
+		error_fn = function () {
+			rt.log.warn("Port call of " + port + " had error with no error callback");
+		}
+	}
+
 	rt.log.debug("before port call of " + port + "(" + value + ")");
 
 	try {
