@@ -1,7 +1,7 @@
 
 var _ = require('lodash');
 
-var config = require('./config');
+var config = require('../config');
 
 var accessors = require('accessors')(config.accessors.host_server);
 
@@ -44,7 +44,6 @@ function AccessorWrapper (path, parameters, finished) {
 		// Let the setup know that we are done with initing the accessor
 		finished();
 	});
-
 }
 
 module.exports = AccessorWrapper;

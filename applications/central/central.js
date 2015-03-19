@@ -4,19 +4,16 @@ var util = require('util');
 var _ = require('lodash');
 var async = require('async');
 
-
-var match = require('./match');
-var not = require('./not');
-var delay = require('./delay');
-var keyway = require('./keyway');
-var transistor = require('./transistor');
-var filter = require('./filter');
-var threshold = require('./threshold');
-var append = require('./append');
-var constant = require('./constant');
-
-var accessor = require('./accessor_wrapper');
-
+var match      = require('./blocks/match');
+var not        = require('./blocks/not');
+var delay      = require('./blocks/delay');
+var keyway     = require('./blocks/keyway');
+var transistor = require('./blocks/transistor');
+var filter     = require('./blocks/filter');
+var threshold  = require('./blocks/threshold');
+var append     = require('./blocks/append');
+var constant   = require('./blocks/constant');
+var accessor   = require('./blocks/accessor_wrapper');
 
 var block_names = {
 	'Match': match,

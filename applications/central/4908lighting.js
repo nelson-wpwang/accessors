@@ -4,8 +4,7 @@ var config = require('./config');
 
 // Define our test.
 // This pulls packets from BLE scan queue, puts them in match, feeds one
-// output of match into a not, and feeds both of those into the 4908lights
-// block, which will be an accessor some day.
+// output of match into a not, and feeds both of those into the 4908lights.
 var profile_desc = {
 	blocks: [
 		{
@@ -48,22 +47,28 @@ var profile_desc = {
 			uuid: 'OverrideDelay'
 		},
 		{
+			type: 'Keyway',
+			parameters: {
+				key: 'event_str'
+			},
+			uuid: 'EventStrKeyway'
+		},
+		{
 			type: 'Match',
 			parameters: {
-				key: 'event_str',
 				matches: [
 					'Location occupied',       // 0
 					'Location not occupied',   // 1
 					'samkuo in location',      // 2
 					'samkuo not in location',  // 3
-                    'Room lights on',          // 4
-                    'Room lights off',         // 5
-                    'Panel on',                // 6
-                    'Panel off',               // 7
-                    'Workbench right on',      // 8
-                    'Workbench right off',     // 9
-                    "Workbench left on",       // 10
-                    'Workbench left off'       // 11
+					'Room lights on',          // 4
+					'Room lights off',         // 5
+					'Panel on',                // 6
+					'Panel off',               // 7
+					'Workbench right on',      // 8
+					'Workbench right off',     // 9
+					"Workbench left on",       // 10
+					'Workbench left off'       // 11
 				]
 			},
 			uuid: 'MatchEvents',
@@ -149,7 +154,7 @@ var profile_desc = {
 		},
 		{
 			src: 'WearaboutsSwitch.out',
-			dst: 'MatchEvents.0'
+			dst: 'EventStrKeyway.0'
 		},
 		{
 			src: 'PullOverride.Data',
@@ -161,6 +166,10 @@ var profile_desc = {
 		},
 		{
 			src: 'PullOverride.Data',
+			dst: 'EventStrKeyway.0'
+		},
+		{
+			src: 'EventStrKeyway.0',
 			dst: 'MatchEvents.0'
 		},
 		{
