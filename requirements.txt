@@ -7,5 +7,5 @@ rjsmin
 websockets
 sh
 python-bond
-semver
+semantic_version
 setproctitle

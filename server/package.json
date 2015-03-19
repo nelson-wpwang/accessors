@@ -14,6 +14,7 @@
   "dependencies": {
     "fs": "^0.0.2",
     "underscore": "^1.7.0",
-    "esprima": "ariya/esprima#harmony"
+    "esprima": "ariya/esprima#harmony",
+    "traceur": "0.0.87"
   }
 }

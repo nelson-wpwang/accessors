@@ -18,12 +18,12 @@ import setproctitle
 setproctitle.setproctitle("accessors:host_server")
 sys.stdout.write("\x1b]2;accessors:host_server\x07")
 
-import semver
+import semantic_version as semver
 
 import tornado
 import tornado.ioloop
 import tornado.web
-if not semver.match(tornado.version, ">=3.1.0"):
+if semver.Version(tornado.version, partial=True) < semver.Version('3.1.0'):
 	raise ImportError("tornado version >=3.1 required")
 
 import watchdog.events
@@ -59,15 +59,24 @@ try:
 except sh.CommandNotFound:
 	parse_js = sh.Command(os.path.abspath('server/validate.js'))
 
-traceur = os.path.join(
-	os.getcwd(),
-	'node_modules',
-	'traceur',
-	'traceur')
-if not os.path.exists(traceur):
-	print("Running npm...")
-	npm('install', 'traceur')
-traceur = sh.Command(traceur)
+try:
+	traceur = sh.Command(os.path.abspath('./node_modules/traceur/traceur'))
+except sh.CommandNotFound:
+	try:
+		traceur = sh.Command(os.path.abspath('server/node_modules/traceur/traceur'))
+	except sh.CommandNotFound:
+		print("You must run npm install traceur")
+		sys.exit(1)
+
+# traceur = os.path.join(
+# 	os.getcwd(),
+# 	'node_modules',
+# 	'traceur',
+# 	'traceur')
+# if not os.path.exists(traceur):
+# 	print("You must run npm install traceur")
+# 	# npm('install', 'traceur')
+# traceur = sh.Command(traceur)
 
 ACCESSOR_SERVER_PORT = 6565
 
@@ -618,7 +627,7 @@ find_accessors(args.accessor_path, None)
 # 		print('\n\n' + '='*80)
 # 		root = find_accessors(args.accessor_path, None)
 # 		create_accessors(root)
-# 
+#
 # observer = watchdog.observers.Observer()
 # observer.schedule(AccessorChangeHandler(), path=args.accessor_path, recursive=True)
 # observer.start()

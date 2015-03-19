@@ -1,26 +1,29 @@
 FROM	ubuntu:14.04
 
+RUN apt-get update --fix-missing
+
 # Install curl (apparently we're in the minimalist view of the world w/ ubuntu)
 RUN	apt-get install -y --force-yes -q curl
+
+# Seems we have to install git as well (let's err on the side of caution w/ b-e too)
+RUN	sudo apt-get install -y build-essential git
+
+# Install pip
+RUN	sudo apt-get install -y python3-pip
 
 # Install node
 RUN	curl -sL https://deb.nodesource.com/setup | sudo bash -
 RUN	sudo apt-get install -y nodejs
 
 # Copy my app source code
-COPY	accessors	/accessors
-COPY	interfaces	/interfaces
-COPY	groups		/groups
-COPY	server		/server
-COPY	tests		/tests
-COPY	tools		/tools
-COPY	requirements.txt	/requirements.txt
+ADD	accessors	/accessors
+ADD	interfaces	/interfaces
+ADD	groups		/groups
+ADD	server		/server
+ADD	tests		/tests
+ADD	requirements.txt	/requirements.txt
 
-# Seems we have to install git as well (let's err on the side of caution w/ b-e too)
-RUN	sudo apt-get install -y git build-essential
-
-# Install python requirements
-RUN	sudo apt-get install -y python3-pip
+# Install python deps
 RUN	pip3 install -r requirements.txt
 
 # Install node requirements
