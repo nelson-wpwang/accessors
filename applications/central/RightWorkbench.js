@@ -47,11 +47,6 @@ var profile_desc = {
 				ip_addr: config.acme.workbench_right_ip_addr,
 			},
 			uuid: 'AcmeWorkbenchRight'
-		},
-		{
-			type: 'accessor',
-			path: '/tests/print',
-			uuid: 'Print'
 		}
 	],
 	connections: [
@@ -78,10 +73,6 @@ var profile_desc = {
 		{
 			src: 'TurnOffDelay.0',
 			dst: 'AcmeWorkbenchRight.PowerControl'
-		},
-		{
-			src: 'Constant.0',
-			dst: 'Print.Print'
 		}
 	]
 }
