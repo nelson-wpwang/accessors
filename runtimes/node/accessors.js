@@ -46,75 +46,65 @@ module.exports = function (host_server) {
 	function create_accessor (path, parameters, success_cb, error_cb) {
 		console.log('art::create_accessor from path: ' + path);
 
+		get_accessor_ir(path, function (accessor) {
+			load_accessor(accessor, parameters, success_cb, error_cb);
+		}, error_cb);
+
+	}
+
+
+	// Call this function to make an accessor object out of an accessor
+	// intermediate representation block.
+	function load_accessor (accessor, parameters, success_cb, error_cb) {
+		console.log('art::create_accessor starting to create ' + accessor.name);
+
 		if (parameters == undefined) {
 			parameters = {};
 		}
 
-		// Get the accessor file and actually load the object
-		var url = host_server + '/accessor' + path + '.json';
-		console.log('Retrieving '  + url);
-
-		request(url, function (error, response, body) {
-			if (!error && response.statusCode == 200) {
-				var accessor = JSON.parse(body);
-				console.log('art::create_accessor starting to create ' + accessor.name);
-
-				var ports = {};
-				for (var i=0; i<accessor.ports.length; i++) {
-					var port = accessor.ports[i];
-					var value = '';
-					if ('default' in port) {
-						value = port['default'];
-					}
-					ports[port.name] = value;
-				}
-
-				//XXX: Implement something to figure out the runtime imports neccessary
-				//	Some of these are from runtime and some are from Hue
-				var runtime_lib_file = path_module.join(__dirname, 'runtime_lib.js');
-				var requires = "";
-				// requires += "var Q = require('q');\n";
-				// requires += "var request = require('request');\n";
-				// requires += "var tinycolor = require('tinycolor2');\n";
-				// requires += "var atob = require('atob');\n";
-				// requires += "var btoa = require('btoa');\n";
-				requires += "var rt = require('"+runtime_lib_file+"');\n";
-
-				var ports_str = "var ports = "+JSON.stringify(ports)+";\n";
-				console.log('art::create_accessor Ports string: ' + ports_str);
-
-				var params = "var parameters = "+JSON.stringify(parameters)+";\n";
-				console.log('art::create_accessor Parameters: ' + params);
-
-				var runtime_file = path_module.join(__dirname, 'runtime.js');
-				var runtime_code = fs.readFileSync(runtime_file);
-
-				var exports = get_exports(accessor);
-
-				// turn the code into a module
-				var module_as_string = requires + ports_str + params + runtime_code + accessor.code + exports;
-				if (typeof module_as_string !== 'string') {
-					console.log("something isn't a string in " + accessor.name);
-					throw "This accessor won't work";
-				}
-				console.log("art::create_accessor before requireFromString " + accessor.name);
-				var device = requireFromString(module_as_string);
-
-				// Provide access to the JSON metadata via _meta
-				device._meta = accessor;
-
-				console.log("art::create_accessor before init-ing " + accessor.name);
-				device.init(function () {
-					console.log("post-init callback start");
-					success_cb(device);
-				}, error_cb);
-			} else {
-				console.log('Could not get accessor file from host server.');
-				if (error) {
-					console.log(error);
-				}
+		var ports = {};
+		for (var i=0; i<accessor.ports.length; i++) {
+			var port = accessor.ports[i];
+			var value = '';
+			if ('default' in port) {
+				value = port['default'];
 			}
-		});
+			ports[port.name] = value;
+		}
+
+		//XXX: Implement something to figure out the runtime imports neccessary
+		//	Some of these are from runtime and some are from Hue
+		var runtime_lib_file = path_module.join(__dirname, 'runtime_lib.js');
+		var requires = "var rt = require('"+runtime_lib_file+"');\n";
+
+		var ports_str = "var ports = "+JSON.stringify(ports)+";\n";
+		console.log('art::create_accessor Ports string: ' + ports_str);
+
+		var params = "var parameters = "+JSON.stringify(parameters)+";\n";
+		console.log('art::create_accessor Parameters: ' + params);
+
+		var runtime_file = path_module.join(__dirname, 'runtime.js');
+		var runtime_code = fs.readFileSync(runtime_file);
+
+		var exports = get_exports(accessor);
+
+		// turn the code into a module
+		var module_as_string = requires + ports_str + params + runtime_code + accessor.code + exports;
+		if (typeof module_as_string !== 'string') {
+			console.log("something isn't a string in " + accessor.name);
+			throw "This accessor won't work";
+		}
+		console.log("art::create_accessor before requireFromString " + accessor.name);
+		var device = requireFromString(module_as_string);
+
+		// Provide access to the JSON metadata via _meta
+		device._meta = accessor;
+
+		console.log("art::create_accessor before init-ing " + accessor.name);
+		device.init(function () {
+			console.log("post-init callback start");
+			success_cb(device);
+		}, error_cb);
 
 	}
 
@@ -157,6 +147,7 @@ module.exports = function (host_server) {
 
 	return {
 		create_accessor: create_accessor,
+		load_accessor: load_accessor,
 		get_accessor_ir: get_accessor_ir
 	}
 };

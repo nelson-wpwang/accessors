@@ -1,7 +1,12 @@
 Node Runtime
 ============
 
-The `accessors.js` file is a node module for interfacing with accessors.
+The `accessors.js` file is a node module for interfacing with accessors
+inside of the Node.js (io.js) runtime. 
+
+
+Description
+-----------
 
 When a new accessor is loaded, a node module is dynamically created. It is
 literally the string concatonation of the accessor javascript and the runtime
@@ -12,3 +17,11 @@ the caller.
   loads the `runtime_lib.js` as a module to export.
 * `runtime_lib.js` contains the implementations for the accessor `rt` library
   functions.
+
+
+
+API
+---
+
+
+
