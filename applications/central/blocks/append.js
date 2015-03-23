@@ -21,9 +21,37 @@ function Append (parameters, finished) {
 	inputs[0] =
 	function (data) {
 		console.log('APPEND: called');
-		_.extend(data, parameters.append);
-		console.log(data);
-		outputs[0](data);
+
+		var out;
+
+		if (data === null) {
+			out = parameters.append;
+
+		} else if (typeof data === 'object') {
+			_.extend(data, parameters.append);
+			out = data;
+
+		} else {
+			out = data + parameters.append;
+		}
+
+		outputs[0](out);
+	}
+
+	this.about = {
+		description: 'Add what is in parameters.append to the incoming data\
+packet and push the packet to the output.'
+		ports: {
+			inputs: {
+				number: 1
+			},
+			outputs: {
+				number: 1
+			}
+		},
+		parameters: {
+			append: 'What to add to the data packet.'
+		}
 	}
 
 	finished();

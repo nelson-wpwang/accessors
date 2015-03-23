@@ -26,7 +26,23 @@ function Keyway (parameters, finished) {
 			// Key found, output the value
 			console.log('KEYWAY: forwarding ' + data[parameters.key]);
 			outputs[0](data[parameters.key]);
+		}
+	}
 
+	this.about = {
+		description: 'Takes in an object and outputs the value of\
+the specified key.',
+		ports: {
+			inputs: {
+				number: 1,
+				ports: [{type: 'object'}]
+			},
+			outputs: {
+				number: 1
+			}
+		},
+		parameters: {
+			key: 'Which key\'s value to extract from the object.'
 		}
 	}
 

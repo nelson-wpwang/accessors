@@ -37,6 +37,29 @@ function Transistor (parameters, finished) {
 		}
 	}
 
+	this.about = {
+		description: 'Pass input->output when the last value written to \
+gate was true.',
+		ports: {
+			inputs: {
+				number: 2,
+				ports: [
+					{
+						name: 'in'
+					},
+					{
+						name: 'gate',
+						type: 'boolean'
+					}
+				]
+			},
+			outputs: {
+				number: 1,
+				ports: [{name: 'out'}]
+			}
+		}
+	}
+
 	finished();
 }
 

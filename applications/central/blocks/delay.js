@@ -7,7 +7,6 @@ var _ = require('lodash');
  * The input packet must be an object with at least the following keys:
  *  {
  *    delay: <milliseconds>    // how long to delay sending the output packet.
- *    delayed_messaage: <msg>  // what to send when the delay expires.
  *  }
  *
  */
@@ -33,12 +32,12 @@ function Delay (parameters, finished) {
 		outputs[0](delayed_message);
 	}
 
-	inputs['delay'] =
+	inputs[0] =
 	function (delay_pkt) {
 		console.log('DELAY: ');
 		console.log(delay_pkt);
 		// Check that the delay packet has what we need
-		if (_.has(delay_pkt, 'delay') && _.has(delay_pkt, 'delayed_msg')) {
+		if (_.has(delay_pkt, 'delay')) {
 			console.log('DELAY: configuring delay');
 			if (timeout_object != null) {
 				console.log('DELAY: clearing old timeout');
@@ -48,8 +47,24 @@ function Delay (parameters, finished) {
 			// a new callback if the delay is 0 or greater
 			if (delay_pkt.delay >= 0) {
 				console.log('DELAY: setting up callback for ' + delay_pkt.delay);
-				delayed_message = delay_pkt.delayed_msg;
+				delayed_message = delay_pkt;
 				timeout_object = setTimeout(delayed, delay_pkt.delay);
+			}
+		}
+	}
+
+	this.about = {
+		description: 'Delay outputting a packet for a specified time.\
+The incoming packet must be an object that includes a key "delay" that specifies
+how long to delay the packet.',
+		ports: {
+			inputs: {
+				number: 1,
+				ports: [{type: 'object'}]
+			},
+			outputs: {
+				number: 1,
+				ports: [{type: 'object'}]
 			}
 		}
 	}

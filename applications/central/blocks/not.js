@@ -10,7 +10,6 @@ var _ = require('lodash');
  */
 function Not (parameters, finished) {
 
-	// var outputs = new Array(1);
 	var outputs = {};
 	this.outputs = outputs;
 
@@ -26,6 +25,19 @@ function Not (parameters, finished) {
 			outputs[0](true);
 		}
 	};
+
+	this.about = {
+		description: 'Converts the input to a bool and inverts it.',
+		ports: {
+			inputs: {
+				number: 1
+			},
+			outputs: {
+				number: 1,
+				ports: [{type: 'boolean'}]
+			}
+		}
+	}
 
 	finished();
 

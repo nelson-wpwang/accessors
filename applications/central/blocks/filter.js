@@ -41,6 +41,27 @@ function Filter (parameters, finished) {
 		}
 	}
 
+	this.about = {
+		description: 'Only pass through packets that have the correct\
+key:value pairs in them.',
+		ports: {
+			inputs: {
+				number: 1,
+				ports: [{type: 'object'}]
+			},
+			outputs: {
+				number: 1,
+				ports: [{type: 'object'}]
+			}
+		},
+		parameters: {
+			filters: {
+				help: 'Array of key:value pairs.',
+				type: 'keyvalue_array'
+			}
+		}
+	}
+
 	finished();
 }
 
