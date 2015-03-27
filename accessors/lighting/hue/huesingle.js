@@ -28,7 +28,7 @@ function get_bulb_id () {
 	}
 }
 
-function* set_bulb_paramter (params) {
+function* set_bulb_parameter (params) {
 	var bulbid = get_bulb_id();
 
 	url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights/' + bulbid + '/state';
@@ -44,22 +44,46 @@ function* init () {
 			'/lighting/brightness.Brightness': brightness,
 			});
 
+	create_port('input', 'PCB');
+
 	rt.log.debug("Accessor::hue_single init before prefetch");
 	yield* prefetch_bulb_layout();
 	rt.log.debug("Accessor::hue_single init after prefetch (end of init)");
 }
 
 function* power (on) {
-	yield* set_bulb_paramter({'on': on});
+	yield* set_bulb_parameter({'on': on});
 }
 
 function* color (hex_color) {
-	hsv = rt.color.hex_to_hsv(hex_color);
+	var hsv = rt.color.hex_to_hsv(hex_color);
 	params = {'hue': Math.round(hsv.h*182.04),
 	          'sat': Math.round(hsv.s*255),
 	          'bri': Math.round(hsv.v*255)}
-	yield* set_bulb_paramter(params);
+	yield* set_bulb_parameter(params);
 }
 function* brightness (brightness) {
-	yield* set_bulb_paramter({'bri': parseInt(brightness)});
+	yield* set_bulb_parameter({'bri': parseInt(brightness)});
+}
+
+// Control Power, Color, and Brightness in one go.
+// Input to the function is an object that looks like:
+// {
+//   Power: true|false,
+//   Color: 'cc5400',
+//   Brightness: 120
+// }
+function* PCB (pcb) {
+	var p = pcb.Power;
+	var c = pcb.Color;
+	var hsv = rt.color.hex_to_hsv(c);
+	var b = pcb.Brightness;
+
+	var params = {};
+	params['on']  = p;
+	params['hue'] = Math.round(hsv.h*182.04);
+	params['sat'] = Math.round(hsv.s*255);
+	params['bri'] = parseInt(b);
+
+	yield* set_bulb_parameter(params);
 }
