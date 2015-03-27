@@ -30,8 +30,9 @@ function Threshold (parameters, finished) {
 	}
 
 	this.about = {
-		description: 'Check if the incoming value is above\
-a predetermined threshold. Outputs true if it is, false otherwise',
+		description:
+"Check if the incoming value is above a predetermined threshold. Outputs true \
+if it is, false otherwise.",
 		ports: {
 			inputs: {
 				number: 1,

@@ -39,8 +39,9 @@ function Append (parameters, finished) {
 	}
 
 	this.about = {
-		description: 'Add what is in parameters.append to the incoming data\
-packet and push the packet to the output.'
+		description:
+"Add what is in parameters.append to the incoming data packet and push the \
+packet to the output.",
 		ports: {
 			inputs: {
 				number: 1

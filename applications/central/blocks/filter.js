@@ -42,8 +42,8 @@ function Filter (parameters, finished) {
 	}
 
 	this.about = {
-		description: 'Only pass through packets that have the correct\
-key:value pairs in them.',
+		description:
+"Only pass through packets that have the correct key:value pairs in them.",
 		ports: {
 			inputs: {
 				number: 1,

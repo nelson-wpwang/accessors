@@ -25,8 +25,8 @@ function Constant (parameters, finished) {
 	}
 
 	this.about = {
-		description: 'When anything is received on the input, ouput a\
-constant value.',
+		description:
+"When anything is received on the input, output a constant value.",
 		ports: {
 			inputs: {
 				number: 1

@@ -40,15 +40,15 @@ function Match (parameters, finished) {
 	}
 
 	this.about = {
-		description: 'Compare an input string and output true if the string\
-matches.',
+		description:
+"Compare an input string and output true if the string matches.",
 		ports: {
 			inputs: {
 				number: 1,
 				ports: [{type: 'string'}]
 			},
 			outputs: {
-				number 1,
+				number: 1,
 				ports: [{type: 'boolean'}]
 			}
 		},

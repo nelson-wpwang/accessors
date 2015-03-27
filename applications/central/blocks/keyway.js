@@ -30,8 +30,8 @@ function Keyway (parameters, finished) {
 	}
 
 	this.about = {
-		description: 'Takes in an object and outputs the value of\
-the specified key.',
+		description:
+"Takes in an object and outputs the value of the specified key.",
 		ports: {
 			inputs: {
 				number: 1,
