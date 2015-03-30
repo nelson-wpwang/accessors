@@ -22,23 +22,37 @@ var profile_desc = {
 			uuid: 'CoilcubeFilter'
 		},
 		{
+			type: 'Keyway',
+			parameters: {
+				key: 'freq'
+			},
+			uuid: 'FilteredKeyway'
+		},
+		{
 			type: 'Threshold',
 			parameters: {
 				key: 'freq',
-				threshold: 0.05
+				threshold: 0.01
 			},
 			uuid: 'Threshold'
 		},
 		{
 			type: 'Constant',
 			parameters: {
-				constant: {delay: 60000, delayed_msg: false}
+				constant: {delay: 60000}
 			},
 			uuid: 'Constant'
 		},
 		{
 			type: 'Delay',
 			uuid: 'TurnOffDelay'
+		},
+		{
+			type: 'Constant',
+			parameters: {
+				constant: false
+			},
+			uuid: 'ConstantTurnOff'
 		},
 		{
 			type: 'accessor',
@@ -56,6 +70,10 @@ var profile_desc = {
 		},
 		{
 			src: 'CoilcubeFilter.0',
+			dst: 'FilteredKeyway'
+		},
+		{
+			src: 'FilteredKeyway',
 			dst: 'Threshold.0'
 		},
 		{
@@ -68,10 +86,14 @@ var profile_desc = {
 		},
 		{
 			src: 'Constant.0',
-			dst: 'TurnOffDelay.delay'
+			dst: 'TurnOffDelay.0'
 		},
 		{
 			src: 'TurnOffDelay.0',
+			dst: 'ConstantTurnOff'
+		},
+		{
+			src: 'ConstantTurnOff',
 			dst: 'AcmeWorkbenchRight.PowerControl'
 		}
 	]
