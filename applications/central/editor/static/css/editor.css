@@ -135,6 +135,11 @@
 	font-family: "Verdana";
 }
 
+.labelRight {
+	font-family: "Verdana";
+	text-align: left;
+}
+
 
 .dragHover { border:2px solid orange; }
 

@@ -184,9 +184,9 @@ function add_source(b, pos, l, h, start) {
 		endpoint: ['Image', {src: '/static/right-arrow.png'}],
 		isSource: true,
 		connector: [ "Flowchart", { cornerRadius:5 } ],
-		anchor: [1, start+(pos*(h/1600)), 0, 0],
+		anchor: [1, start+(pos*(h)), 0, 0],
 		overlays: [
-			['Label', {location: [0.2-(l.length*0.1), 0.5], label: l, cssClass:'labelLeft'}]
+			['Label', {location: [0.2-(l.length*0.11), 0.5], label: l, cssClass:'labelLeft'}]
 		],
 	};
 	jsp.addEndpoint(b, source_endpoint);
@@ -197,9 +197,9 @@ function add_dest(b, pos, l, h, start) {
 		endpoint: ['Image', {src: '/static/right-arrow.png'}],
 		isTarget: true,
 		connector: [ "Flowchart", { cornerRadius:5 } ],
-		anchor: [0,  start+(pos*(h/1600)), 0, 0],
+		anchor: [0,  start+(pos*(h)), 0, 0],
 		overlays: [
-			['Label', {location: [1.7, 0.5], label: l, cssClass:'labelLeft'}]
+			['Label', {location: [1.2+(l.length*0.1), 0.5], label: l, cssClass:'labelRight'}]
 		],
 	};
 	jsp.addEndpoint(b, dest_endpoint);
@@ -262,23 +262,77 @@ jsPlumb.ready(function() {
 
 
 	var nb = $('#111');
-	var h = nb.height();
+	var h = nb.height()/1600;
 	var b = new_block('111');
 	add_source(b, 0, "Power", h, 0.4);
-	add_source(b, 1, "PowerEvent", h, 0.4);
+	add_source(b, 1, "PowerChangeEvent", h, 0.4);
 	add_source(b, 2, "Energy", h, 0.4);
 	add_source(b, 3, "Voltage", h, 0.4);
-	add_dest(b, 0, "Power", h, 0.4);
+	// add_dest(b, 0, "Power", h, 0.4);
 
 	var nb = $('#222');
-	var h = nb.height();
+	var h = nb.height()/600;
 	console.log(h)
 	var b = new_block('222');
 	add_source(b, 0, "Power", h, 0.6);
+	add_source(b, 1, "Brightness", h, 0.6);
+	// add_source(b, 0, "Power", h, 0.6);
 	// add_source(b, 1, "PowerEvent", h);
 	// add_source(b, 2, "Energy", h);
 	// add_source(b, 3, "Voltage", h);
 	add_dest(b, 0, "Power", h, 0.6);
+	add_dest(b, 1, "Brightness", h, 0.6);
+
+	var nb = $('#monjolo');
+	var h = nb.height()/600;
+	console.log(h)
+	var b = new_block('monjolo');
+	add_source(b, 0, "Pulse", h, 0.6);
+	// add_source(b, 0, "Pulse", h, 0.6);
+
+
+	var nb = $('#filter');
+	var h = nb.height()/600;
+	console.log(h)
+	var b = new_block('filter');
+	add_dest(b, 0, "Input", h, 0.6);
+	add_source(b, 0, "Output", h, 0.6);
+	add_source(b, 0, "Output", h, 0.6);
+
+	var nb = $('#constant1');
+	var h = nb.height()/600;
+	console.log(h)
+	var b = new_block('constant1');
+	add_dest(b, 0, "Input", h, 0.6);
+	add_source(b, 0, "Output", h, 0.6);
+
+	var nb = $('#constant2');
+	var h = nb.height()/600;
+	console.log(h)
+	var b = new_block('constant2');
+	add_dest(b, 0, "Input", h, 0.6);
+	add_source(b, 0, "Output", h, 0.6);
+
+	var nb = $('#delay');
+	var h = nb.height()/600;
+	console.log(h)
+	var b = new_block('delay');
+	add_dest(b, 0, "Input", h, 0.6);
+	add_source(b, 0, "Output", h, 0.6);
+
+	var nb = $('#lighting2');
+	var h = nb.height()/600;
+	console.log(h)
+	var b = new_block('lighting2');
+	add_source(b, 0, "Power", h, 0.6);
+	add_source(b, 1, "Brightness", h, 0.6);
+	// add_source(b, 0, "Power", h, 0.6);
+	// add_source(b, 1, "PowerEvent", h);
+	// add_source(b, 2, "Energy", h);
+	// add_source(b, 3, "Voltage", h);
+	add_dest(b, 0, "Power", h, 0.6);
+	add_dest(b, 0, "Power", h, 0.6);
+	add_dest(b, 1, "Brightness", h, 0.6);
 
 
 
