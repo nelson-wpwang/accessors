@@ -39,7 +39,7 @@ var profile_desc = {
 		{
 			type: 'Constant',
 			parameters: {
-				constant: {delay: 60000}
+				constant: {delay: 600000}
 			},
 			uuid: 'Constant'
 		},
