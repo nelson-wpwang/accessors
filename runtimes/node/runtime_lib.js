@@ -1,18 +1,23 @@
 /* This runtime conforms to accessor runtime v0.1.0 */
 /* vim: set noet ts=2 sts=2 sw=2: */
 
-var Q = require('q');
-var request = require('request');
-var tinycolor = require('tinycolor2');
-var atob = require('atob');
-var btoa = require('btoa');
-var coap = require('coap');
-var amqp = require('amqp');
-var urllib = require('url');
-var dgram = require('dgram');
-var net = require('net');
+var Q            = require('q');
+var request      = require('request');
+var tinycolor    = require('tinycolor2');
+var atob         = require('atob');
+var btoa         = require('btoa');
+var coap         = require('coap');
+var amqp         = require('amqp');
+var urllib       = require('url');
+var dgram        = require('dgram');
+var net          = require('net');
 var socketio_old = require('socket.io-client');
-// var color = require('color');
+var debug  = require('debug');
+
+var info  = debug('accessors:info');
+var warn  = debug('accessors:warn');
+var error = debug('accessors:error');
+
 
 var AcessorRuntimeException = Error;
 
@@ -157,19 +162,15 @@ rt.socket.socket = function* (family, sock_type) {
 rt.http = Object();
 
 rt.http.request = function* request_fn(url, method, properties, body, timeout) {
-	rt.log.debug("httpRequest("
-				+ (function(obj) {
-					result=[];
-					for(p in obj) {
-						result.push(JSON.stringify(obj[p]));
-					};
-					return result;
-				})(arguments)
-				+ ")");
-
-	// if (properties != null) {
-	// 	throw new AccessorRuntimeException("Don't know what to do with properties...");
-	// }
+	info("httpRequest("
+		+ (function(obj) {
+			result=[];
+			for(p in obj) {
+				result.push(JSON.stringify(obj[p]));
+			};
+			return result;
+		})(arguments)
+		+ ")");
 
 	var request_defer = Q.defer();
 
@@ -180,8 +181,6 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 		body: body,
 		timeout: timeout
 	}
-
-	rt.log.debug('DOES THIS HAPPEN');
 
 	var req = request(options, function (error, response, body) {
 		if (!error) {
@@ -195,15 +194,15 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 		}
 	});
 
-	rt.log.debug('before yield in rt.http.request');
+	info('before yield in rt.http.request');
 	return yield request_defer.promise;
 }
 
 //This is just GET. Don't know why it's called readURL...
-rt.http.readURL = function* readURL(url) {
-	rt.log.debug("runtime_lib::readURL before yield*");
+rt.http.get = function* get(url) {
+	info("runtime_lib::readURL before yield*");
 	return yield* rt.http.request(url, 'GET', null, null, 0);
-	rt.log.debug("runtime_lib::readURL after yield*");
+	info("runtime_lib::readURL after yield*");
 }
 
 rt.http.post = function* post(url, body) {
@@ -221,15 +220,15 @@ rt.coap = Object();
 function* _coapCommon(ogm) {
 	var defer = Q.defer();
 	ogm.on('response', function (resp) {
-		rt.log.debug("CoAP complete, resp payload: " + resp.payload);
+		info("CoAP complete, resp payload: " + resp.payload);
 		defer.resolve(resp.payload);
 	});
-	rt.log.debug("CoAP yielding for I/O operation");
+	info("CoAP yielding for I/O operation");
 	return yield defer.promise;
 }
 
 rt.coap.get = function* coapGet(url) {
-	rt.log.debug("CoAP GET: " + url);
+	info("CoAP GET: " + url);
 	var params = urllib.parse(url);
 	params.method = 'GET';
 	var ogm = coap.request(params);
@@ -238,8 +237,8 @@ rt.coap.get = function* coapGet(url) {
 }
 
 rt.coap.post = function* coapPost(url, body) {
-	rt.log.debug("CoAP POST: " + url + " -- with body:");
-	rt.log.debug(body);
+	info("CoAP POST: " + url + " -- with body:");
+	info(body);
 	var params = urllib.parse(url);
 	params.method = 'POST';
 	var ogm = coap.request(params);
@@ -256,7 +255,7 @@ rt.amqp.connect = function* amqpConnect (url) {
 	var a = Object();
 	var conn;
 
-	rt.log.debug('AMQP Connect: ' + url);
+	info('AMQP Connect: ' + url);
 	var defer = Q.defer();
 	var conn = amqp.createConnection({url: url});
 	conn.on('ready', function () {
@@ -285,11 +284,11 @@ rt.gatd_old.connect = function* gatdOldConnect (url) {
 	var g = Object();
 	var conn;
 
-	rt.log.debug('GATD OLD connecting to ' + url);
+	info('GATD OLD connecting to ' + url);
 	var defer = Q.defer();
 	var conn = socketio_old.connect(url);
 	conn.on('connect', function () {
-		console.log('GATD OLD connected');
+		info('GATD OLD connected');
 		defer.resolve(g);
 	});
 
@@ -348,13 +347,13 @@ function getElementValueById (html, id) {
 }
 
 
-exports.version = rt.version;
-exports.log = rt.log;
-exports.time = rt.time;
-exports.socket = rt.socket;
-exports.http = rt.http;
-exports.coap = rt.coap;
-exports.amqp = rt.amqp;
+exports.version  = rt.version;
+exports.log      = rt.log;
+exports.time     = rt.time;
+exports.socket   = rt.socket;
+exports.http     = rt.http;
+exports.coap     = rt.coap;
+exports.amqp     = rt.amqp;
 exports.gatd_old = rt.gatd_old;
-exports.color = rt.color;
-exports.encode = rt.encode;
+exports.color    = rt.color;
+exports.encode   = rt.encode;

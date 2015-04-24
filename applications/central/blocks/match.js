@@ -39,28 +39,30 @@ function Match (parameters, finished) {
 		});
 	}
 
-	this.about = {
-		description:
-"Compare an input string and output true if the string matches.",
-		ports: {
-			inputs: {
-				number: 1,
-				ports: [{type: 'string'}]
-			},
-			outputs: {
-				number: 1,
-				ports: [{type: 'boolean'}]
-			}
-		},
-		parameters: {
-			matches: {
-				help: 'Array of strings to compare against.',
-				type: 'string_array'
-			}
-		}
-	}
-
 	finished();
 }
 
-module.exports = Match;
+var about = {
+	name: 'Match',
+	description:
+"Compare an input string and output true if the string matches.",
+	ports: {
+		inputs: {
+			number: 1,
+			ports: [{type: 'string'}]
+		},
+		outputs: {
+			number: 1,
+			ports: [{type: 'boolean'}]
+		}
+	},
+	parameters: {
+		matches: {
+			help: 'Array of strings to compare against.',
+			type: 'string_array'
+		}
+	}
+}
+
+module.exports.block = Match;
+module.exports.about = about;

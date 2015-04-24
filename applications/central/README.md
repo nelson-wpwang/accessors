@@ -23,11 +23,13 @@ Other npm installs
 
     npm install
 
-Need new Node
+Need new Node (or just use [io.js](https://iojs.org/en/index.html)!)
 
     nvm use 0.11
 
 Run 
 
     node --harmony test.js
+
+You don't need `--harmony` with io.js.
 

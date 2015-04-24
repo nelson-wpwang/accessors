@@ -1,7 +1,7 @@
 {
 	"ports": {
 		"Lock": {
-			"direction": "inout",
+			"directions": ["input", "output"],
 			"type":      "bool"
 		}
 	}

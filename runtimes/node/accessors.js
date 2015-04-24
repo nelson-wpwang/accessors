@@ -1,50 +1,68 @@
 /* vim: set noet ts=2 sts=2 sw=2: */
 
 var path_module = require('path');
-var request = require('request');
-var fs = require('fs');
-var semver = require('semver');
+var request     = require('request');
+var fs          = require('fs');
+var semver      = require('semver');
+var debug       = require('debug');
 
+// We use generators which require a newer version of node. We recommend that
+// you use io.js as it runs a newer version of the V8 engine and is generally
+// just easier to use.
 if (!semver.satisfies(process.version, '>=0.11.0')) {
 	throw "Your node version (" + process.version + ") is too old. Need >=0.11";
 }
 
+// We have info and error level print outs
+// To use, run your io.js application like so:
+//
+//   DEBUG=accessors:* node application.js
+//
+var info = debug('accessors:info');
+var error = debug('accessors:error');
 
 module.exports = function (host_server) {
 	// Base path to a source of accessor files.
 	var host_server = host_server;
 
-	console.log('Using host server ' + host_server + ' for accessors.');
+	info('Using host server ' + host_server + ' for accessors.');
 
 	// Ask for an accessor from the accessor host server and return the
 	// Accessor Intermediate Representation object.
 	function get_accessor_ir (path, success_cb, error_cb) {
-		console.log('art::get_accessor_ir from path: ' + path);
-
+		info('art::get_accessor_ir from path: ' + path);
 		var url = host_server + '/accessor' + path + '.json';
-		console.log('art::gair Retrieving ' + url);
-
-		request(url, function (error, response, body) {
-			if (!error && response.statusCode == 200) {
+		
+		info('art::gair Retrieving ' + url);
+		request(url, function (err, response, body) {
+			if (!err && response.statusCode == 200) {
 				var accessor = JSON.parse(body);
 				success_cb(accessor);
 			} else {
+				error('Accessor retreival failed.')
+				error(err)
+				error('Response code: ' + response.statusCode)
 				error_cb('Could not retreive accessor from host server');
 			}
 		});
 	}
 
 
-	// Call this function to create an object that can be used as an accessor
-	//
-	// On success you get a callback:
-	//     success_cb(device)
-	//
-	// On failure you get a callback:
-	//     error_cb(error_msg)
-	//
+	/*
+	 * Call this function to create an object that can be used as an accessor.
+	 *
+	 * path:       /path/to/accessor
+	 * parameters: object of key:value parameters
+	 * 
+	 * On success you get a callback:
+	 *     success_cb(device)
+	 *
+	 * On failure you get a callback:
+	 *     error_cb(error_msg)
+	 *
+	 */
 	function create_accessor (path, parameters, success_cb, error_cb) {
-		console.log('art::create_accessor from path: ' + path);
+		info('art::create_accessor from path: ' + path);
 
 		get_accessor_ir(path, function (accessor) {
 			load_accessor(accessor, parameters, success_cb, error_cb);
@@ -52,57 +70,54 @@ module.exports = function (host_server) {
 
 	}
 
-
-	// Call this function to make an accessor object out of an accessor
-	// intermediate representation block.
-	function load_accessor (accessor, parameters, success_cb, error_cb) {
-		console.log('art::create_accessor starting to create ' + accessor.name);
+	/*
+	 * Call this function to make an accessor object out of an accessor
+	 * intermediate representation block.
+	 *
+	 * accessor_ir: JSON blob of the accessor intermediate representation
+	 * parameters:  object of key:value parameters
+	 * 
+	 */
+	function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
+		info('art::create_accessor starting to create ' + accessor_ir.name);
 
 		if (parameters == undefined) {
 			parameters = {};
 		}
 
-		var ports = {};
-		for (var i=0; i<accessor.ports.length; i++) {
-			var port = accessor.ports[i];
-			var value = '';
-			if ('default' in port) {
-				value = port['default'];
-			}
-			ports[port.name] = value;
-		}
-
 		//XXX: Implement something to figure out the runtime imports neccessary
-		//	Some of these are from runtime and some are from Hue
 		var runtime_lib_file = path_module.join(__dirname, 'runtime_lib.js');
 		var requires = "var rt = require('"+runtime_lib_file+"');\n";
 
-		var ports_str = "var ports = "+JSON.stringify(ports)+";\n";
-		console.log('art::create_accessor Ports string: ' + ports_str);
-
+		// Add the parameters to the `eval()` string
 		var params = "var parameters = "+JSON.stringify(parameters)+";\n";
-		console.log('art::create_accessor Parameters: ' + params);
+		info('art::create_accessor Parameters: ' + params);
 
+		// Need to include the helper functions like get(), get_parameter(), etc
 		var runtime_file = path_module.join(__dirname, 'runtime.js');
 		var runtime_code = fs.readFileSync(runtime_file);
 
-		var exports = get_exports(accessor);
+		// Need objects for our port function scheme (e.g. Power.input)
+		var port_objs = get_port_objects(accessor_ir);
 
-		// turn the code into a module
-		var module_as_string = requires + ports_str + params + runtime_code + accessor.code + exports;
+		// Export the functions that one can call on this accessor
+		var exports = get_exports(accessor_ir);
+
+		// Turn the code into a module
+		var module_as_string = requires + port_objs + params + runtime_code + accessor_ir.code + exports;
 		if (typeof module_as_string !== 'string') {
-			console.log("something isn't a string in " + accessor.name);
+			error("something isn't a string in " + accessor_ir.name);
 			throw "This accessor won't work";
 		}
-		console.log("art::create_accessor before requireFromString " + accessor.name);
+		info("art::create_accessor before requireFromString " + accessor_ir.name);
 		var device = requireFromString(module_as_string);
 
 		// Provide access to the JSON metadata via _meta
-		device._meta = accessor;
+		device._meta = accessor_ir;
 
-		console.log("art::create_accessor before init-ing " + accessor.name);
+		info("art::create_accessor before init-ing " + accessor_ir.name);
 		device.init(function () {
-			console.log("post-init callback start");
+			info("post-init callback start");
 			success_cb(device);
 		}, error_cb);
 
@@ -117,30 +132,49 @@ module.exports = function (host_server) {
 		return m.exports;
 	}
 
-	function get_exports (accessor) {
-		// need to keep a list of module exports for toplevel to call
-		// var export_str = "module.exports = {};\n";
-		var export_str = "";
+	// Accessors specify port functions as
+	//
+	//    PortName.input = function* () {...}
+	//
+	// We need `PortName` to exist.
+	function get_port_objects (accessor) {
+		var port_obj_str = '';
 
 		for (var i=0; i<accessor.ports.length; i++) {
 			var port = accessor.ports[i];
+			port_obj_str += port.func += ' = {};';
+		}
+		return port_obj_str;
+	}
+
+	function get_exports (accessor) {
+		// need to keep a list of module exports for toplevel to call
+		// var export_str = "module.exports = {};\n";
+		var export_str = '';
+
+		// Need to add functions for each port of the accessor to the exports
+		// listing
+		for (var i=0; i<accessor.ports.length; i++) {
+			var port = accessor.ports[i];
 			var name = port.name;
+			var func = port.function;
 
-			var func = port.function || port.name;
+			export_str += 'module.exports.'+func+' = {' + 
 
-			var wrapper = 'function () {set("'+name+'", arguments[0]); _do_port_call.apply(this, [' + func + ', arguments[0], arguments[1]])};\n'
+			// Each port can support multiple directions based on what makes
+			// sense for the particular device
+			for (var j=0; j<port.directions.length; j++) {
+				var direction = port.directions[j];
+				export_str += direction + ': function () {_do_port_call.apply(this, [' + func + ',' + direction + ', arguments[0], arguments[1], arguments[2]])},\n'
+			}
 
-			export_str += 'module.exports["'+name+'"] = ' + wrapper;
-			export_str += 'module.exports["'+func+'"] = ' + wrapper;
+			export_str += '};';
 		}
 
 		export_str += '\nmodule.exports.init = function (succ_cb, err_cb) {\n';
 		export_str += '  rt.log.debug("About to init ' + accessor.name + '");\n';
-		export_str += '  _do_port_call(init, null, succ_cb, err_cb);\n';
+		export_str += '  _do_port_call(init, null, null, succ_cb, err_cb);\n';
 		export_str += '};\n';
-
-		export_str += 'module.exports.get= get;\n';
-		export_str += 'module.exports.set= set;\n';
 
 		return export_str;
 	}

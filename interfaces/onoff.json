@@ -1,7 +1,7 @@
 {
     "ports": {
         "Power": {
-            "direction": "inout",
+            "directions": ["input", "output"],
             "type":      "bool"
         }
     }

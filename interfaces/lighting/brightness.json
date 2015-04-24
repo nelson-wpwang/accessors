@@ -1,7 +1,7 @@
 {
 	"ports": {
 		"Brightness": {
-			"direction": "inout",
+			"directions": ["input", "output"],
 			"type": "integer",
 			"min": 0,
 			"max": 255

@@ -10,8 +10,6 @@ while (true) {
 
 var central = require('./central');
 
-
-
 var profile_desc = {
 	blocks: [
 		{
@@ -35,12 +33,6 @@ var profile_desc = {
 		},
 		{
 			type: 'Match',
-			parameters: {
-				matches: [
-					process.argv[1] + ' in location',      // 0
-					process.argv[1] + ' not in location'   // 1
-				]
-			},
 			uuid: 'MatchEvents',
 		},
 		{
@@ -198,5 +190,3 @@ var profile_desc = {
 		},
 	]
 }
-
-c = new central(profile_desc);

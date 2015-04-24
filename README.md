@@ -72,14 +72,14 @@ function init() {
 	});
 }
 
-function* power(onoff) {
+power.input = function* (onoff) {
 	params = {'power': onoff};
 	url = get_parameter('url') + '/api/' + get_parameter('api_key') + '/state';
 	yield* rt.http.request(url, 'PUT', null, rt.json.stringify(params), 3000);
 	set('/av/audiodevice.Power', true);
 }
 
-function* next_track() {
+next_track.input = function* () {
 	if (get('/av/audiodevice.Power') != true) {
 		power(true);
 	}
@@ -90,7 +90,7 @@ function* next_track() {
 	set('/av/audiodevice.NowPlaying', resp.track);
 }
 
-function* Skip15() { ... }
+Skip15.input = function* () { ... }
 ```
 
 The JavaScript file gets expanded to a full JSON representation as shown:

@@ -1,0 +1,18 @@
+{
+	"applications": [
+		{
+			"name": "HueProximity",
+			"parameters": {
+				"MatchEvents": {
+					"matches": [
+						"bradjc in location",
+						"bradjc not in location"
+					]
+				},
+				"Hue": {
+					"bulb_name": "Brad"
+				}
+			}
+		}
+	]
+}

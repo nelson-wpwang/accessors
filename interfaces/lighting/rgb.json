@@ -1,7 +1,7 @@
 {
     "ports": {
         "Color": {
-            "direction": "inout",
+            "directions": ["input", "output"],
             "type": "color"
         }
     }

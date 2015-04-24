@@ -34,7 +34,7 @@ function init () {
 Then you define port functions for each port.
 
 ```js
-function* Power (state) {
+Power.input = function* () {
 	// Control the power state of the device.
 }
 ```
