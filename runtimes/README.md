@@ -179,6 +179,28 @@ least the amount of time requested.
 - `<null> rt.time.run_later(<float> delay_in_ms, <fn> fn_to_run, <T> args)`:
 Schedules `fn_to_run` for execution in the future.
 
+### Encoding Functions
+
+Various devices may need data in a variety of encodings. These functions help
+convert between them.
+
+- `<string> rt.encode.atob(<base64> str)`: Decode a base64 encoded string.
+
+- `<base64> rt.encode.btoa(<string> str)`: Encode a string in the base64 format.
+
+### Color Functions
+
+When writing accessors that use colors (such as lighting) it may be useful
+to change colors between various color representations. The `color` object
+makes this easier.
+
+- `<hsv object> rt.color.hex_to_hsv(<string> hex_color)`: Convert a hex color
+string (like "0000FF") to an HSV object (like
+`{h: [hue (0-360)], s: [saturation (0-1)], v: [value (0-1)]}`).
+
+- `<string> rt.color.hsv_to_hex(<hsv object> hsv_color)`: Convert an HSV object
+to an RGB hex string.
+
 
 ### Sockets
 
@@ -223,11 +245,10 @@ calling `connect`.
 All HTTP related functions are scoped under the `http` object.
 
 - _Blocking_ `<string> rt.http.request(<string> url, <string> method, <string>
-properties=null, <string> body=null, <int> timeout=null)`: Currently a wrapper
-around XMLHTTPRequest, needs to be revisited, especially for non-browser
-runtimes.
+properties=null, <string> body=null, <int> timeout=null)`: Currently mimics the
+(very old) XMLHTTPRequest API, needs to be revisited.
 
-- _Blocking_ `<string> rt.http.readURL(<string> url)`: A convenience function for
+- _Blocking_ `<string> rt.http.get(<string> url)`: A convenience function for
 `GET`-ing a URL that wraps `http.request`.
 
 - _Blocking_ `<void> rt.http.post(<string> url, <string> body)`: HTTP POST.
@@ -262,24 +283,3 @@ to a socket.io server (0.9).
 Query the GATD streamer with the given query and call `callback` will all
 returned data packets.
 
-### Color Functions
-
-When writing accessors that use colors (such as lighting) it may be useful
-to change colors between various color representations. The `color` object
-makes this easier.
-
-- `<hsv object> rt.color.hex_to_hsv(<string> hex_color)`: Convert a hex color
-string (like "0000FF") to an HSV object (like
-`{h: [hue (0-360)], s: [saturation (0-1)], v: [value (0-1)]}`).
-
-- `<string> rt.color.hsv_to_hex(<hsv object> hsv_color)`: Convert an HSV object
-to an RGB hex string.
-
-### Encoding Functions
-
-Various devices may need data in a variety of encodings. These functions help
-convert between them.
-
-- `<string> rt.encode.atob(<base64> str)`: Decode a base64 encoded string.
-
-- `<base64> rt.encode.btoa(<string> str)`: Encode a string in the base64 format.
