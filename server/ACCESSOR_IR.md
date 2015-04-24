@@ -7,6 +7,9 @@ expresses the accessor interface, dependencies, imports, and other key
 information. The JSON file includes the original accessor under a `code` key.
 This document specifies the JSON format.
 
+Additionally, this document defines an isomorphic transfrom from this JSON format
+to an XML format for cases where XML is easier for the recipient to process.
+
 The basic format is:
 
 ```json
@@ -23,9 +26,10 @@ be empty. Runtimes should ignore unknown keys.
 
 | KEY            | Type          | Description |
 | ---            | ------        | ----------- |
-| `name`         | string        | The name of the accessor. |
 | `version`      | string        | The version number of the accessor format. |
-| `author`       | object        | Information about the author. Must be an object with the keys: `name`, `email`, `website`. |
+| `name`         | string        | The name of the accessor. |
+| `safe_name`    | string        | The name of the accessor with any special characters removed. Will match /[a-zA-Z_]+[a-zA-Z_0-9]*/ |
+| `author`       | object        | Information about the author. Must be an object with the keys: `name`, `email`. |
 | `description`  | string        | Description of the accessor written in Markdown syntax. |
 | `ports`        | array         | Input and output fields for this accessor. See the "Ports" section below. |
 | `parameters`   | array         | Values which must be specified for a particular instantiation of this accessor. These are set when the accessor is retrieved from the accessor host server. |
@@ -135,17 +139,7 @@ object as its value. The valid keys in the second object are:
 #### Code Example
 
 ```json
-"code": {
-	"javascript": {
-		"include": ["some_common_code.js", "myaccessor.js"]
-	},
-	"python": {
-		"code": "import myaccessor
-def fire():
-	myaccessor.do_the_python()"
-
-	}
-}
+"code": "function* init () {\n\t// INTERFACES\n\tprovide_interface('/onoff', {\n\t\t'/onoff.Power': PowerControl\n\t});\n\tprovide_interface('/sensor/power' ..."
 ```
 
 ### Dependencies
@@ -191,48 +185,140 @@ Accessor Example
 
 ```json
 {
-	"name":    "Denon AVR-1913",
-	"version": "0.1",
-	"author":  {"name": "Brad Campbell", "email": "bradjc@umich.edu"},
-	"description": "
-Denon AVR-1913 Accessor
-=======================
-
-The Denon AVR-1913 is a digital receiver.
-",
-
-	"ports": [
-		{
-			"direction": "output",
-			"name":      "Name"
-		},
-		{
-			"direction": "inout",
-			"name":      "Input",
-			"type":      "select",
-			"options":   ["PC", "Apple TV", "Internet"]
-		},
-		{
-			"direction": "inout",
-			"name":      "Audio Mode",
-			"type":      "select",
-			"options":   ["Multi Channel Stereo, Stereo"]
-		}
-	],
-
-	"parameters": [
-		{
-			"name": "device_url",
-			"default": "http://localhost"
-		}
-	],
-
-	"code": {
-		"javascript": {
-			"include": ["denonavr1913.js"]
-		}
-	}
+    "author": {
+        "name": "Brad Campbell",
+        "email": "bradjc@umich.edu"
+    },
+    "code": "// name: ACme++\n// author: Brad Campbell\n// email:  bradjc@umich.edu\n\n// ACme++\n// ======\n//\n// ACme++ (AC Meter ++) is a power meter with an included relay.\n//\n\nvar ip_addr;\n\nfunction* init () {\n\t// INTERFACES\n\tprovide_interface('/onoff', {\n\t\t'/onoff.Power': PowerControl\n\t});\n\tprovide_interface('/sensor/power', {\n\t\t'/sensor/power.Power': PowerMeter\n\t});\n\n\tip_addr = get_parameter('ip_addr');\n\n\t// Initialize the relay power state\n\tvar response = yield* rt.coap.get('coap://['+ip_addr+']/onoffdevice/Power');\n\tset('PowerControl', (response == 'true'));\n}\n\nfunction* PowerControl (state) {\n\tyield* rt.coap.post('coap://['+ip_addr+']/onoffdevice/Power', (state)?'true':'false');\n\n}\n\nfunction* PowerMeter () {\n\treturn yield* rt.coap.post('coap://['+ip_addr+']/powermeter/Power');\n}\n",
+    "dependencies": [],
+    "version": "0.1",
+    "name": "ACme++",
+    "description": "ACme++\n======\n\nACme++ (AC Meter ++) is a power meter with an included relay.\n\n",
+    "implements": [
+        {
+            "interface": "/onoff",
+            "provides": [
+                [
+                    "/onoff.Power",
+                    "PowerControl"
+                ]
+            ],
+            "ports": [
+                "onoff.Power"
+            ]
+        },
+        {
+            "interface": "/sensor/power",
+            "provides": [
+                [
+                    "/sensor/power.Power",
+                    "PowerMeter"
+                ]
+            ],
+            "ports": [
+                "sensor.power.Power"
+            ]
+        }
+    ],
+    "ports": [
+        {
+            "type": "bool",
+            "direction": "inout",
+            "display_name": "Power",
+            "name": "/onoff/Power",
+            "function": "PowerControl"
+        },
+        {
+            "direction": "output",
+            "unit": "watts",
+            "display_name": "Power Usage",
+            "name": "/sensor/power/Power",
+            "function": "PowerMeter",
+            "type": "numeric"
+        }
+    ],
+    "runtime_imports": [
+        "coap"
+    ],
+    "parameters": [
+        {
+            "required": true,
+            "name": "ip_addr"
+        }
+    ],
+    "safe_name": "ACme__"
 }
 ```
 
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type="text/xsl" href="/static/v0/renderHTML.xsl"?>
+<!DOCTYPE class PUBLIC "-//TerraSwarm//DTD Accessor 1//EN" "http://www.terraswarm.org/accessors/Accessor_1.dtd">
+<class extends="org.terraswarm.kernel.JavaScript" name="ACme++" >
+<version>0.1</version>
+<author>
+  <name>Brad Campbell</name>
+  <email>bradjc@umich.edu</email>
+</author>
+<documentation type="text/html">
+<![CDATA[ACme++
+======
 
+ACme++ (AC Meter ++) is a power meter with an included relay.
+
+]]>
+</documentation>
+<implements>
+  <interface name="/onoff">
+    <provides name="/onoff.Power">
+  </interface>
+  <interface name="/sensor/power">
+    <provides name="/sensor/power.Power">
+  </interface>
+<ports>
+  <port name="/onoff/Power" direction="inout" type="bool" display_name="Power">
+  <port name="/sensor/power/Power" direction="output" type="numeric" display_name="Power Usage" unit="watts">
+</ports>
+<parameter name="ip_addr" required="True" />
+<script type="text/javascript">
+<![CDATA[
+// name: ACme++
+// author: Brad Campbell
+// email:  bradjc@umich.edu
+
+// ACme++
+// ======
+//
+// ACme++ (AC Meter ++) is a power meter with an included relay.
+//
+
+var ip_addr;
+
+function* init () {
+	// INTERFACES
+	provide_interface('/onoff', {
+		'/onoff.Power': PowerControl
+	});
+	provide_interface('/sensor/power', {
+		'/sensor/power.Power': PowerMeter
+	});
+
+	ip_addr = get_parameter('ip_addr');
+
+	// Initialize the relay power state
+	var response = yield* rt.coap.get('coap://['+ip_addr+']/onoffdevice/Power');
+	set('PowerControl', (response == 'true'));
+}
+
+function* PowerControl (state) {
+	yield* rt.coap.post('coap://['+ip_addr+']/onoffdevice/Power', (state)?'true':'false');
+
+}
+
+function* PowerMeter () {
+	return yield* rt.coap.post('coap://['+ip_addr+']/powermeter/Power');
+}
+]]>
+</script>
+</class>
+```
