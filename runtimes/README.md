@@ -171,6 +171,8 @@ errors (e.g. a 503).
 
 ### Time
 
+- `<float> rt.time.time()`: Returns current time as a unix timestamp.
+
 - _Blocking_ `<null> rt.time.sleep(<int> time_in_ms)`: Suspends execution for at
 least the amount of time requested.
 
