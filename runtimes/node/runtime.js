@@ -40,12 +40,15 @@ _do_port_call=function (port, value, done_fn, error_fn) {
 		r = port(value);
 		if (r && typeof r.next == 'function') {
 			var def = Q.async(function* () {
-				yield* port(value);
+				r = yield* port(value);
 			});
-			def().done(done_fn, error_fn);
+			finished = function () {
+				done_fn(r);
+			}
+			def().done(finished, error_fn);
 			rt.log.debug("port call running asynchronously");
 		} else {
-			done_fn();
+			done_fn(r);
 		}
 	});
 }
