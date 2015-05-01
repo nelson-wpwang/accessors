@@ -339,6 +339,17 @@ jsPlumb.ready(function() {
 
 
 
+	var nb = $('#pm');
+	var h = nb.height()/1600;
+	var b = new_block('pm');
+	add_source(b, 0, "PowerChangeEvent", h, 0.6);
+
+	var nb = $('#l');
+	var h = nb.height()/600;
+	console.log(h)
+	var b = new_block('l');
+	add_dest(b, 0, "Power", h, 0.6);
+
 
 
 

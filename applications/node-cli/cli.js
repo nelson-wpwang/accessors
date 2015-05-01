@@ -55,12 +55,17 @@ rl.question('Accessor path: ', function (path) {
 					console.log(data);
 				}
 
-				function interact () {
+				function interact (val) {
+					// We call interact as the success callback. We may
+					// have succeeded in getting something from the device
+					if (val !== undefined) {
+						console.log('GOT: ' + val);
+					}
 					rl.question('[get, set, listen]: ', function (cmd) {
 						rl.question('port index: ', function (pi) {
 							var port_index = parseInt(pi);
 							if (cmd == 'get') {
-								console.log(accessor[accessor_ir.ports[port_index].function](interact));
+								accessor[accessor_ir.ports[port_index].function](interact);
 							} else if (cmd == 'set') {
 								rl.question('value: ', function (val) {
 									if (val == 'true') {
