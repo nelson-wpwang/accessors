@@ -1,6 +1,15 @@
+while (true) {
+	try {
+		var config = require('./config');
+		break;
+	} catch (e) {
+		var stop = new Date().getTime();
+		while (new Date().getTime() < stop + 1000) {;}
+	}
+}
 
 var central = require('./central');
-var config = require('./config');
+
 
 
 var profile_desc = {
@@ -28,8 +37,8 @@ var profile_desc = {
 			type: 'Match',
 			parameters: {
 				matches: [
-					'bradjc in location',      // 0
-					'bradjc not in location'   // 1
+					process.argv[1] + ' in location',      // 0
+					process.argv[1] + ' not in location'   // 1
 				]
 			},
 			uuid: 'MatchEvents',
@@ -47,7 +56,7 @@ var profile_desc = {
 			parameters: {
 				bridge_url: config.hues.bridge_url,
 				username: config.hues.username,
-				bulb_name: 'Brad'
+				bulb_name: process.argv[2]
 			},
 			uuid: 'Hue'
 		},

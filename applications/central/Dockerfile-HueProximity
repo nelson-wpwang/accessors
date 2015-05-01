@@ -1,0 +1,13 @@
+FROM	iojs:1.8.1
+
+# Copy my app source code
+COPY	applications/central	/central
+
+# Install node requirements
+RUN	cd /central; npm install
+
+# Remove config.js if it exists
+RUN rm /central/config.js
+
+# Run the actual application
+CMD	["node", "/central/HueProximity.js"]
