@@ -1,6 +1,8 @@
 Accessors
 =========
 
+[![Code Climate](https://codeclimate.com/github/lab11/accessors/badges/gpa.svg)](https://codeclimate.com/github/lab11/accessors)
+
 Accessors are a method for abstracting the complicated and diverse input/output
 interfaces present in real-world devices and systems. Accessors allow for
 bundling standardized interfaces to common devices (lights, audio equipment,
