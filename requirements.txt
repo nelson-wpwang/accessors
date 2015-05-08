@@ -9,3 +9,5 @@ sh
 python-bond
 semantic_version
 setproctitle
+pydblite
+jinja2

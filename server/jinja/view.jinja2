@@ -1,0 +1,77 @@
+{% extends "base.jinja" %}
+
+{% block title %}
+Accessor: {{ accessor.accessor.name }}
+{% endblock %}
+
+{% block content %}
+
+<h1>Accessor: {{ accessor.accessor.name }}</h1>
+
+<h2>About</h2>
+<dl class="dl-horizontal">
+  <dt>Author Name</dt><dd>{{ accessor.accessor.author.name }}</dd>
+  <dt>Author Email</dt><dd>{{ accessor.accessor.author.email }}</dd>
+  <dt>Links</dt><dd><a href="/accessor{{ accessor.path }}.json">JSON</a> | <a href="/accessor{{ accessor.path }}.xml">XML</a></dd>
+</dl>
+
+
+
+<div class="panel panel-default">
+  <div class="panel-body">
+    {{ accessor.accessor.description|markdown }}
+  </div>
+</div>
+
+
+<h2>Ports</h2>
+<ul class="list-group">
+  {% for port in accessor.accessor.ports %}
+  <li class="list-group-item">
+    <h4>{{ port.name }}</h4>
+    <p>{{ port.description }}</p>
+    <dl class="dl-horizontal">
+      <dt>Directions</dt><dd>{{ port.direction }}</dd>
+      <dt>Type</dt><dd>{{ port.type }}</dd>
+      <dt>Units</dt><dd>{{ port.unit }}</dd>
+      <dt>Options</dt><dd>{{ port.options }}</dd>
+      <dt>Min</dt><dd>{{ port.min }}</dd>
+      <dt>Max</dt><dd>{{ port.max }}</dd>
+    </dl>
+  </li>
+  {% endfor %}
+</ul>
+
+
+<h2>Parameters</h2>
+<ul class="list-group">
+  {% for parameter in accessor.accessor.parameters %}
+  <li class="list-group-item">
+    <h4>{{ parameter.name }}</h4>
+    <p>{{ parameter.description }}</p>
+  </li>
+  {% endfor %}
+</ul>
+
+
+<h2>Dependencies</h2>
+<ul class="list-group">
+  {% for dep in accessor.accessor.dependencies %}
+  <li class="list-group-item">
+    <h4>{{ dep.name }}</h4>
+    <p>{{ dep.description }}</p>
+  </li>
+  {% endfor %}
+</ul>
+
+
+<h2>Code</h2>
+<div class="panel panel-default">
+  <div class="panel-body">
+    <pre>
+{{ accessor.accessor.code_alternates.javascript|escape }}
+    </pre>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.jinja" %}
+
+{% block content %}
+
+<h1>Accessors</h1>
+
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Group</th>
+    </tr>
+  </thead>
+
+  {% for record in accessors_db %}
+  <tr>
+    <td><a href="/view{{ record.path }}">{{ record.name }}</a></td>
+    <td>{{ record.group }}</td>
+  </tr>
+  {% endfor %}
+
+</table>
+
+{% endblock %}

@@ -18,6 +18,9 @@ import setproctitle
 setproctitle.setproctitle("accessors:host_server")
 sys.stdout.write("\x1b]2;accessors:host_server\x07")
 
+import jinja2
+import markdown
+import pydblite
 import semantic_version as semver
 
 import tornado
@@ -80,9 +83,16 @@ except sh.CommandNotFound:
 
 ACCESSOR_SERVER_PORT = 6565
 
+accessors_db = pydblite.Base('accessors', save_to_file=False)
+accessors_db.create('name', 'group', 'path', 'accessor')
 
 server_path_tuples = []
 accessors_by_path = {}
+
+# Helper function to get the first result from a pydblite query
+def first (iterable):
+	for i in iterable:
+		return i
 
 ET._original_serialize_xml = ET._serialize_xml
 def _serialize_xml(write, elem, *args, **kwargs):
@@ -581,9 +591,100 @@ def find_accessors (accessor_path, tree_node):
 				assert path not in accessor_tree
 				accessor_tree[path] = accessor
 
+				# Strip .js from path
+				view_path = path[0:-3]
+				accessors_db.insert(name=meta['name'], group=root, path=view_path, accessor=accessor)
+
 				create_servable_objects_from_accessor(accessor, path)
 
+################################################################################
+### Jinja2 Support
+###
+### https://bibhas.in/blog/using-jinja2-as-the-template-engine-for-tornado-web-framework/
+###
+################################################################################
 
+### Filters
+def jinja_filter_markdown (string):
+	return markdown.markdown(string)
+
+
+
+class JinjaTemplateRendering:
+    """
+    A simple class to hold methods for rendering templates.
+    """
+    def render_template (self, template_name, **kwargs):
+        template_dirs = []
+        if self.settings.get('template_path', ''):
+            template_dirs.append(
+                self.settings["template_path"]
+            )
+
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dirs))
+        env.filters['markdown'] = jinja_filter_markdown
+
+        try:
+            template = env.get_template(template_name)
+        except jinja2.TemplateNotFound:
+            raise TemplateNotFound(template_name)
+        content = template.render(kwargs)
+        return content
+
+
+class JinjaBaseHandler (tornado.web.RequestHandler, JinjaTemplateRendering):
+    """
+    RequestHandler already has a `render()` method. I'm writing another
+    method `renderj()` and keeping the API almost same.
+    """
+    def renderj (self, template_name, **kwargs):
+        """
+        This is for making some extra context variables available to
+        the template
+        """
+        kwargs.update({
+            'settings': self.settings,
+            'STATIC_URL': self.settings.get('static_url_prefix', '/static/'),
+            'request': self.request,
+            'xsrf_token': self.xsrf_token,
+            'xsrf_form_html': self.xsrf_form_html,
+        })
+        content = self.render_template(template_name, **kwargs)
+        self.write(content)
+
+
+
+
+
+################################################################################
+### Website GUI Frontend
+################################################################################
+
+# Main index
+class handler_index (JinjaBaseHandler):
+	def get(self, **kwargs):
+		data = {
+			'accessors_db': accessors_db
+		}
+		return self.renderj('index.jinja2', **data)
+
+# Page for each accessor
+class handler_accessor_page (JinjaBaseHandler):
+	def get(self, path, **kwargs):
+		path = '/'+path
+
+		records = accessors_db('path') == path
+
+		data = {
+			'accessor': first(records)
+		}
+		return self.renderj('view.jinja2', **data)
+
+
+
+################################################################################
+### main()
+################################################################################
 
 DESC = """
 Run an accessor hosting server.
@@ -632,10 +733,15 @@ find_accessors(args.accessor_path, None)
 # observer.schedule(AccessorChangeHandler(), path=args.accessor_path, recursive=True)
 # observer.start()
 
+# Add in the viewable pages
+server_path_tuples.append((r'/', handler_index))
+server_path_tuples.append((r'/view/(.*)', handler_accessor_page))
+
 # Start the webserver for accessors
 accessor_server = tornado.web.Application(
 	server_path_tuples,
 	static_path="static/",
+	template_path='jinja/',
 	debug=True
 	)
 accessor_server.listen(ACCESSOR_SERVER_PORT)
@@ -644,3 +750,6 @@ print('\nStarting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
 
 # Run the loop!
 tornado.ioloop.IOLoop.instance().start()
+
+
+
