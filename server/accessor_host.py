@@ -91,9 +91,7 @@ ACCESSOR_SERVER_PORT = 6565
 ACCESSOR_REPO_URL = 'https://github.com/lab11/accessor-files.git'
 
 accessors_db = pydblite.Base('accessors', save_to_file=False)
-accessors_db.create('name', 'group', 'path', 'accessor')
-
-accessors_by_path = {}
+accessors_db.create('name', 'group', 'path', 'jscontents', 'accessor')
 
 # Helper function to get the first result from a pydblite query
 def first (iterable):
@@ -375,9 +373,9 @@ def javascript_to_traceur(javascript):
 	return code
 
 
-accessor_tree = {}
+# accessor_tree = {}
 
-def find_accessors (accessor_path, tree_node):
+def find_accessors (accessor_path):
 
 	def parse_error(msg, path, line_no=None, line=None):
 		log.error(msg)
@@ -407,7 +405,26 @@ def find_accessors (accessor_path, tree_node):
 
 				path = os.path.join(root, item_path)
 
-				log.debug("NEW ACCESSOR: %s", path)
+				# Strip .js from path
+				view_path = path[0:-3]
+
+				# Check to see if we have already parsed this accessor
+				contents = ''
+				with open("." + path) as f:
+					contents = f.read()
+
+					existing_accessor = first((accessors_db('path') == view_path) &
+					                          (accessors_db('jscontents') == contents))
+					if existing_accessor:
+						print('Already parsed {}, skipping'.format(path))
+						continue
+
+					old_accessor = first(accessors_db('path') == view_path)
+					if old_accessor:
+						print('Got new version of {}'.format(path))
+						accessors_db.delete(old_accessor)
+					else:
+						log.debug("NEW ACCESSOR: %s", path)
 
 				name = None
 				author = None
@@ -569,14 +586,15 @@ def find_accessors (accessor_path, tree_node):
 							raise NotImplementedError("Accessor code must be javascript")
 					del accessor['code']
 
-				assert path not in accessor_tree
-				accessor_tree[path] = accessor
-
-				# Strip .js from path
-				view_path = path[0:-3]
+				# assert path not in accessor_tree
+				# accessor_tree[path] = accessor
 
 				# Save accessor in in-memory DB
-				accessors_db.insert(name=meta['name'], group=root, path=view_path, accessor=accessor)
+				accessors_db.insert(name=meta['name'],
+				                    group=root,
+				                    path=view_path,
+				                    jscontents=contents,
+				                    accessor=accessor)
 
 				log.info('Adding accessor {}'.format(view_path))
 
@@ -701,23 +719,22 @@ load_interface_tree(interfaces_path)
 
 # Initialize the accessors
 accessors_path = os.path.join(accessor_files_path, 'accessors')
-find_accessors(accessors_path, None)
+find_accessors(accessors_path)
 
 #pprint.pprint(accessor_tree, depth=2)
 #pprint.pprint(accessor_tree['/lighting/hue/huesingle.js'])
 
-# # Start a monitor to watch for any changes to accessors
+# Start a monitor to watch for any changes to accessors
 # class AccessorChangeHandler (watchdog.events.FileSystemEventHandler):
 # 	def on_any_event (self, event):
 # 		if str(event.src_path[-1]) == '~' or str(event.src_path[-4:-1]) == '.sw':
 # 			# Ignore temporary files
 # 			return
 # 		print('\n\n' + '='*80)
-# 		root = find_accessors(args.accessor_path, None)
-# 		create_accessors(root)
-#
+# 		find_accessors(accessors_path)
+
 # observer = watchdog.observers.Observer()
-# observer.schedule(AccessorChangeHandler(), path=args.accessor_path, recursive=True)
+# observer.schedule(AccessorChangeHandler(), path=accessors_path, recursive=True)
 # observer.start()
 
 
@@ -741,6 +758,3 @@ print('\nStarting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
 
 # Run the loop!
 tornado.ioloop.IOLoop.instance().start()
-
-
-
