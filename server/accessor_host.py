@@ -44,6 +44,12 @@ except ImportError:
 	print("(this isn't a python package)")
 	sys.exit(1)
 
+try:
+	from sh import git
+except ImportError:
+	print('You need to have git installed')
+	sys.exit(1)
+
 # n.b. newer sh will support this directly when released
 class pushd(object):
 	def __init__(self, path):
@@ -82,6 +88,7 @@ except sh.CommandNotFound:
 # traceur = sh.Command(traceur)
 
 ACCESSOR_SERVER_PORT = 6565
+ACCESSOR_REPO_URL = 'https://github.com/lab11/accessor-files.git'
 
 accessors_db = pydblite.Base('accessors', save_to_file=False)
 accessors_db.create('name', 'group', 'path', 'accessor')
@@ -666,29 +673,35 @@ Run an accessor hosting server.
 
 
 parser = argparse.ArgumentParser(description=DESC)
-parser.add_argument('-p', '--accessor_path',
-                    default='../accessors',
-                    help='The root of the tree that holds the accessors.')
-parser.add_argument('-i', '--interfaces_path',
-                    default='../interfaces',
-                    help='The root of the tree that holds the accessors.')
+parser.add_argument('-n', '--disable-git',
+                    action='store_true',
+                    help='Do not pull new accessors from git repository.')
+parser.add_argument('-u', '--repo-url',
+                    default=ACCESSOR_REPO_URL,
+                    help='Git URL of the repository to get accessors and interfaces from.')
 parser.add_argument('-t', '--tests', action='store_true',
                     help='Include test accessors')
 args = parser.parse_args()
 
-# Validate the accessor paths exist
-args.accessor_path = os.path.abspath(args.accessor_path)
-if not os.path.exists(args.accessor_path):
-	raise IOError("Accessor Path ({}) does not exist".format(args.accessor_path))
-args.interfaces_path = os.path.abspath(args.interfaces_path)
-if not os.path.exists(args.interfaces_path):
-	raise IOError("Interfaces Path ({}) does not exist".format(args.interfaces_path))
+# Make sure we have accessor files
+here = os.path.dirname(os.path.abspath(__file__))
+accessor_files_path = os.path.join(here, 'accessors')
+if not args.disable_git:
+	print('Trying to update accessor files from git repo')
+	if not os.path.exists(accessor_files_path):
+		print('Need to clone the git repo')
+		git('clone', args.repo_url, 'accessors')
+	with pushd(accessor_files_path):
+		print('Pulling the accessor')
+		git('pull')
 
 # Parse the interface heirarchy
-load_interface_tree(args.interfaces_path)
+interfaces_path = os.path.join(accessor_files_path, 'interfaces')
+load_interface_tree(interfaces_path)
 
 # Initialize the accessors
-find_accessors(args.accessor_path, None)
+accessors_path = os.path.join(accessor_files_path, 'accessors')
+find_accessors(accessors_path, None)
 
 #pprint.pprint(accessor_tree, depth=2)
 #pprint.pprint(accessor_tree['/lighting/hue/huesingle.js'])
