@@ -752,5 +752,14 @@ accessor_server.listen(ACCESSOR_SERVER_PORT)
 
 log.info('\nStarting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
 
+# Periodically fetch new files from github
+if not args.disable_git:
+	def pull_git_periodic ():
+		log.info('Pulling git repo')
+		with pushd(accessor_files_path):
+			git('pull')
+		find_accessors(accessors_path)
+	tornado.ioloop.PeriodicCallback(pull_git_periodic, 60000).start()
+
 # Run the loop!
 tornado.ioloop.IOLoop.instance().start()
