@@ -40,14 +40,14 @@ from sh import rm
 try:
 	from sh import npm
 except ImportError:
-	print("You need to install npm: https://www.npmjs.org/")
-	print("(this isn't a python package)")
+	log.error("You need to install npm: https://www.npmjs.org/")
+	log.error("(this isn't a python package)")
 	sys.exit(1)
 
 try:
 	from sh import git
 except ImportError:
-	print('You need to have git installed')
+	log.error('You need to have git installed')
 	sys.exit(1)
 
 # n.b. newer sh will support this directly when released
@@ -74,7 +74,7 @@ except sh.CommandNotFound:
 	try:
 		traceur = sh.Command(os.path.abspath('server/node_modules/traceur/traceur'))
 	except sh.CommandNotFound:
-		print("You must run npm install traceur")
+		log.error("You must run npm install traceur")
 		sys.exit(1)
 
 # traceur = os.path.join(
@@ -83,7 +83,7 @@ except sh.CommandNotFound:
 # 	'traceur',
 # 	'traceur')
 # if not os.path.exists(traceur):
-# 	print("You must run npm install traceur")
+# 	log.error("You must run npm install traceur")
 # 	# npm('install', 'traceur')
 # traceur = sh.Command(traceur)
 
@@ -289,8 +289,8 @@ class Interface():
 					self.extends.append(interface_tree[dep])
 
 			interface_tree[self.path] = self
-			print('---'*30)
-			pprint.pprint(interface_tree)
+			log.debug('---'*30)
+			log.debug(pprint.pformat(interface_tree))
 
 		except:
 			log.exception("Uncaught exception generating %s", self.path)
@@ -416,12 +416,12 @@ def find_accessors (accessor_path):
 					existing_accessor = first((accessors_db('path') == view_path) &
 					                          (accessors_db('jscontents') == contents))
 					if existing_accessor:
-						print('Already parsed {}, skipping'.format(path))
+						log.info('Already parsed {}, skipping'.format(path))
 						continue
 
 					old_accessor = first(accessors_db('path') == view_path)
 					if old_accessor:
-						print('Got new version of {}'.format(path))
+						log.info('Got new version of {}'.format(path))
 						accessors_db.delete(old_accessor)
 					else:
 						log.debug("NEW ACCESSOR: %s", path)
@@ -521,7 +521,6 @@ def find_accessors (accessor_path):
 					log.error(e.stderr.decode("unicode_escape"))
 					raise
 				analyzed = json.loads(analyzed.stdout.decode('utf-8'))
-				print(analyzed)
 
 				meta.update(analyzed)
 
@@ -557,7 +556,7 @@ def find_accessors (accessor_path):
 				#err = validate_accessor.check(accessor)
 				#TODO: Maybe put this back someday?
 				#if err:
-				#	print('ERROR: Invalid accessor format.')
+				#	log.error('ERROR: Invalid accessor format.')
 				#	accessor['valid'] = False
 				#	return
 
@@ -689,7 +688,6 @@ DESC = """
 Run an accessor hosting server.
 """
 
-
 parser = argparse.ArgumentParser(description=DESC)
 parser.add_argument('-n', '--disable-git',
                     action='store_true',
@@ -705,12 +703,12 @@ args = parser.parse_args()
 here = os.path.dirname(os.path.abspath(__file__))
 accessor_files_path = os.path.join(here, 'accessors')
 if not args.disable_git:
-	print('Trying to update accessor files from git repo')
+	log.info('Trying to update accessor files from git repo')
 	if not os.path.exists(accessor_files_path):
-		print('Need to clone the git repo')
+		log.info('Need to clone the git repo')
 		git('clone', args.repo_url, 'accessors')
 	with pushd(accessor_files_path):
-		print('Pulling the accessor')
+		log.info('Pulling the accessor')
 		git('pull')
 
 # Parse the interface heirarchy
@@ -721,8 +719,6 @@ load_interface_tree(interfaces_path)
 accessors_path = os.path.join(accessor_files_path, 'accessors')
 find_accessors(accessors_path)
 
-#pprint.pprint(accessor_tree, depth=2)
-#pprint.pprint(accessor_tree['/lighting/hue/huesingle.js'])
 
 # Start a monitor to watch for any changes to accessors
 # class AccessorChangeHandler (watchdog.events.FileSystemEventHandler):
@@ -754,7 +750,7 @@ accessor_server = tornado.web.Application(
 	)
 accessor_server.listen(ACCESSOR_SERVER_PORT)
 
-print('\nStarting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
+log.info('\nStarting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
 
 # Run the loop!
 tornado.ioloop.IOLoop.instance().start()
