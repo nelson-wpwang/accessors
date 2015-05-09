@@ -86,7 +86,6 @@ ACCESSOR_SERVER_PORT = 6565
 accessors_db = pydblite.Base('accessors', save_to_file=False)
 accessors_db.create('name', 'group', 'path', 'accessor')
 
-server_path_tuples = []
 accessors_by_path = {}
 
 # Helper function to get the first result from a pydblite query
@@ -113,8 +112,9 @@ class ServeAccessor (tornado.web.RequestHandler):
 	def set_default_headers(self):
 		self.set_header("Access-Control-Allow-Origin", "*")
 
-	def get (self):
+	def get (self, path):
 		log.debug("get accessor {}".format(self))
+		path = '/' + path
 
 		# Look for any parameters that change how we will respond
 		language = self.get_argument('language', 'es6')
@@ -131,10 +131,11 @@ class ServeAccessor (tornado.web.RequestHandler):
 				create_traceur_alternate(self.accessor)
 
 		# Create a local copy of the accessor to serve so we can configure it
-		accessor = copy.deepcopy(self.accessor)
+		accessor = copy.deepcopy(first(accessors_db('path') == path)['accessor'])
 
 		def set_dependency_js (accessor, language):
 			for dep in accessor['dependencies']:
+				print(dep)
 				dep['code'] = dep['code_alternates'][language]
 				set_dependency_js(dep, language)
 
@@ -368,33 +369,6 @@ def javascript_to_traceur(javascript):
 	return code
 
 
-def create_servable_objects_from_accessor (accessor, path):
-	# Create the URL based on the hierarchy
-	path = path[:-3]
-	name = path.replace('/', '_')
-	json_path = '/accessor{}.json'.format(path)
-	xml_path = '/accessor{}.xml'.format(path)
-
-	# Create a class for the tornado webserver to use when the accessor
-	# is requested
-	json_serve_class = type('ServeAccessor_' + name, (ServeAccessorJSON,), {
-		'accessor': accessor
-	})
-
-	xml_serve_class = type('ServeAccessorXML_' + name, (ServeAccessorXML,), {
-		'accessor': accessor
-	})
-
-	# Add the accessor to the list of valid accessors to request
-	json_path = re.escape(json_path)
-	xml_path = re.escape(xml_path)
-	server_path_tuples.append((json_path, json_serve_class))
-	server_path_tuples.append((xml_path, xml_serve_class))
-	accessors_by_path[json_path] = json_serve_class
-	log.info('Adding accessor {}'.format(json_path))
-	log.info('Adding accessor {}'.format(xml_path))
-
-
 accessor_tree = {}
 
 def find_accessors (accessor_path, tree_node):
@@ -593,9 +567,11 @@ def find_accessors (accessor_path, tree_node):
 
 				# Strip .js from path
 				view_path = path[0:-3]
+
+				# Save accessor in in-memory DB
 				accessors_db.insert(name=meta['name'], group=root, path=view_path, accessor=accessor)
 
-				create_servable_objects_from_accessor(accessor, path)
+				log.info('Adding accessor {}'.format(view_path))
 
 ################################################################################
 ### Jinja2 Support
@@ -608,8 +584,7 @@ def find_accessors (accessor_path, tree_node):
 def jinja_filter_markdown (string):
 	return markdown.markdown(string)
 
-
-
+# Helper classes for rendering jinja templates
 class JinjaTemplateRendering:
     """
     A simple class to hold methods for rendering templates.
@@ -630,7 +605,6 @@ class JinjaTemplateRendering:
             raise TemplateNotFound(template_name)
         content = template.render(kwargs)
         return content
-
 
 class JinjaBaseHandler (tornado.web.RequestHandler, JinjaTemplateRendering):
     """
@@ -733,13 +707,17 @@ find_accessors(args.accessor_path, None)
 # observer.schedule(AccessorChangeHandler(), path=args.accessor_path, recursive=True)
 # observer.start()
 
-# Add in the viewable pages
-server_path_tuples.append((r'/', handler_index))
-server_path_tuples.append((r'/view/(.*)', handler_accessor_page))
 
 # Start the webserver for accessors
 accessor_server = tornado.web.Application(
-	server_path_tuples,
+	[
+		# User viewable web gui
+		(r'/', handler_index),
+		(r'/view/(.*)', handler_accessor_page),
+		# Accessor IR
+		(r'/accessor/(.*).json', ServeAccessorJSON),
+		(r'/accessor/(.*).xml', ServeAccessorXML),
+	],
 	static_path="static/",
 	template_path='jinja/',
 	debug=True
