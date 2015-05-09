@@ -140,33 +140,32 @@ class ServeAccessor (tornado.web.RequestHandler):
 		# Create a local copy of the accessor to serve so we can configure it
 		accessor = copy.deepcopy(first(accessors_db('path') == path)['accessor'])
 
-		def set_dependency_js (accessor, language):
-			for dep in accessor['dependencies']:
-				print(dep)
-				dep['code'] = dep['code_alternates'][language]
-				set_dependency_js(dep, language)
+		# def set_dependency_js (accessor, language):
+		# 	for dep in accessor['dependencies']:
+		# 		dep['code'] = dep['code_alternates'][language]
+		# 		set_dependency_js(dep, language)
 
 		if language == 'traceur':
 			accessor['code'] = accessor['code_alternates']['traceur']
-			set_dependency_js(accessor, 'traceur')
+			# set_dependency_js(accessor, 'traceur')
 		elif language == 'es6' or language == 'javascript':
 			accessor['code'] = accessor['code_alternates']['javascript']
-			set_dependency_js(accessor, 'javascript')
+			# set_dependency_js(accessor, 'javascript')
 		else:
 			if language in accessor['code_alternates']:
 				accessor['code'] = accessor['code_alternates'][language]
-				set_dependency_js(accessor, language)
+				# set_dependency_js(accessor, language)
 			else:
 				raise NotImplementedError("Unknown language: {}".format(language))
 
 		if 'code_alternates' in accessor:
 			del accessor['code_alternates']
-		def remove_dependency_code_alts (accessor):
-			for dependency in accessor['dependencies']:
-				if 'code_alternates' in dependency:
-					del dependency['code_alternates']
-				remove_dependency_code_alts(dependency)
-		remove_dependency_code_alts(accessor)
+		# def remove_dependency_code_alts (accessor):
+		# 	for dependency in accessor['dependencies']:
+		# 		if 'code_alternates' in dependency:
+		# 			del dependency['code_alternates']
+		# 		remove_dependency_code_alts(dependency)
+		# remove_dependency_code_alts(accessor)
 
 		self.set_content_type()
 		self.write_accessor(accessor)
@@ -505,6 +504,7 @@ def find_accessors (accessor_path, tree_node):
 					log.error(e.stderr.decode("unicode_escape"))
 					raise
 				analyzed = json.loads(analyzed.stdout.decode('utf-8'))
+				print(analyzed)
 
 				meta.update(analyzed)
 
