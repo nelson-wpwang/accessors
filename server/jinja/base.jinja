@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="{% block html_lang %}en{% endblock %}">
 <head>
-{% from "macros.jinja" import debugmin %}
 {% block head %}
     <title>{% block title %}App Name{% endblock %}</title>
     {% block meta %}
@@ -82,20 +81,7 @@
         <script>window.jQuery || document.write('<script src="{{ STATIC_URL }}js/jquery-1.10.2.min.js"><\/script>')</script>
     {% endblock %}
     {% block js_bootstrap %}
-        <script src="{{ STATIC_URL }}js/bootstrap{{ debugmin() }}.js"></script>
-    {% endblock %}
-    {% block js_analytics %}
-        {# Via HTML5BP. Asynchronous Google Analytics snippet. mathiasbynens.be/notes/async-analytics-snippet #}
-        <script>
-            {% block google_analytics %}
-                {% if not DEBUG %}
-                    var _gaq=[['_setAccount','{% block google_analytics_id %}UA-XXXXX-X{% endblock %}'],['_trackPageview']];
-                    (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
-                    g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
-                    s.parentNode.insertBefore(g,s)}(document,'script'));
-                {% endif %}
-            {% endblock %}
-        </script>
+        <script src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
     {% endblock %}
     {% block js_footer %}
         {# Add your javascript here #}
