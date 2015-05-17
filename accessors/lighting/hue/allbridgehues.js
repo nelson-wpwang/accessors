@@ -27,6 +27,13 @@ function* init () {
 	});
 
 	create_port('Bridge');
+
+	// Populate the list of known bulbs
+	var url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights';
+	var data = JSON.parse(yield* rt.http.get(url));
+	for (var key in data) {
+		bulbids.push(key);
+	}
 }
 
 Power.input = function* (on) {
@@ -34,19 +41,16 @@ Power.input = function* (on) {
 }
 
 Power.output = function* () {
-	var url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights';
-	var data = JSON.parse(yield* rt.http.readURL(url));
 	var on = false;
 
-	for (var key in data) {
-		bulbids.push(key);
-
+	for (var bulbid in bulbids) {
 		url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights/' + key;
-		var bulb_state = JSON.parse(yield* rt.http.readURL(url));
+		var bulb_state = JSON.parse(yield* rt.http.get(url));
 		if (bulb_state.state.on) {
 			on = true;
 		}
 	}
+
 	return on;
 }
 

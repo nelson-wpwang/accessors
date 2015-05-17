@@ -32,7 +32,7 @@ module.exports = function (host_server) {
 	function get_accessor_ir (path, success_cb, error_cb) {
 		info('art::get_accessor_ir from path: ' + path);
 		var url = host_server + '/accessor' + path + '.json';
-		
+
 		info('art::gair Retrieving ' + url);
 		request(url, function (err, response, body) {
 			if (!err && response.statusCode == 200) {
@@ -53,7 +53,7 @@ module.exports = function (host_server) {
 	 *
 	 * path:       /path/to/accessor
 	 * parameters: object of key:value parameters
-	 * 
+	 *
 	 * On success you get a callback:
 	 *     success_cb(device)
 	 *
@@ -76,7 +76,7 @@ module.exports = function (host_server) {
 	 *
 	 * accessor_ir: JSON blob of the accessor intermediate representation
 	 * parameters:  object of key:value parameters
-	 * 
+	 *
 	 */
 	function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
 		info('art::create_accessor starting to create ' + accessor_ir.name);
@@ -142,8 +142,9 @@ module.exports = function (host_server) {
 
 		for (var i=0; i<accessor.ports.length; i++) {
 			var port = accessor.ports[i];
-			port_obj_str += port.func += ' = {};';
+			port_obj_str += port.function + ' = {};';
 		}
+
 		return port_obj_str;
 	}
 
@@ -159,13 +160,13 @@ module.exports = function (host_server) {
 			var name = port.name;
 			var func = port.function;
 
-			export_str += 'module.exports.'+func+' = {' + 
+			export_str += 'module.exports.'+func+' = {';
 
 			// Each port can support multiple directions based on what makes
 			// sense for the particular device
 			for (var j=0; j<port.directions.length; j++) {
 				var direction = port.directions[j];
-				export_str += direction + ': function () {_do_port_call.apply(this, [' + func + ',' + direction + ', arguments[0], arguments[1], arguments[2]])},\n'
+				export_str += direction + ': function () {_do_port_call.apply(this, ['+func+'.'+direction+',"'+direction+'",arguments[0],arguments[1],arguments[2]])},\n'
 			}
 
 			export_str += '};';

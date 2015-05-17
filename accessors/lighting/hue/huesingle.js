@@ -13,8 +13,8 @@ var bulb_layout;
 
 function* prefetch_bulb_layout () {
 	var url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights';
-	rt.log.debug('got here');
-	bulb_layout = JSON.parse(yield* rt.http.readURL(url));
+	rt.log.debug('Fetching bulb info from bridge');
+	bulb_layout = JSON.parse(yield* rt.http.get(url));
 	rt.log.debug(bulb_layout);
 }
 
