@@ -9,7 +9,7 @@ var gatd_conn;
 
 function init() {
   // Create a single output observe port to publish data from the queue to.
-  create_port('observable', 'Data');
+  create_port('Data');
 }
 
 Data.observe = function* (enable) {

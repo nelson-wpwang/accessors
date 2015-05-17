@@ -37,32 +37,33 @@ function* set_bulb_parameter (params) {
 
 function* init () {
 	provide_interface('/lighting/light', {
-			'/lighting/light.Power': power,
+			'/lighting/light.Power': Power,
 			});
 	provide_interface('/lighting/hue', {
-			'/lighting/rgb.Color': color,
-			'/lighting/brightness.Brightness': brightness,
+			'/lighting/rgb.Color': Color,
+			'/lighting/brightness.Brightness': Brightness,
 			});
 
-	create_port('input', 'PCB');
+	create_port('PCB', {type: 'object'});
 
 	rt.log.debug("Accessor::hue_single init before prefetch");
 	yield* prefetch_bulb_layout();
 	rt.log.debug("Accessor::hue_single init after prefetch (end of init)");
 }
 
-function* power (on) {
+Power.input = function* (on) {
 	yield* set_bulb_parameter({'on': on});
 }
 
-function* color (hex_color) {
+Color.input = function* (hex_color) {
 	var hsv = rt.color.hex_to_hsv(hex_color);
 	params = {'hue': Math.round(hsv.h*182.04),
 	          'sat': Math.round(hsv.s*255),
 	          'bri': Math.round(hsv.v*255)}
 	yield* set_bulb_parameter(params);
 }
-function* brightness (brightness) {
+
+Brightness.input = function* (brightness) {
 	yield* set_bulb_parameter({'bri': parseInt(brightness)});
 }
 
@@ -73,7 +74,7 @@ function* brightness (brightness) {
 //   Color: 'cc5400',
 //   Brightness: 120
 // }
-function* PCB (pcb) {
+PCB.input = function* (pcb) {
 	var p = pcb.Power;
 	var c = pcb.Color;
 	var hsv = rt.color.hex_to_hsv(c);

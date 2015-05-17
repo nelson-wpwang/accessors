@@ -45,7 +45,7 @@ function BulbName (name) {
 	OtherHue.set(name);
 	yield* OtherHue.BulbName(name);
 
-	if (BradBradPatHueHue.get('Power') && OtherHue.get('Power')) {
+	if (BradPatHue.get('Power') && OtherHue.get('Power')) {
 		set('Power', true);
 	}
 

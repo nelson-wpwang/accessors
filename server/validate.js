@@ -221,7 +221,7 @@ function checkNewPortUnits(port) {
 function checkNewPortParameters(port, pnode) {
   var prop, idx;
   var options, option, opt_idx;
-  var legal_port_types = ["button", "bool", "string", "numeric", "integer", "select", "color"];
+  var legal_port_types = ["button", "bool", "string", "numeric", "integer", "select", "color", "object"];
 
   for (idx in pnode) {
     if (pnode.hasOwnProperty(idx)) {
@@ -378,30 +378,21 @@ var port_list = [];
 
 function checkNewPorts(node) {
   if (node.callee.name === 'create_port') {
-    var directionNode = node.arguments[0];
-    var nameNode = node.arguments[1];
-    var parametersNode = node.arguments[2];
-
-    var legal_directions = ["input", "output", "inout", "observable"];
-    if (directionNode.type !== 'Literal') {
-      throw "First argument to 'create_port' must be a fixed string";
-    }
-    if (!_.contains(legal_directions, directionNode.value)) {
-      throw "First argument to 'create_port' must be one of " + legal_directions;
-    }
+    var nameNode = node.arguments[0];
+    var parametersNode = node.arguments[1];
 
     var legal_port_regex = /^[A-Za-z]\w*$/;
     if (nameNode.type !== 'Literal') {
-      throw "Second argument to 'create_port' must be a fixed string";
+      throw "First argument to 'create_port' must be a fixed string";
     }
     if (!legal_port_regex.test(nameNode.value)) {
       throw "Port name " + nameNode.value + " is not a legal port name";
     }
 
     var port = {
-      direction: directionNode.value,
       name: nameNode.value,
       function: nameNode.value,
+      directions: []
     };
 
     if (parametersNode !== undefined) {
@@ -418,6 +409,33 @@ function checkNewPorts(node) {
   }
 }
 
+// Looking for <PortName>.<direction> = function* () {
+function checkPortFunction(node) {
+  if (node.operator == '=') {
+    if (node.left.type == 'MemberExpression' && node.right.type == 'FunctionExpression') {
+      var portNode = node.left.object;
+      var directionNode = node.left.property;
+
+      if (portNode.type == 'Identifier') {
+
+        // Check if this is a port we know about
+        for (var i=0; i<port_list.length; i++) {
+          if (port_list[i].name == portNode.name) {
+
+            // Check that the direction is valid
+            if (['input', 'output', 'observe'].indexOf(directionNode.name) == -1) {
+              throw '"' + directionNode.name + '" is an invalid direction for port "' + portNode.name + '"';
+            }
+
+            port_list[i].directions.push(directionNode.name);
+          }
+        };
+      }
+
+    }
+  }
+}
+
 function processFunction(node) {
   console.log(node);
 }
@@ -426,6 +444,9 @@ function on_read(err, data) {
   if (err) { throw err; }
 
   var syntax;
+
+  // Clear ports
+  port_list = [];
 
   syntax = esprima.parse(data);
   //console.log(JSON.stringify(syntax, null, 1));
@@ -437,6 +458,10 @@ function on_read(err, data) {
       checkProvideInterface(node);
       checkGetParameter(node);
       checkNewPorts(node);
+
+    } else if (node.type == 'AssignmentExpression') {
+      // Looking for <PortName>.<direction> = function* ()
+      checkPortFunction(node);
     }
   });
 
@@ -491,7 +516,9 @@ function on_read(err, data) {
 //fs.readFile('webquery/StockTick.js', 'ascii', on_read);
 //fs.readFile('lockunlockdevice/door/rpidoor.js', 'ascii', on_read);
 //fs.readFile('onoffdevice/light/hue/threehues.js', 'ascii', on_read);
+fs.readFile('webquery/GatdOld.js', 'ascii', on_read);
+fs.readFile('lighting/hue/huesingle.js', 'ascii', on_read);
 
 //console.log("\n-----------------------------------------------");
 //console.log("Parsing " + process.argv[2]);
-fs.readFile(process.argv[2], 'ascii', on_read);
+// fs.readFile(process.argv[2], 'ascii', on_read);
