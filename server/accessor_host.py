@@ -600,6 +600,31 @@ def find_accessors (accessor_path):
 
 				log.info('Adding accessor {}'.format(view_path))
 
+
+
+################################################################################
+### /list functions
+################################################################################
+
+class ServeAccessorList (tornado.web.RequestHandler):
+	def set_default_headers(self):
+		self.set_header("Access-Control-Allow-Origin", "*")
+
+	def set_content_type (self):
+		self.set_header('Content-Type', 'application/json')
+
+	def get (self):
+
+		accessor_list = []
+		for accessor in accessors_db:
+			accessor_list.append(accessor['path'])
+
+		print(accessor_list)
+
+		self.set_content_type()
+		self.write(json.dumps(accessor_list))
+
+
 ################################################################################
 ### Jinja2 Support
 ###
@@ -746,6 +771,8 @@ accessor_server = tornado.web.Application(
 		# Accessor IR
 		(r'/accessor/(.*).json', ServeAccessorJSON),
 		(r'/accessor/(.*).xml', ServeAccessorXML),
+		# Accessor lists
+		(r'/list/all', ServeAccessorList),
 	],
 	static_path="static/",
 	template_path='jinja/',

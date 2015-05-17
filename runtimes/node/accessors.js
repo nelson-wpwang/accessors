@@ -27,6 +27,25 @@ module.exports = function (host_server) {
 
 	info('Using host server ' + host_server + ' for accessors.');
 
+
+	/* Return a list of all accessors
+	 */
+	function get_accessor_list (success_cb, error_cb) {
+		info('art::get_accessor_list');
+
+		var url = host_server + '/list/all';
+		request(url, function (err, response, body) {
+			if (!err && response.statusCode == 200) {
+				success_cb(JSON.parse(body));
+			} else {
+				error('Could not get list of accessors.')
+				error(err)
+				error('Response code: ' + response.statusCode)
+				error_cb('Could not retrieve accessor list from host server');
+			}
+		})
+	}
+
 	// Ask for an accessor from the accessor host server and return the
 	// Accessor Intermediate Representation object.
 	function get_accessor_ir (path, success_cb, error_cb) {
@@ -39,10 +58,10 @@ module.exports = function (host_server) {
 				var accessor = JSON.parse(body);
 				success_cb(accessor);
 			} else {
-				error('Accessor retreival failed.')
+				error('Accessor retrieval failed.')
 				error(err)
 				error('Response code: ' + response.statusCode)
-				error_cb('Could not retreive accessor from host server');
+				error_cb('Could not retrieve accessor from host server');
 			}
 		});
 	}
@@ -181,6 +200,7 @@ module.exports = function (host_server) {
 	}
 
 	return {
+		get_accessor_list: get_accessor_list,
 		create_accessor: create_accessor,
 		load_accessor: load_accessor,
 		get_accessor_ir: get_accessor_ir
