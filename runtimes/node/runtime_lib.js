@@ -40,23 +40,23 @@ rt.log.log = function _log_log (message) {
 }
 
 rt.log.debug = function _log_debug (message) {
-	rt.log.log("DEBUG: " + message);
+	rt.log.log("ACCESSOR DEBUG: " + message);
 }
 
 rt.log.info = function _log_info (message) {
-	rt.log.log(" INFO: " + message);
+	rt.log.log("ACCESSOR INFO: " + message);
 }
 
 rt.log.warn = function _log_warn (message) {
-	rt.log.log(" WARN: " + message);
+	rt.log.log("ACCESSOR WARN: " + message);
 }
 
 rt.log.error = function _log_error (message) {
-	rt.log.log("ERROR: " + message);
+	rt.log.log("ACCESSOR ERROR: " + message);
 }
 
 rt.log.critical = function _log_critical (message) {
-	rt.log.log(" CRIT: " + message);
+	rt.log.log("ACCESSOR CRIT: " + message);
 	throw new AccessorRuntimeException(message);
 }
 
