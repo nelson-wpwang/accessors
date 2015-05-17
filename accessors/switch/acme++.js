@@ -22,15 +22,15 @@ function* init () {
 	ip_addr = get_parameter('ip_addr');
 
 	// Initialize the relay power state
-	var response = yield* rt.coap.get('coap://['+ip_addr+']/onoffdevice/Power');
-	set('PowerControl', (response == 'true'));
+	// var response = yield* rt.coap.get('coap://['+ip_addr+']/onoff/Power');
+	// set('PowerControl', (response == 'true'));
 }
 
-function* PowerControl (state) {
-	yield* rt.coap.post('coap://['+ip_addr+']/onoffdevice/Power', (state)?'true':'false');
+PowerControl.input = function* (state) {
+	yield* rt.coap.post('coap://['+ip_addr+']/onoff/Power', (state)?'true':'false');
 
 }
 
-function* PowerMeter () {
+PowerMeter.output = function* () {
 	return yield* rt.coap.post('coap://['+ip_addr+']/powermeter/Power');
 }

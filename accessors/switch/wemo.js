@@ -56,7 +56,8 @@ function* get_power_state () {
 	// Put this back when the rt. library supports it
 	// var power_state = getXMLValue(response, 'BinaryState');
 
-	set('Power', (parseInt(power_state) == 1));
+	// set('Power', (parseInt(power_state) == 1));
+	return (parseInt(power_state) == 1);
 }
 
 function* set_power_state (state) {
@@ -80,13 +81,20 @@ function* init () {
 
 	url = get_parameter('wemo_url');
 
-	yield* find_wemo_port();
-	yield* get_power_state();
+	// yield* find_wemo_port();
+	// yield* get_power_state();
 }
 
-function* Power (state) {
+Power.input = function* (state) {
 	if (port == null) {
 		error('WeMo not found. Can not control the relay.');
 	}
 	yield* set_power_state(state);
+}
+
+Power.output = function* () {
+	if (port == null) {
+		error('WeMo not found. Can not read the relay.');
+	}
+	return yield* get_power_state();
 }

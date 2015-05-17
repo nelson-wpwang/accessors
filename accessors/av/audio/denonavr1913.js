@@ -29,41 +29,42 @@ function* init () {
   // PORTS
 
   // This receiver has a stored name. This port lets you see that name.
-  create_port('output', 'Name');
+  create_port('Name');
+
   // Select the input from a list specific to this receiver.
-  create_port('inout', 'Input', {
+  create_port('Input', {
     type: 'select',
     options: ['PC', 'Apple TV', 'Internet']
   });
   // Choose the audio mode.
-  create_port('inout', 'AudioMode', {
+  create_port('AudioMode', {
     type: 'select',
     options: ['Multi Channel Stereo', 'Stereo']
   });
 
   receiver_url = get_parameter('device_url') + '/goform/formMainZone_MainZoneXml.xml?_=1416011630214';
 
-  /* Get the XML from the receiver via the proxy running on the webserver */
-  receiver_xml = yield* rt.http.readURL(receiver_url);
+  // Get the XML from the receiver via the proxy running on the webserver
+  var receiver_xml = yield* rt.http.get(receiver_url);
 
-  name = receiver_get_key(receiver_xml, 'FriendlyName');
-  set('Name', name);
+  // name = receiver_get_key(receiver_xml, 'FriendlyName');
+  // set('Name', name);
 
-  power = receiver_get_key(receiver_xml, 'Power') == 'ON';
-  set('Power', power);
+  // power = receiver_get_key(receiver_xml, 'Power') == 'ON';
+  // set('Power', power);
 
-  volume = parseFloat(receiver_get_key(receiver_xml, 'MasterVolume')) + 80;
-  set('Volume', volume);
+  // volume = parseFloat(receiver_get_key(receiver_xml, 'MasterVolume')) + 80;
+  // set('Volume', volume);
 
-  input = receiver_get_key(receiver_xml, 'InputFuncSelect');
-  if (input == 'THERMAL') {
-  	set('Input', 0);
-  }
+  // input = receiver_get_key(receiver_xml, 'InputFuncSelect');
+  // if (input == 'THERMAL') {
+  // 	set('Input', 0);
+  // }
 
-  audio = receiver_get_key(receiver_xml, 'selectSurround');
-  if (audio == 'MULTI CH STEREO') {
-  	set('AudioMode', 0);
-  }
+  // audio = receiver_get_key(receiver_xml, 'selectSurround');
+  // if (audio == 'MULTI CH STEREO') {
+  // 	set('AudioMode', 0);
+  // }
 }
 
 function* Power (on) {
@@ -79,10 +80,21 @@ function* Volume (volume) {
 	rt.log.debug(volume);
 }
 
-function* Input (input_setting_choice) {
+Input.input = function* (input_setting_choice) {
+}
+
+Input.output = function* () {
+  return 'NotImplemented';
+}
+
+AudioMode.input = function* (audio_setting_choice) {
 
 }
 
-function* AudioMode (audio_setting_choice) {
-  
+AudioMode.output = function* () {
+  return 'NotImplemented';
+}
+
+Name.output = function* () {
+  return 'NotImplemented';
 }

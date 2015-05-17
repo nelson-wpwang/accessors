@@ -11,18 +11,22 @@
  */
 
 function* init () {
-	create_port('output', 'People', {
+	create_port('People', {
 		type: 'string',
 		description: 'The people in the room'
 	});
-	create_port('input', 'Update', {
+	create_port('Update', {
 		type: 'button'
 	});
 
-	yield* Update();
+	// yield* Update();
 }
 
-function* Update () {
+People.output = function* () {
+	return '';
+}
+
+Update.input = function* () {
 	var pid = get_parameter('profile_id');
 	var gatd = get_parameter('gatd_url');
 	var query = rt.encode.btoa(JSON.stringify({'location_str':get_parameter('location')}));
@@ -31,7 +35,7 @@ function* Update () {
 	data = JSON.parse(yield* rt.http.readURL(url));
 
 	if (data.length == 0) {
-		set('People', 'Nobody in the room');
+		// set('People', 'Nobody in the room');
 	} else {
 		people_list = data[0].person_list;
 		people_names = [];
@@ -42,9 +46,9 @@ function* Update () {
 			}
 		}
 		if (people_names.length == 0) {
-			set('People', 'Nobody in the room');
+			// set('People', 'Nobody in the room');
 		} else {
-			set('People', people_names.join(', '));
+			// set('People', people_names.join(', '));
 		}
 	}
 }

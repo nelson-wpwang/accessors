@@ -24,7 +24,7 @@ function* all (state) {
 }
 
 function init () {
-	create_port('input', 'Off', {
+	create_port('Off', {
 		type: "button"
 	});
 
@@ -35,10 +35,10 @@ function init () {
 	acc_sconce = load_dependency('/onoffdevice/wemo', {'wemo_url': get_parameter('wemo_url')});
 }
 
-function* Power (state) {
+Power.input = function* Power () {
 	yield* all(state);
 }
 
-function* Off () {
+Off.input = function* () {
 	yield* all(false);
 }

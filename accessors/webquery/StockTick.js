@@ -8,19 +8,19 @@
 // stock symbol from a Yahoo server.
 
 function init() {
-  create_port('input', 'StockSymbol', {
+  create_port('StockSymbol', {
     display_name: "Stock Symbol",
     default: "YHOO",
     description: "The stock symbol."
   });
-  create_port('output', 'Price', {
+  create_port('Price', {
     type: "numeric",
     units: "currency.usd",
     description: "The most recent stock price (bid)."
   });
 }
 
-function* StockSymbol(symbol) {
+StockSymbol.input = function* (symbol) {
   rt.log.debug("StockTick StockSymbol start");
   var stock = get('StockSymbol');
   var url = "http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.quotes%20where%20symbol%20in%20(%22"+ stock + "%22)%0A%09%09&env=http%3A%2F%2Fdatatables.org%2Falltables.env&format=json";
@@ -28,14 +28,14 @@ function* StockSymbol(symbol) {
   var json = JSON.parse(record);
   if (json.query.results == null) {
     rt.log.error("Stock query failed");
-    set('Price', '<ERR>');
+    // set('Price', '<ERR>');
   } else {
     var tick = parseFloat(json.query.results.quote.LastTradePriceOnly);
-    set('Price', tick);
+    // set('Price', tick);
   }
   rt.log.debug("StockTick StockSymbol end");
 }
 
-function* Price () {
-  
+Price.output = function* () {
+
 }

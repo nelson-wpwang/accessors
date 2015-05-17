@@ -22,13 +22,18 @@ function* init () {
 		'/lighting/light.Power': Power,
 	});
 	provide_interface('/lighting/hue', {
-		'/onoff.Power': Power,
 		'/lighting/rgb.Color': Color,
 		'/lighting/brightness.Brightness': Brightness
 	});
 
-	create_port('output', 'Bridge');
+	create_port('Bridge');
+}
 
+Power.input = function* (on) {
+	yield* on_each({'on': on});
+}
+
+Power.output = function* () {
 	var url = get_parameter('bridge_url') + '/api/' + get_parameter('username') + '/lights';
 	var data = JSON.parse(yield* rt.http.readURL(url));
 	var on = false;
@@ -42,17 +47,10 @@ function* init () {
 			on = true;
 		}
 	}
-	set('Power', on);
-
-	set('Bridge', get_parameter('bridge_url'));
+	return on;
 }
 
-function* Power (on) {
-	console.log('power');
-	yield* on_each({'on': on});
-}
-
-function* Color (hex_color) {
+Color.input = function* (hex_color) {
 	hsv = rt.color.hex_to_hsv(hex_color);
 	params = {'hue': Math.round(hsv.h*182.04),
 	          'sat': Math.round(hsv.s*255),
@@ -60,19 +58,10 @@ function* Color (hex_color) {
 	yield* on_each(params);
 }
 
-function* Brightness (brightness) {
+Brightness.input = function* (brightness) {
 	yield* on_each({'bri': parseInt(brightness)});
 }
 
-function* SetAll () {
-	var power = get('Power');
-	var brightness = get('Brightness');
-	var color = get('Color');
-	var output = {};
-
-	if (color.length) output.hue = parseInt(color);
-	if (brightness.length) output.bri = parseInt(brightness);
-	output.on = power;
-
-	yield* on_each(output);
+Bridge.output = function* () {
+	return get_parameter('bridge_url');
 }

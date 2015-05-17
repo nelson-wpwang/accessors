@@ -10,9 +10,9 @@
 
 
 function* init () {
-	create_port('input', 'Print');
+	create_port('Print');
 }
 
-function* Print (content) {
+Print.input = function* (content) {
 	rt.log.log(content);
 }

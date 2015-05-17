@@ -11,20 +11,26 @@
  */
 
 var socket;
+var msg;
+
+function rx_callback(message) {
+	msg = message;
+}
 
 function* init () {
-	create_port('input', 'Message');
-	create_port('output', 'Response');
+	create_port('Message');
+	create_port('Response');
 
 	socket = yield* rt.socket.socket('AF_INET', 'SOCK_STREAM');
 	socket.bind(rx_callback);
 	yield* socket.connect(['127.0.0.1', 22222]);
 }
 
-function* Message (content) {
+Message.input = function* (content) {
 	yield* socket.send(content);
 }
 
-function rx_callback(message) {
-	set('Response', message);
+Response.output = function* () {
+	return msg;
 }
+

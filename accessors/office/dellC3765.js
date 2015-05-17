@@ -10,12 +10,12 @@
  */
 
 function* init () {
-	create_port('output', 'Cyan');
-	create_port('output', 'Magenta');
-	create_port('output', 'Yellow');
-	create_port('output', 'Black');
-	create_port('output', 'Waste');
-	create_port('output', 'Tray1');
+	create_port('Cyan');
+	create_port('Magenta');
+	create_port('Yellow');
+	create_port('Black');
+	create_port('Waste');
+	create_port('Tray1');
 }
 
 function* get_status_page () {
@@ -46,42 +46,42 @@ function find_in_page (page, field) {
 	return page.substr(start_tag, end_tag-start_tag);
 }
 
-function* Cyan () {
+Cyan.output = function*  () {
 	var status_html = yield* get_status_page();
 	var status = find_in_page(status_html, 'Cyan Drum Cartridge');
 	rt.log.log(status);
 	return status;
 }
 
-function* Magenta () {
+Magenta.output = function* () {
 	var status_html = yield* get_status_page();
 	var status = find_in_page(status_html, 'Magenta Drum Cartridge');
 	rt.log.log(status);
 	return status;
 }
 
-function* Yellow () {
+Yellow.output = function* () {
 	var status_html = yield* get_status_page();
 	var status = find_in_page(status_html, 'Yellow Drum Cartridge');
 	rt.log.log(status);
 	return status;
 }
 
-function* Black () {
+Black.output = function* () {
 	var status_html = yield* get_status_page();
 	var status = find_in_page(status_html, 'Black Drum Cartridge');
 	rt.log.log(status);
 	return status;
 }
 
-function* Waste () {
+Waste.output = function* () {
 	var status_html = yield* get_status_page();
 	var status = find_in_page(status_html, 'Waste Toner Box');
 	rt.log.log(status);
 	return status;
 }
 
-function* Tray1 () {
+Tray1.output = function* () {
 	var status_html = yield* get_status_page();
 	var status = find_in_page(status_html, '35%>Output Tray');
 	rt.log.log(status);

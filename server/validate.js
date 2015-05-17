@@ -331,9 +331,10 @@ function checkNewPortParameters(port, pnode) {
     port.type = 'string';
   }
 
-  if ((port.type === 'button') && (port.direction !== 'input')) {
-    throw port.name + ": Port with type button must be an input port";
-  }
+  // TODO: put this check back after we know what port directions are implemented
+  // if ((port.type === 'button') && (port.direction !== 'input')) {
+  //   throw port.name + ": Port with type button must be an input port";
+  // }
   if ((port.type === 'select') && (!port.options)) {
     throw port.name + ": Port with type select must include options";
   }
@@ -516,9 +517,10 @@ function on_read(err, data) {
 //fs.readFile('webquery/StockTick.js', 'ascii', on_read);
 //fs.readFile('lockunlockdevice/door/rpidoor.js', 'ascii', on_read);
 //fs.readFile('onoffdevice/light/hue/threehues.js', 'ascii', on_read);
-fs.readFile('webquery/GatdOld.js', 'ascii', on_read);
-fs.readFile('lighting/hue/huesingle.js', 'ascii', on_read);
+// fs.readFile('webquery/GatdOld.js', 'ascii', on_read);
+// fs.readFile('lighting/hue/huesingle.js', 'ascii', on_read);
+// fs.readFile('switch/acme++.js', 'ascii', on_read);
 
 //console.log("\n-----------------------------------------------");
 //console.log("Parsing " + process.argv[2]);
-// fs.readFile(process.argv[2], 'ascii', on_read);
+fs.readFile(process.argv[2], 'ascii', on_read);

@@ -15,7 +15,7 @@ function* init () {
 	});
 }
 
-function* Power (state) {
+Power.input = function* (state) {
 	var post_url = get_parameter('post_url');
 	var location = get_parameter('location_str');
 	var data = {};

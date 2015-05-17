@@ -36,7 +36,7 @@ function* init () {
   // PORTS
 
   // Select the video source for the projector
-  create_port('input', 'Input', {
+  create_port('Input', {
     type: 'select',
     options: ['VGA', 'HDMI 1', 'HDMI 2', 'S-Video', 'Composite']
   });
@@ -46,15 +46,15 @@ function* init () {
   /* Get the XML status from the receiver */
   var xml = yield* rt.http.request(url, 'GET', null, '', 3000);
 
-  val = getXMLValue(xml, 'pjPowermd');
-  if ((val == POWER_STATES['off']) || (val == POWER_STATES['turning_off'])) {
-    set('Power', false);
-  } else {
-    set('Power', true);
-  }
+  // val = getXMLValue(xml, 'pjPowermd');
+  // if ((val == POWER_STATES['off']) || (val == POWER_STATES['turning_off'])) {
+  //   set('Power', false);
+  // } else {
+  //   set('Power', true);
+  // }
 }
 
-function* Power (power_setting) {
+Power.input = function* (power_setting) {
   var url;
 
   if (power_setting) {
@@ -65,7 +65,7 @@ function* Power (power_setting) {
   yield* rt.http.request(url, 'GET', null, '', 3000);
 }
 
-function* Input (input_setting_choice) {
+Input.input = function* (input_setting_choice) {
   if (SOURCES[input_setting_choice] === undefined) return;
 
   var url = get_parameter('device_url') + '/dpjset.cgi?PJ_SRCINPUT=' + SOURCES[input_setting_choice];

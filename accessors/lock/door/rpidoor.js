@@ -16,21 +16,21 @@ function init () {
 		'/lock.Lock': Lock
 	});
 
-	set_to_locked();
+	// set_to_locked();
 }
 
-function set_to_locked () {
-	set('Lock', true);
-}
+// function set_to_locked () {
+// 	set('Lock', true);
+// }
 
-function* Lock (lock) {
+Lock.input = function* (lock) {
 	if (lock) return;
 
 	try {
 		var s = yield* rt.socket.socket('AF_INET6', 'SOCK_DGRAM');
 	} catch (err) {
 		rt.log.error("Failed to connect to socket: " + err);
-		set_to_locked();
+		// set_to_locked();
 		return;
 	}
 	var host = get_parameter('host', '::1');
@@ -40,10 +40,10 @@ function* Lock (lock) {
 		yield* s.sendto(pass, [host, port]);
 	} catch (err) {
 		rt.log.error("Failed to send open pacekt: " + err);
-		set_to_locked();
+		// set_to_locked();
 		return;
 	}
-	set('Lock', false);
+	// set('Lock', false);
 
 	rt.time.run_later(2000, set_to_locked);
 }

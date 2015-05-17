@@ -11,19 +11,24 @@
  */
 
 var socket;
+var msg;
+
+function rx_callback(message) {
+	msg = message;
+}
 
 function* init () {
-	create_port('input', 'Message');
-	create_port('output', 'Response');
+	create_port('Message');
+	create_port('Response');
 
 	socket = yield* rt.socket.socket('AF_INET', 'SOCK_DGRAM');
 	socket.bind(rx_callback);
 }
 
-function* Message (content) {
+Message.input = function* (content) {
 	yield* socket.sendto(content, ['localhost', 11111]);
 }
 
-function rx_callback(message) {
-	set('Response', message);
+Response.output = function* () {
+	return msg;
 }

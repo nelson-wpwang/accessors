@@ -454,7 +454,7 @@ def find_accessors (accessor_path):
 								line = '* ' + line[3:]
 								in_comment = True
 							else:
-								log.debug("non-comment line: >>%s<<", line)
+								# log.debug("non-comment line: >>%s<<", line)
 								break
 						else:
 							if line == '*':
@@ -520,7 +520,10 @@ def find_accessors (accessor_path):
 					log.debug('-'*50)
 					log.error(e.stderr.decode("unicode_escape"))
 					raise
-				analyzed = json.loads(analyzed.stdout.decode('utf-8'))
+				raw_analyzed = analyzed.stdout.decode('utf-8')
+				print(len(raw_analyzed))
+				print(raw_analyzed)
+				analyzed = json.loads(raw_analyzed)
 
 				meta.update(analyzed)
 
