@@ -29,24 +29,26 @@ function Keyway (parameters, finished) {
 		}
 	}
 
-	this.about = {
-		description:
-"Takes in an object and outputs the value of the specified key.",
-		ports: {
-			inputs: {
-				number: 1,
-				ports: [{type: 'object'}]
-			},
-			outputs: {
-				number: 1
-			}
-		},
-		parameters: {
-			key: 'Which key\'s value to extract from the object.'
-		}
-	}
-
 	finished();
 }
 
-module.exports = Keyway;
+var about = {
+	name: 'Keyway',
+	description:
+"Takes in an object and outputs the value of the specified key.",
+	ports: {
+		inputs: {
+			number: 1,
+			ports: [{type: 'object'}]
+		},
+		outputs: {
+			number: 1
+		}
+	},
+	parameters: {
+		key: 'Which key\'s value to extract from the object.'
+	}
+};
+
+module.exports.block = Keyway;
+module.exports.about = about;

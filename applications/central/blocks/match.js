@@ -1,5 +1,6 @@
 var _ = require('lodash');
 
+var uuid    = require('node-uuid');
 /* Create a MATCH block.
  *
  * This takes in a single input, compares the input to its match table,
@@ -14,6 +15,8 @@ var _ = require('lodash');
  */
 function Match (parameters, finished) {
 
+	var me = uuid.v4();
+
 	// var outputs = new Array(parameters.matches.length);
 	var outputs = {};
 	this.outputs = outputs;
@@ -23,7 +26,8 @@ function Match (parameters, finished) {
 
 	inputs[0] =
 	function (data) {
-		console.log('MATCH: trying to match ' + data);
+		console.log('MATCH: ('+me+') trying to match ' + data);
+		console.log(parameters);
 
 		_.forEach(parameters.matches, function (match_str, n) {
 			if (match_str == data) {
@@ -62,7 +66,7 @@ var about = {
 			type: 'string_array'
 		}
 	}
-}
+};
 
 module.exports.block = Match;
 module.exports.about = about;

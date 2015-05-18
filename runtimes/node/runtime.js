@@ -19,7 +19,7 @@ var _observe_listeners = {};
 
 // Function that wraps calling a port. This sets up all of the promises/futures
 // code so that "await" works.
-_do_port_call=function (port, direction, value, done_fn, error_fn) {
+var _do_port_call = function  (port, port_name, direction, value, done_fn, error_fn) {
 	var r;
 
 	// in the OUTPUT case, there is no value.
@@ -31,39 +31,41 @@ _do_port_call=function (port, direction, value, done_fn, error_fn) {
 
 	if (typeof done_fn === 'undefined') {
 		done_fn = function () {
-			warn("Port call of " + port + " finished successfully with no callback");
+			warn("Port call of " + port_name + " finished successfully with no callback");
 		}
 	}
 	if (typeof error_fn === 'undefined') {
 		error_fn = function () {
-			warn("Port call of " + port + " had error with no error callback");
+			warn("Port call of " + port_name + " had error with no error callback");
 		}
 	}
 
-	info("before port call of " + port + "(" + value + ")");
+	info("before port call of " + port_name + "(" + value + ")");
 
 	// Need to handle observe specially.
 	// With observe, value is a callback that we have to remember.
 	if (direction == 'observe' && typeof value === 'function') {
-		if (!(port in _observe_listeners)) {
-			_observe_listeners[port] = [];
+		info('Adding observe callback for ' + port_name);
+		if (!(port_name in _observe_listeners)) {
+			_observe_listeners[port_name] = [];
 		}
 		// Check that this callback hasn't already been registered
 		var already_added = false;
-		for (var i=0; i<_observe_listeners.length; i++) {
-			if (_observe_listeners[i] == value) {
+		for (var i=0; i<_observe_listeners[port_name].length; i++) {
+			if (_observe_listeners[port_name][i] == value) {
+				info('Function for port ' + port_name + ' already added.');
 				already_added = true;
 				break;
 			}
 		}
 		if (!already_added) {
 			// Add the callback to the listener list
-			_observe_listeners.push(value);
+			_observe_listeners[port_name].push(value);
 		}
 
 		// Now we only need to call the actual accessor if we haven't set
 		// up an observe callback before.
-		if (_observe_listeners.length > 1) {
+		if (_observe_listeners[port_name].length > 1) {
 			done_fn();
 			return;
 		} else {
@@ -93,8 +95,6 @@ _do_port_call=function (port, direction, value, done_fn, error_fn) {
 		}
 	});
 }
-module.exports['_do_port_call'] = _do_port_call;
-
 
 // These function are NOOPs and are only used by the Host Server to understand
 // properties of the accessor/device, and do not have any meaning when
@@ -122,8 +122,8 @@ var send = function (port_name, val) {
 	info("SEND: " + port_name + " <= " + val);
 
 	if (port_name in _observe_listeners) {
-		for (var i=0; i<_observe_listeners.length; i++) {
-			_observe_listeners[i](val);
+		for (var i=0; i<_observe_listeners[port_name].length; i++) {
+			_observe_listeners[port_name][i](val);
 		}
 	}
 }

@@ -5,6 +5,7 @@ var request     = require('request');
 var fs          = require('fs');
 var semver      = require('semver');
 var debug       = require('debug');
+var vm          = require('vm');
 
 // We use generators which require a newer version of node. We recommend that
 // you use io.js as it runs a newer version of the V8 engine and is generally
@@ -129,6 +130,7 @@ module.exports = function (host_server) {
 			throw "This accessor won't work";
 		}
 		info("art::create_accessor before requireFromString " + accessor_ir.name);
+
 		var device = requireFromString(module_as_string);
 
 		// Provide access to the JSON metadata via _meta
@@ -161,7 +163,7 @@ module.exports = function (host_server) {
 
 		for (var i=0; i<accessor.ports.length; i++) {
 			var port = accessor.ports[i];
-			port_obj_str += port.function + ' = {};';
+			port_obj_str += 'var ' + port.function + ' = {};';
 		}
 
 		return port_obj_str;
@@ -169,8 +171,7 @@ module.exports = function (host_server) {
 
 	function get_exports (accessor) {
 		// need to keep a list of module exports for toplevel to call
-		// var export_str = "module.exports = {};\n";
-		var export_str = '';
+		var export_str = "module.exports = {};\n";
 
 		// Need to add functions for each port of the accessor to the exports
 		// listing
@@ -185,7 +186,7 @@ module.exports = function (host_server) {
 			// sense for the particular device
 			for (var j=0; j<port.directions.length; j++) {
 				var direction = port.directions[j];
-				export_str += direction + ': function () {_do_port_call.apply(this, ['+func+'.'+direction+',"'+direction+'",arguments[0],arguments[1],arguments[2]])},\n'
+				export_str += direction + ': function () {_do_port_call.apply(this, ['+func+'.'+direction+',"'+name+'","'+direction+'",arguments[0],arguments[1],arguments[2]])},\n'
 			}
 
 			export_str += '};';
@@ -193,7 +194,7 @@ module.exports = function (host_server) {
 
 		export_str += '\nmodule.exports.init = function (succ_cb, err_cb) {\n';
 		export_str += '  rt.log.debug("About to init ' + accessor.name + '");\n';
-		export_str += '  _do_port_call(init, null, null, succ_cb, err_cb);\n';
+		export_str += '  _do_port_call(init, "init", null, null, succ_cb, err_cb);\n';
 		export_str += '};\n';
 
 		return export_str;

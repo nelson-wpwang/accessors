@@ -29,26 +29,27 @@ function Threshold (parameters, finished) {
 		}
 	}
 
-	this.about = {
-		description:
-"Check if the incoming value is above a predetermined threshold. Outputs true \
-if it is, false otherwise.",
-		ports: {
-			inputs: {
-				number: 1,
-				ports: [{type: 'number'}]
-			},
-			outputs: {
-				number: 1,
-				ports: [{type: 'boolean'}]
-			}
-		},
-		parameters: {
-			threshold: 'The value to compare against.'
-		}
-	}
-
 	finished();
 }
 
-module.exports = Threshold;
+var about = {
+	description:
+"Check if the incoming value is above a predetermined threshold. Outputs true \
+if it is, false otherwise.",
+	ports: {
+		inputs: {
+			number: 1,
+			ports: [{type: 'number'}]
+		},
+		outputs: {
+			number: 1,
+			ports: [{type: 'boolean'}]
+		}
+	},
+	parameters: {
+		threshold: 'The value to compare against.'
+	}
+};
+
+module.exports.block = Threshold;
+module.exports.about = about;

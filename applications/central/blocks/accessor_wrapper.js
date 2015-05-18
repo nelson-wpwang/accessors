@@ -1,10 +1,15 @@
 
-var _ = require('lodash');
+var debug   = require('debug');
 
-var config = require('../config');
+var _       = require('lodash');
 
-var accessors = require('accessors.io')(config.accessors.host_server);
+var config  = require('../config');
 
+// var accessors = require('accessors.io')(config.accessors.host_server);
+var accessors = require('accessors')(config.accessors.host_server);
+
+info = debug('accessorsCentral:info');
+error = debug('accessorsCentral:error');
 
 function AccessorWrapper (path, parameters, finished) {
 
@@ -22,45 +27,49 @@ function AccessorWrapper (path, parameters, finished) {
 
 		// Iterate all ports
 		_.forEach(acc._meta.ports, function (port, index) {
-			if (port.direction == 'input' || port.direction == 'inout') {
+			if (port.directions.indexOf('input') > -1) {
 				// Map each input port to the correct function inside of the
 				// accessor.
 				inputs[port.function] = function (input) {
-					acc[port.function](input);
+					acc[port.function].input(input);
 				};
 			}
 		});
 
 		// Let the setup know that we are done with initing the accessor
 		finished();
+	},
+	function (error) {
+		error('Could not create accessor ' + path);
+		error(error);
 	});
 
 	// Setup the observable ports in the run function so that they don't
 	// send packets too early
-	this.run = function () {
+	var run = function () {
 		_.forEach(accessor._meta.ports, function (port, index) {
-			if (port.direction == 'observable') {
-				// Create intermediate callback function to call the correct
-				// output callback function.
-				accessor[port.function](function (data) {
-					console.log('OBSERVED: ');
-					console.log(data);
+			if (port.directions.indexOf('observe') > -1) {
+				accessor[port.function].observe(function (data) {
+					info('OBSERVED: ');
+					info(data);
 					outputs[port.function](data);
 				});
 			}
 		});
 	}
-
-	this.about = {
-		description: 'Include an accessor',
-		inputs: {
-			number: 'variable'
-		},
-		outputs: {
-			number: 'variable'
-		},
-		parameters: 'Passed to the accessor'
-	}
+	this.run = run;
 }
 
-module.exports = AccessorWrapper;
+var about = {
+	description: 'Include an accessor',
+	inputs: {
+		number: 'variable'
+	},
+	outputs: {
+		number: 'variable'
+	},
+	parameters: 'Passed to the accessor'
+};
+
+module.exports.block = AccessorWrapper;
+module.exports.about = about;

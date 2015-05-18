@@ -24,23 +24,24 @@ function Constant (parameters, finished) {
 		outputs[0](parameters.constant);
 	}
 
-	this.about = {
-		description:
-"When anything is received on the input, output a constant value.",
-		ports: {
-			inputs: {
-				number: 1
-			},
-			outputs: {
-				number: 1
-			}
-		},
-		parameters: {
-			constant: 'The value/object to output.'
-		}
-	}
-
 	finished();
 }
 
-module.exports = Constant;
+var about = {
+	description:
+"When anything is received on the input, output a constant value.",
+	ports: {
+		inputs: {
+			number: 1
+		},
+		outputs: {
+			number: 1
+		}
+	},
+	parameters: {
+		constant: 'The value/object to output.'
+	}
+};
+
+module.exports.block = Constant;
+module.exports.about = about;

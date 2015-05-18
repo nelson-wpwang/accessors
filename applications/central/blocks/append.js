@@ -38,24 +38,25 @@ function Append (parameters, finished) {
 		outputs[0](out);
 	}
 
-	this.about = {
-		description:
-"Add what is in parameters.append to the incoming data packet and push the \
-packet to the output.",
-		ports: {
-			inputs: {
-				number: 1
-			},
-			outputs: {
-				number: 1
-			}
-		},
-		parameters: {
-			append: 'What to add to the data packet.'
-		}
-	}
-
 	finished();
 }
 
-module.exports = Append;
+var about = {
+	description:
+"Add what is in parameters.append to the incoming data packet and push the \
+packet to the output.",
+	ports: {
+		inputs: {
+			number: 1
+		},
+		outputs: {
+			number: 1
+		}
+	},
+	parameters: {
+		append: 'What to add to the data packet.'
+	}
+};
+
+module.exports.block = Append;
+module.exports.about = about;

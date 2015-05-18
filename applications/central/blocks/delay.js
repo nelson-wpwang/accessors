@@ -53,24 +53,25 @@ function Delay (parameters, finished) {
 		}
 	}
 
-	this.about = {
-		description:
-"Delay outputting a packet for a specified time. The incoming packet must be \
-an object that includes a key 'delay' that specifies how long to delay the \
-packet in milliseconds. A delay of -1 cancels the delay block.",
-		ports: {
-			inputs: {
-				number: 1,
-				ports: [{type: 'object'}]
-			},
-			outputs: {
-				number: 1,
-				ports: [{type: 'object'}]
-			}
-		}
-	}
-
 	finished();
 }
 
-module.exports = Delay;
+var about = {
+	description:
+"Delay outputting a packet for a specified time. The incoming packet must be \
+an object that includes a key 'delay' that specifies how long to delay the \
+packet in milliseconds. A delay of -1 cancels the delay block.",
+	ports: {
+		inputs: {
+			number: 1,
+			ports: [{type: 'object'}]
+		},
+		outputs: {
+			number: 1,
+			ports: [{type: 'object'}]
+		}
+	}
+};
+
+module.exports.block = Delay;
+module.exports.about = about;

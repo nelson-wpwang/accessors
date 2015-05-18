@@ -26,21 +26,22 @@ function Not (parameters, finished) {
 		}
 	};
 
-	this.about = {
-		description: 'Converts the input to a bool and inverts it.',
-		ports: {
-			inputs: {
-				number: 1
-			},
-			outputs: {
-				number: 1,
-				ports: [{type: 'boolean'}]
-			}
-		}
-	}
-
 	finished();
 
 }
 
-module.exports = Not;
+var about = {
+	description: 'Converts the input to a bool and inverts it.',
+	ports: {
+		inputs: {
+			number: 1
+		},
+		outputs: {
+			number: 1,
+			ports: [{type: 'boolean'}]
+		}
+	}
+};
+
+module.exports.block = Not;
+module.exports.about = about;
