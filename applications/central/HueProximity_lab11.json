@@ -1,0 +1,102 @@
+{
+	"applications": [
+		{
+			"name": "HueProximity",
+			"parameters": {
+				"MatchEvents": {
+					"matches": [
+						"bradjc in location",
+						"bradjc not in location"
+					]
+				},
+				"Hue": {
+					"bulb_name": "Brad"
+				}
+			}
+		},
+		{
+			"name": "HueProximity",
+			"parameters": {
+				"MatchEvents": {
+					"matches": [
+						"ppannuto in location",
+						"ppannuto not in location"
+					]
+				},
+				"Hue": {
+					"bulb_name": "Pat"
+				}
+			}
+		},
+		{
+			"name": "HueProximity",
+			"parameters": {
+				"MatchEvents": {
+					"matches": [
+						"brghena in location",
+						"brghena not in location"
+					]
+				},
+				"Hue": {
+					"bulb_name": "Branden"
+				}
+			}
+		},
+		{
+			"name": "HueProximity",
+			"parameters": {
+				"MatchEvents": {
+					"matches": [
+						"adkinsjd in location",
+						"adkinsjd not in location"
+					]
+				},
+				"Hue": {
+					"bulb_name": "Josh"
+				}
+			}
+		},
+		{
+			"name": "HueProximity",
+			"parameters": {
+				"MatchEvents": {
+					"matches": [
+						"samkuo in location",
+						"samkuo not in location"
+					]
+				},
+				"Hue": {
+					"bulb_name": "Ye-Sheng"
+				}
+			}
+		},
+		{
+			"name": "HueProximity",
+			"parameters": {
+				"MatchEvents": {
+					"matches": [
+						"nklugman in location",
+						"nklugman not in location"
+					]
+				},
+				"Hue": {
+					"bulb_name": "Noah"
+				}
+			}
+		},
+		{
+			"name": "HueProximity",
+			"parameters": {
+				"MatchEvents": {
+					"matches": [
+						"sdebruin in location",
+						"sdebruin not in location"
+					]
+				},
+				"Hue": {
+					"bulb_name": "Sam"
+				}
+			}
+		}
+	]
+}
