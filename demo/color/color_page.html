@@ -1,0 +1,33 @@
+<html>
+<head>
+<title>Color Led!</title>
+</head>
+
+<body id="b">
+  <div id="display"></div>
+
+<script type="text/javascript">
+
+var w;
+
+function init () {
+	w = websocket = new WebSocket('ws://memristor-v1.eecs.umich.edu:8765/');
+	w.onopen = function (evt) {
+		console.log('opened');
+	}
+	w.onmessage = function (evt) {
+		console.log(evt.data);
+
+		document.getElementById("b").style.backgroundColor = evt.data;
+	}
+}
+
+
+init();
+
+</script>
+
+</body
+</html>
+
+
