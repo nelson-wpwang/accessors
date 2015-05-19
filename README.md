@@ -172,12 +172,10 @@ components.
 
 ### Folder Structure Overview
 
-- `/accessors`: This holds the accessor `.js` files.
 - `/android`: Android apps. Not extensively used.
 - `/applications`: Various applications that use accessors.
 - `/groups`: Organized collections of devices and the accessors that each
 device uses. This may be deprecated in the future.
-- `/interfaces`: Collections of ports that accessors may expose.
 - `/runtimes`: Execution environments in different languages for accessors.
 - `/server`: The Accessor Host Server that provides the full JSON/XML versions
 of accessors.
