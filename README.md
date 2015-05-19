@@ -36,6 +36,54 @@ and `wrapup()`, that run when an accessor is instantiated and destroyed
 respectively. Input (and inout) ports define port functions that are called
 whenever their input value changes. -->
 
+
+Quick Start
+-----------
+
+1. Run the Accessor Host Server. This is a webserver that parses the raw
+JavaScript accessors, converts them to the full JSON representation, and serves
+them to any interested clients.
+
+        cd server
+        ./accessor_host.py
+
+2. Run the RPC example application. This instantiates an Accessor Runtime (in
+Node.js) where accessors execute. It then makes the ports accessible via a RESTful
+web API.
+
+        cd applications/node-rpc
+        ./rpc.js
+
+3. Run a front-end to the RPC application. This provides a web interface for
+interacting with the accessors running in the RPC server.
+
+        cd applications/rpc-frontend
+        ./server.py
+
+4. Go to [http://localhost:5000](http://localhost:5000). You can now interact
+with the accessors that were loaded in the RPC runtime.
+
+
+
+Getting Started
+===============
+
+There's a lot going on in this accessors repository and a few different
+components.
+
+### Folder Structure Overview
+
+- `/android`: Android apps. Not extensively used.
+- `/applications`: Various applications that use accessors.
+- `/groups`: Organized collections of devices and the accessors that each
+device uses. This may be deprecated in the future.
+- `/runtimes`: Execution environments in different languages for accessors.
+- `/server`: The Accessor Host Server that provides the full JSON/XML versions
+of accessors.
+- `/tests`: Test code, not used currently.
+
+
+
 Accessor Runtime
 ----------------
 
@@ -161,52 +209,6 @@ disincentivized to use our API. To remedy this, we allow accessors to explicitly
 a roadmap towards new interfaces. If a critical mass of devices create the same
 port, it motivates the standardization of a new interface, while permitting for
 the immediate uptake of new features.
-
-
-
-Getting Started
----------------
-
-There's a lot going on in this accessors repository and a few different
-components.
-
-### Folder Structure Overview
-
-- `/android`: Android apps. Not extensively used.
-- `/applications`: Various applications that use accessors.
-- `/groups`: Organized collections of devices and the accessors that each
-device uses. This may be deprecated in the future.
-- `/runtimes`: Execution environments in different languages for accessors.
-- `/server`: The Accessor Host Server that provides the full JSON/XML versions
-of accessors.
-- `/tests`: Test code, not used currently.
-
-
-### Running a web interface for accessors
-
-
-1. Run the Accessor Host Server. This is a webserver that parses the raw
-JavaScript accessors, converts them to the full JSON representation, and serves
-them to any interested clients.
-
-        cd server
-        ./accessor_host.py
-
-2. Run the RPC example application. This instantiates an Accessor Runtime (in
-Node.js) where accessors execute. It then makes the ports accessible via a RESTful
-web API.
-
-        cd applications/node-rpc
-        ./rpc.js
-
-3. Run a front-end to the RPC application. This provides a web interface for
-interacting with the accessors running in the RPC server.
-
-        cd applications/rpc-frontend
-        ./server.py
-
-4. Go to [http://localhost:5000](http://localhost:5000). You can now interact
-with the accessors that were loaded in the RPC runtime.
 
 
 
