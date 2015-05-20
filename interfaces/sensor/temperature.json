@@ -4,7 +4,7 @@
 			"display_name": "Temperature",
 			"type": "numeric",
 			"unit": "degrees_celcius",
-			"direction": "output"
+			"directions": ["output", "observe"]
 		}
 	}
 }
