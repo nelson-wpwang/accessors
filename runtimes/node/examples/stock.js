@@ -16,6 +16,6 @@ accessors.create_accessor('/webquery/StockTick', {}, function (accessor) {
 },
 // Handle any errors that may occur when creating the accessor.
 function (error) {
-	console.log('Error loading accessor.')l
+	console.log('Error loading accessor.');
 	console.log(error);
 });
