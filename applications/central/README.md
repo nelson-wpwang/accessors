@@ -44,5 +44,44 @@ runtime. To do this:
 Running A Blocks App
 --------------------
 
-The run script should get things started. For instance, to run
+The run script should get things started. For instance, to run the stock
+example:
+
+    ./run.sh stocks
+
+You can also override the parameters with a parameters file. `parameters.json`:
+
+    {
+    	"<block uuid>": {
+    		"<parameter name>": "<parameter value>"
+    	}
+    }
+
+
+Designing Blocks Apps by Hand
+-----------------------------
+
+To do this you specify, in JSON, a list of blocks and connections.
+
+```json
+{
+	"blocks": [
+		{
+			"type": "<block type>",
+			"parameters": {
+				"<parameter name>": "<parameter value>"
+			},
+			"uuid": "<block uuid>"
+		},
+		...
+	],
+	"connections": [
+		{
+			"src": "<block uuid>.<port name>",
+			"dst": "<block uuid>.<port name>"
+		},
+		...
+	]
+}
+```
 
