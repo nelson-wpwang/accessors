@@ -521,6 +521,7 @@ def find_accessors (accessor_path):
 								'name': author,
 								'email': email,
 								},
+							'_path': path,
 							}
 					# http://stackoverflow.com/q/3303312
 					meta['safe_name'] = re.sub('\W|^(?=\d)', '_', meta['name'])
@@ -603,14 +604,14 @@ def find_accessors (accessor_path):
 							if req not in accessor['normalized_interface_ports']:
 								log.error("Interface %s requires %s",
 										claim['interface'], req)
-								log.error("But %s only implements %s",
-										accessor['name'], accessor['normalized_interface_ports'])
+								log.error("But %s from %s only implements %s",
+										accessor['name'], accessor['_path'], accessor['normalized_interface_ports'])
 								complete_interface = False
 							if iface[req]['directions'] != name_map[req]['directions']:
 								log.error("Interface %s port %s requires %s",
 										iface, req, iface[req]['directions'])
-								log.error("But %s only implements %s",
-										accessor['name'], name_map[req]['directions'])
+								log.error("But %s from %s only implements %s",
+										accessor['name'], accessor['_path'], name_map[req]['directions'])
 								complete_interface = False
 							accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
 					if not complete_interface:
