@@ -256,7 +256,8 @@ rt.coap.observe = function coapObserver(url, callback) {
 	params.observe = true;
 	var ogm = coap.request(params);
 	ogm.on('response', function (resp) {
-		res.pipe(through2(function (chunk, enc, t2callback) {
+		resp.pipe(through2(function (chunk, enc, t2callback) {
+			info('CoAP obSERve cb');
 			callback(chunk.toString('utf-8'));
 			t2callback();
 		}));

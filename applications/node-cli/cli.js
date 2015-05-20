@@ -5,10 +5,8 @@ var readline = require('readline');
 var _ = require('lodash');
 var async = require('async');
 
-var config = require('./config');
-
-var accessors = require('accessors')(config.accessors.host_server);
-
+// var accessors = require('accessors.io')('http://accessors.io');
+var accessors = require('accessors.io');
 
 var rl = readline.createInterface({
 	input: process.stdin,
@@ -79,7 +77,7 @@ accessors.get_accessor_list(function (accessor_list) {
 								interact();
 							} else {
 								var port = accessor_ir.ports[port_index];
-								var question = '[';
+								var question = 'choose a direction: [';
 								if (port.directions.indexOf('output') > -1) {
 									question += 'get, ';
 								}
