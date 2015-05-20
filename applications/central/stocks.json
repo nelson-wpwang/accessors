@@ -1,0 +1,38 @@
+{
+	"blocks": [
+		{
+			"type": "Initialize",
+			"uuid": "init"
+		},
+		{
+			"type": "Constant",
+			"parameters": {
+				"constant": "MSFT"
+			},
+			"uuid": "constant_stocksym"
+		},
+		{
+			"type": "accessor",
+			"path": "/webquery/StockTick",
+			"uuid": "stock"
+		},
+		{
+			"type": "Print",
+			"uuid": "print"
+		}
+	],
+	"connections": [
+		{
+			"src": "init",
+			"dst": "constant_stocksym"
+		},
+		{
+			"src": "constant_stocksym",
+			"dst": "stock.StockSymbol"
+		},
+		{
+			"src": "stock.Price",
+			"dst": "print"
+		}
+	]
+}

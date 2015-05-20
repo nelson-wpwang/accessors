@@ -18,6 +18,22 @@ function AccessorWrapper (path, parameters, finished) {
 	var outputs = {};
 	this.outputs = outputs;
 
+	// This function gives us this semantics:
+	// If an output port (that is not an observe port) is wired to something,
+	// then have it call that something when any inputs change.
+	function execute_all_connected_outputs () {
+		_.forEach(accessor._meta.ports, function (port, index) {
+			if (port.directions.indexOf('output') > -1 &&
+				port.directions.indexOf('observe') == -1 &&
+				port.name in outputs) {
+
+				accessor[port.function].output(function (ret) {
+					outputs[port.name](ret);
+				});
+			}
+		});
+	}
+
 	accessors.create_accessor(path, parameters, function (acc) {
 
 		// Save the accessor
@@ -29,7 +45,9 @@ function AccessorWrapper (path, parameters, finished) {
 				// Map each input port to the correct function inside of the
 				// accessor.
 				inputs[port.function] = function (input) {
-					acc[port.function].input(input);
+					acc[port.function].input(input, function () {
+						execute_all_connected_outputs();
+					});
 				};
 			}
 		});

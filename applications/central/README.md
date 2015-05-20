@@ -6,30 +6,43 @@ Goal: build applications by connecting lines between blocks and accessors.
 Tip
 ---
 
-Get config.js from `shed/projects/wearabouts`.
+Get parameters.js from `shed/projects/wearabouts`.
 
 
-Setup
+Install
 -----
 
-First add the local accessors module to the packages by linking them.
+    npm install
+
+
+Node.js
+-------
+
+Need new Node (or just use [io.js](https://iojs.org/en/index.html)!)
+
+    nvm use 0.11
+
+Run
+
+    node --harmony test.js
+
+You don't need `--harmony` with io.js.
+
+
+npm link
+--------
+
+Sometimes it is useful to run with an editable version of the accessor
+runtime. To do this:
 
     cd accessors/runtimes/node
     npm link
     cd ../../applications/central
     npm link accessors
 
-Other npm installs
 
-    npm install
+Running A Blocks App
+--------------------
 
-Need new Node (or just use [io.js](https://iojs.org/en/index.html)!)
-
-    nvm use 0.11
-
-Run 
-
-    node --harmony test.js
-
-You don't need `--harmony` with io.js.
+The run script should get things started. For instance, to run
 

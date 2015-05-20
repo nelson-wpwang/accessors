@@ -17,6 +17,8 @@ var threshold  = require('./blocks/threshold');
 var append     = require('./blocks/append');
 var constant   = require('./blocks/constant');
 var accessor   = require('./blocks/accessor_wrapper');
+var initialize = require('./blocks/initialize');
+var print      = require('./blocks/print');
 
 var block_names = {
 	'Match':      match,
@@ -28,6 +30,8 @@ var block_names = {
 	'Threshold':  threshold,
 	'Append':     append,
 	'Constant':   constant,
+	'Initialize': initialize,
+	'Print':      print
 }
 
 info = debug('accessorsCentral:info');
@@ -60,7 +64,7 @@ function instantiate_blocks (profile, app_uuid, block_array, global_parameters, 
 				var nblock = block_names[block.type];
 
 				// Check the provided parameters
-				for (var parameter_name in nblock.about.parameters) {
+				for (var parameter_name in _.get(nblock.about, 'parameters', {})) {
 					var parameter = nblock.about.parameters[parameter_name];
 
 					// Check that this parameter was provided
