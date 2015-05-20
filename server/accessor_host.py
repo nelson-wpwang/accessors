@@ -557,10 +557,39 @@ def find_accessors (accessor_path):
 					# and interface_ports from the validator
 					accessor['ports'] = copy.deepcopy(accessor['created_ports'])
 
+					inferred_iface_ports = {}
+					inferred_iface_ports_to_delete = []
+					for claim in accessor['implements']:
+						iface = interface_tree[claim['interface']]
+						for port in iface:
+							name = port.split('.')[-1]
+							if name in inferred_iface_ports:
+								inferred_iface_ports_to_delete.append(name)
+							else:
+								inferred_iface_ports[name] = port
+					for name in inferred_iface_ports_to_delete:
+						# Delete ambiguous entries
+						del inferred_iface_ports[name]
+
 					accessor['normalized_interface_ports'] = []
 					name_map = {}
 					for port in accessor['interface_ports']:
-						norm = Interface.normalize(port['name'])
+						if '.' not in port['name']:
+							# Port is an unqualified name
+							if port['name'] in inferred_iface_ports:
+								norm = inferred_iface_ports[port['name']]
+							else:
+								if port['name'] in inferred_iface_ports_to_delete:
+									log.error("The port named " + port['name'] + " belongs to multiple implemented interfaces");
+									log.error("It must be fully qualified")
+									raise NotImplementedError("Unqualified ambiguous port")
+								else:
+									log.error("The port named " + port + " does not belong to any implemented interface")
+									log.error("It is ignored.")
+						else:
+							# Port is a fully qualified name
+							norm = Interface.normalize(port['name'])
+
 						if norm in accessor['normalized_interface_ports']:
 							raise NotImplementedError('Duplicate port conflict')
 						accessor['normalized_interface_ports'].append(norm)
