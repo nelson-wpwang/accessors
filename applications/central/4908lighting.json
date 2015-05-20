@@ -1,0 +1,234 @@
+{
+	"blocks": [
+		{
+			"type": "accessor",
+			"path": "/webquery/RabbitMQ",
+			"parameters": {
+				"amqp_routing_key": "event.presence.University_of_Michigan.BBB.4908.#"
+			},
+			"uuid": "PullWearabouts"
+		},
+		{
+			"type": "accessor",
+			"path": "/webquery/RabbitMQ",
+			"parameters": {
+				"amqp_routing_key": "event.override.University_of_Michigan.BBB.4908.#"
+			},
+			"uuid": "PullOverride"
+		},
+		{
+			"type": "Transistor",
+			"uuid": "WearaboutsSwitch"
+		},
+		{
+			"type": "Keyway",
+			"parameters": {
+				"key": "override"
+			},
+			"uuid": "OverrideKeyway"
+		},
+		{
+			"type": "Delay",
+			"uuid": "OverrideDelay"
+		},
+		{
+			"type": "Keyway",
+			"parameters": {
+				"key": "event_str"
+			},
+			"uuid": "EventStrKeyway"
+		},
+		{
+			"type": "Match",
+			"parameters": {
+				"matches": [
+					"Location occupied",
+					"Location not occupied",
+					"samkuo in location",
+					"samkuo not in location",
+					"Room lights on",
+					"Room lights off",
+					"Panel on",
+					"Panel off",
+					"Workbench right on",
+					"Workbench right off",
+					"Workbench left on",
+					"Workbench left off"
+				]
+			},
+			"uuid": "MatchEvents"
+		},
+		{
+			"type": "Not",
+			"uuid": "Not0"
+		},
+		{
+			"type": "Not",
+			"uuid": "Not1"
+		},
+		{
+			"type": "Not",
+			"uuid": "Not2"
+		},
+		{
+			"type": "Not",
+			"uuid": "Not3"
+		},
+		{
+			"type": "Not",
+			"uuid": "Not4"
+		},
+		{
+			"type": "Not",
+			"uuid": "Not5"
+		},
+		{
+			"type": "accessor",
+			"path": "/switch/acme++",
+			"uuid": "AcmeWorkbenchRight"
+		},
+		{
+			"type": "accessor",
+			"path": "/switch/acme++",
+			"uuid": "AcmeWorkbenchLeft"
+		},
+		{
+			"type": "accessor",
+			"path": "/switch/acme++",
+			"uuid": "AcmeOverheadLights"
+		},
+		{
+			"type": "accessor",
+			"path": "/switch/acme++",
+			"uuid": "AcmeYeshengLight"
+		},
+		{
+			"type": "accessor",
+			"path": "/lighting/hue/allbridgehues",
+			"uuid": "HueAll"
+		},
+		{
+			"type": "accessor",
+			"path": "/switch/wemo",
+			"uuid": "WemoSamSconce"
+		}
+	],
+	"connections": [
+		{
+			"src": "PullWearabouts.Data",
+			"dst": "WearaboutsSwitch.in"
+		},
+		{
+			"src": "WearaboutsSwitch.out",
+			"dst": "EventStrKeyway.0"
+		},
+		{
+			"src": "PullOverride.Data",
+			"dst": "OverrideKeyway"
+		},
+		{
+			"src": "PullOverride.Data",
+			"dst": "OverrideDelay.delay"
+		},
+		{
+			"src": "PullOverride.Data",
+			"dst": "EventStrKeyway.0"
+		},
+		{
+			"src": "EventStrKeyway.0",
+			"dst": "MatchEvents.0"
+		},
+		{
+			"src": "OverrideKeyway.0",
+			"dst": "WearaboutsSwitch.gate"
+		},
+		{
+			"src": "OverrideDelay.0",
+			"dst": "WearaboutsSwitch.gate"
+		},
+        {
+            "src": "MatchEvents.0",
+            "dst": "AcmeOverheadLights.PowerControl"
+        },
+        {
+            "src": "MatchEvents.1",
+            "dst": "Not0"
+        },
+        {
+            "src": "Not0",
+            "dst": "AcmeWorkbenchRight.PowerControl"
+        },
+        {
+            "src": "Not0",
+            "dst": "AcmeWorkbenchLeft.PowerControl"
+        },
+        {
+            "src": "Not0",
+            "dst": "AcmeOverheadLights.PowerControl"
+        },
+        {
+            "src": "Not0",
+            "dst": "AcmeYeshengLight.PowerControl"
+        },
+        {
+            "src": "MatchEvents.2",
+            "dst": "AcmeYeshengLight.PowerControl"
+        },
+        {
+            "src": "MatchEvents.3",
+            "dst": "Not1"
+        },
+        {
+            "src": "Not1",
+            "dst": "AcmeYeshengLight.PowerControl"
+        },
+        {
+            "src": "MatchEvents.4",
+            "dst": "AcmeOverheadLights.PowerControl"
+        },
+        {
+            "src": "MatchEvents.5",
+            "dst": "Not2"
+        },
+        {
+            "src": "Not2",
+            "dst": "AcmeOverheadLights.PowerControl"
+        },
+        {
+            "src": "MatchEvents.6",
+            "dst": "AcmeYeshengLight.PowerControl"
+        },
+        {
+            "src": "MatchEvents.7",
+            "dst": "Not3"
+        },
+        {
+            "src": "Not3",
+            "dst": "AcmeYeshengLight.PowerControl"
+        },
+        {
+            "src": "MatchEvents.8",
+            "dst": "AcmeWorkbenchRight.PowerControl"
+        },
+        {
+            "src": "MatchEvents.9",
+            "dst": "Not4"
+        },
+        {
+            "src": "Not4",
+            "dst": "AcmeWorkbenchRight.PowerControl"
+        },
+        {
+            "src": "MatchEvents.10",
+            "dst": "AcmeWorkbenchLeft.PowerControl"
+        },
+        {
+            "src": "MatchEvents.11",
+            "dst": "Not5"
+        },
+        {
+            "src": "Not5",
+            "dst": "AcmeWorkbenchLeft.PowerControl"
+        }
+	]
+}
