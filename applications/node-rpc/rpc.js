@@ -8,8 +8,13 @@ try {
 	var w = require('express')();
 	var bodyParser = require('body-parser');
 	var dir = require('node-dir');
-	var argv = require('optimist').argv;
 	var s = require('underscore.string');
+
+	var argv = require('optimist')
+		.usage('Run an accessor with a command line interface.\nUsage: $0')
+		.alias('s', 'host_server')
+		.describe('s', 'URL of the accessor host server to use.')
+		.argv;
 } catch (e) {
 	console.log("** Missing import in the node-rpc library");
 	console.log("** This is an error with the node-rpc module.");
@@ -22,7 +27,7 @@ var GROUP_FOLDER = '../../groups'
 
 // Check command line arguments
 if (argv.host_server == undefined) {
-	argv.host_server = 'http://localhost:6565';
+	argv.host_server = 'http://accessors.io:6565';
 	console.log('Using default Accessor Host Server: ' + argv.host_server);
 	console.log('To specify, use option --host_server');
 } else {
