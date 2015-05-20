@@ -120,7 +120,7 @@ These functions allow the accessor to describe its features and dependencies.
 Because these are not actually library functions they are not namespaced
 under the `rt` namespace.
 
-- `<void> create_port(<string> direction, <string> name, <object> options)`:
+- `<void> create_port(<string> name, <object> options)`:
 Create a one-off port for this accessor.
 
 - `<void> provide_interface(<string> path, <object> mapping)`: Specify that this
@@ -142,9 +142,10 @@ configured parameter that was passed to accessor when it was created. Parameters
 allow for configuring generic accessors to specific instances of devices.
 
 - `<T> get(<string> port_name)`: Get the cached value of an input to a given
-port.
+port. This is not supported in all runtimes.
 
-- `<void> set(<string> port_name, <T> val)`: Set the value of an output port.
+- `<void> send(<string> port_name, <T> val)`: Send a value to an ouptut
+observe port.
 
 
 
@@ -262,6 +263,9 @@ to the specified URL.
 
 - _Blocking_ `<string> rt.coap.post(<string> url, <string> body)`: POST via
 CoAP to a specified resource.
+
+- `<void> rt.coap.observe(<string> url, <function> callback)`: Connect to an
+observe port and call `callback` every time new data is available.
 
 ### RabbitMQ / AMQP
 
