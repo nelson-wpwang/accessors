@@ -375,7 +375,8 @@ function checkNewPortParameters(port, pnode) {
   }
 }
 
-var port_list = [];
+var created_port_list = [];
+var interface_port_list = [];
 
 function checkNewPorts(node) {
   if (node.callee.name === 'create_port') {
@@ -406,7 +407,7 @@ function checkNewPorts(node) {
       port.type = 'string';
     }
 
-    port_list.push(port);
+    created_port_list.push(port);
   }
 }
 
@@ -414,31 +415,67 @@ function checkNewPorts(node) {
 function checkPortFunction(node) {
   if (node.operator == '=') {
     if (node.left.type == 'MemberExpression' && node.right.type == 'FunctionExpression') {
-      var portNode = node.left.object;
-      var directionNode = node.left.property;
-
-      if (portNode.type == 'Identifier') {
-
-        // Check if this is a port we know about
-        for (var i=0; i<port_list.length; i++) {
-          if (port_list[i].name == portNode.name) {
-
-            // Check that the direction is valid
-            if (['input', 'output', 'observe'].indexOf(directionNode.name) == -1) {
-              throw '"' + directionNode.name + '" is an invalid direction for port "' + portNode.name + '"';
-            }
-
-            port_list[i].directions.push(directionNode.name);
-          }
-        };
+      var direction = node.left.property.name;
+      var name_obj = node.left.object;
+      var portName = ''
+      while (name_obj.type == 'MemberExpression') {
+        if (portName.length) {
+          portName = name_obj.property.name + '.' + portName;
+        } else {
+          portName = name_obj.property.name;
+        }
+        name_obj = name_obj.object;
+      }
+      if (portName.length) {
+        portName = name_obj.name + '.' + portName;
+      } else {
+        portName = name_obj.name;
       }
 
+
+      var created = false;
+
+      // Check if this is a port we know about
+      for (var i=0; i<created_port_list.length; i++) {
+        if (created_port_list[i].name == portName) {
+
+          // Check that the direction is valid
+          if (['input', 'output', 'observe'].indexOf(direction) == -1) {
+            throw '"' + direction + '" is an invalid direction for port "' + portName + '"';
+          }
+
+          created_port_list[i].directions.push(direction);
+          created = true;
+        }
+      };
+
+      if (!created) {
+        // Only interested in things that match <string>.<direction>
+        if (['input', 'output', 'observe'].indexOf(direction) == -1) {
+          return;
+        }
+
+        // Don't have a list a priori of interfaces, so learn as we go
+        var known_iface = false;
+        for (var i=0; i<interface_port_list.length; i++) {
+          if (interface_port_list[i].name == portName) {
+            interface_port_list[i].directions.push(direction);
+            known_iface = true;
+          }
+        };
+
+        if (!known_iface) {
+          var port = {
+            name: portName,
+            directions: []
+          };
+          port.directions.push(direction);
+
+          interface_port_list.push(port);
+        }
+      }
     }
   }
-}
-
-function processFunction(node) {
-  console.log(node);
 }
 
 function on_read(err, data) {
@@ -447,7 +484,7 @@ function on_read(err, data) {
   var syntax;
 
   // Clear ports
-  port_list = [];
+  //port_list = [];
 
   syntax = esprima.parse(data);
   //console.log(JSON.stringify(syntax, null, 1));
@@ -482,7 +519,8 @@ function on_read(err, data) {
     implements: interface_list,
     dependencies: dependency_list,
     parameters: parameter_list,
-    ports: port_list
+    created_ports: created_port_list,
+    interface_ports: interface_port_list
   };
 
   console.log(JSON.stringify(data));
