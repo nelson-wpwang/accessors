@@ -36,6 +36,7 @@ import watchdog.observers
 #import validate_accessor
 
 import sh
+logging.getLogger("sh").setLevel(logging.WARNING)
 from sh import rm
 try:
 	from sh import npm
