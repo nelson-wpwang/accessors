@@ -596,6 +596,7 @@ def find_accessors (accessor_path):
 						accessor['normalized_interface_ports'].append(norm)
 						name_map[norm] = port
 
+					complete_interface = True
 					for claim in accessor['implements']:
 						iface = interface_tree[claim['interface']]
 						for req in iface:
@@ -604,14 +605,17 @@ def find_accessors (accessor_path):
 										claim['interface'], req)
 								log.error("But %s only implements %s",
 										accessor['name'], accessor['normalized_interface_ports'])
-								raise NotImplementedError("Incomplete interface")
+								complete_interface = False
 							if iface[req]['directions'] != name_map[req]['directions']:
 								log.error("Interface %s port %s requires %s",
 										iface, req, iface[req]['directions'])
 								log.error("But %s only implements %s",
 										accessor['name'], name_map[req]['directions'])
-								raise NotImplementedError("Incomplete interface")
+								complete_interface = False
 							accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
+					if not complete_interface:
+						# defer raising this so that all of the missing bits are reported
+						raise NotImplementedError("Incomplete interface")
 
 					# Run the other accessor checker concept
 					#err = validate_accessor.check(accessor)
