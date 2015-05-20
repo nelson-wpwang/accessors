@@ -116,6 +116,7 @@ accessors.get_accessor_list(function (accessor_list) {
 									} else if (cmd == 'listen') {
 										accessor[accessor_ir.ports[port_index].function].observe(subscribe_callback);
 									} else {
+										console.log('"'+cmd+'" is not a valid choice');
 										interact();
 									}
 								});
