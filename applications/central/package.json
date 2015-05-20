@@ -1,10 +1,10 @@
 {
-  "name": "central",
+  "name": "accessors.io-blocks",
   "version": "1.0.0",
   "description": "Visual accessor data flow.",
   "main": "central.js",
   "dependencies": {
-    "accessors.io": "^0.1.0",
+    "accessors.io": "^1.0.0",
     "amqp": "^0.2.4",
     "async": "^0.9.0",
     "async-each-object": "0.0.2",

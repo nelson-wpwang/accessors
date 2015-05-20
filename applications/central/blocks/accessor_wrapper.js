@@ -6,7 +6,7 @@ var _       = require('lodash');
 var config  = require('../config');
 
 // var accessors = require('accessors.io')(config.accessors.host_server);
-var accessors = require('accessors')(config.accessors.host_server);
+var accessors = require('accessors.io');
 
 info = debug('accessorsCentral:info');
 error = debug('accessorsCentral:error');
