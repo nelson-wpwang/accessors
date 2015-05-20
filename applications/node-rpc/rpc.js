@@ -78,10 +78,8 @@ dir.readFiles('../../groups',
 		// var new_device = group.accessors[i];
 
 		if (!('name' in new_device)) {
-			console.log('Skipping device because it is not named.');
+			console.log('Skipping accessor for ' + new_device.path + ' because it is not named.');
 			return;
-		} else {
-			console.log('Not skipping ' + new_device.name);
 		}
 
 		// Retrieve the full accessor from the host server
@@ -92,8 +90,7 @@ dir.readFiles('../../groups',
 			if (!error && response.statusCode == 200) {
 				var accessor = JSON.parse(body);
 
-				console.log('Adding accessor ' + accessor.name);
-				console.log(new_device.path)
+				console.log('Adding accessor ' + accessor.name + ' for ' + new_device.name);
 
 				// Generate an object for the accessor that we can actually
 				// call and execute.
