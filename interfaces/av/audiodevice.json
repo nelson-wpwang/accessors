@@ -1,9 +1,0 @@
-{
-	"extends": "/onoff",
-    "ports": {
-        "Volume": {
-            "direction": "inout",
-            "type": "numeric"
-        }
-    }
-}

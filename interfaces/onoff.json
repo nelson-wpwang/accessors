@@ -1,8 +1,0 @@
-{
-    "ports": {
-        "Power": {
-            "directions": ["input", "output"],
-            "type":      "bool"
-        }
-    }
-}

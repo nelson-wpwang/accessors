@@ -1,8 +1,0 @@
-{
-	"ports": {
-		"LightIntensity": {
-			"directions": ["output"],
-			"type": "integer"
-		}
-	}
-}
