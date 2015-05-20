@@ -103,7 +103,7 @@ accessors.get_accessor_list(function (accessor_list) {
 								rl.question(question, function (cmd) {
 
 									if (cmd == 'get') {
-										accessor[accessor_ir.ports[port_index].function].output(interact);
+										accessor[port.function].output(interact);
 									} else if (cmd == 'set') {
 										rl.question('value: ', function (val) {
 											if (val == 'true') {
@@ -111,10 +111,10 @@ accessors.get_accessor_list(function (accessor_list) {
 											} else if (val == 'false') {
 												val = false;
 											}
-											accessor[accessor_ir.ports[port_index].function].input(val, interact);
+											accessor[port.function].input(val, interact);
 										});
 									} else if (cmd == 'listen') {
-										accessor[accessor_ir.ports[port_index].function].observe(subscribe_callback);
+										accessor[port.function].observe(subscribe_callback);
 									} else {
 										console.log('"'+cmd+'" is not a valid choice');
 										interact();
