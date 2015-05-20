@@ -124,7 +124,6 @@ power.input = function* (onoff) {
 	params = {'power': onoff};
 	url = get_parameter('url') + '/api/' + get_parameter('api_key') + '/state';
 	yield* rt.http.request(url, 'PUT', null, rt.json.stringify(params), 3000);
-	set('/av/audiodevice.Power', true);
 }
 
 next_track.input = function* () {
@@ -135,7 +134,6 @@ next_track.input = function* () {
 	url = get_parameter('url') + '/api/' + get_parameter('api_key') + '/action';
 	resp = yield* rt.http.request(url, 'PUT', null, rt.json.stringify(params), 3000);
 	resp = rt.json.from_string(resp);
-	set('/av/audiodevice.NowPlaying', resp.track);
 }
 
 Skip15.input = function* () { ... }
@@ -159,17 +157,17 @@ An example accessor for a networked stereo.
     "runtime_imports": ["http", "json"],
     "ports": [
               {
-                "direction": "inout",
-                "name":      "Power",
-                "type":      "bool"
+                "directions": ["input", "output"],
+                "name":       "Power",
+                "type":       "bool"
               },
               {
-                "direction": "input",
-                "name":      "Seek",
-                "type":      "button"
+                "directions": ["input"],
+                "name":       "Seek",
+                "type":       "button"
               },
               {
-                "direction":    "output",
+                "directions":   ["output"],
                 "name":         "NowPlaying",
                 "display_name": "Now Playing",
                 "type":         "string"
