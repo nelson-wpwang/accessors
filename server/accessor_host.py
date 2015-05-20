@@ -521,8 +521,6 @@ def find_accessors (accessor_path):
 					log.error(e.stderr.decode("unicode_escape"))
 					raise
 				raw_analyzed = analyzed.stdout.decode('utf-8')
-				print(len(raw_analyzed))
-				print(raw_analyzed)
 				analyzed = json.loads(raw_analyzed)
 
 				meta.update(analyzed)
