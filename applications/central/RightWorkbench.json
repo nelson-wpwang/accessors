@@ -1,0 +1,20 @@
+{
+	"applications": [
+		{
+			"name": "CoilcubePowerControl",
+			"parameters": {
+				"CoilcubeFilter": {
+					"filters": [["ccid_mac", "c0:98:e5:43:4f:f3:76:72"]]
+				},
+				"AcmeWorkbenchRight": {
+					"ip_addr": "2607:f018:800:10f:c298:e541:4310:f"
+				},
+				"PullCoilcube": {
+					"gatd_url": "gatd.eecs.umich.edu:8082/stream",
+					"gatd_query": "{'profile_id':'7aiOPJapXF','description': {'$exists': true},'_processor_freq': 'last'}"
+				}
+
+			}
+		}
+	]
+}

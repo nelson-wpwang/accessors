@@ -3,8 +3,6 @@ var debug   = require('debug');
 
 var _       = require('lodash');
 
-var config  = require('../config');
-
 // var accessors = require('accessors.io')(config.accessors.host_server);
 var accessors = require('accessors.io');
 
@@ -39,9 +37,9 @@ function AccessorWrapper (path, parameters, finished) {
 		// Let the setup know that we are done with initing the accessor
 		finished();
 	},
-	function (error) {
-		error('Could not create accessor ' + path);
-		error(error);
+	function (err) {
+		console.log('Could not create accessor ' + path);
+		error(err);
 	});
 
 	// Setup the observable ports in the run function so that they don't
