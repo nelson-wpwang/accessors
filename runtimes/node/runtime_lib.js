@@ -1,20 +1,26 @@
 /* This runtime conforms to accessor runtime v0.1.0 */
 /* vim: set noet ts=2 sts=2 sw=2: */
 
-var debug        = require('debug');
-var urllib       = require('url');
+try {
+	var debug        = require('debug');
+	var urllib       = require('url');
 
-var Q            = require('q');
-var request      = require('request');
-var tinycolor    = require('tinycolor2');
-var atob         = require('atob');
-var btoa         = require('btoa');
-var coap         = require('coap');
-var amqp         = require('amqp');
-var dgram        = require('dgram');
-var net          = require('net');
-var socketio_old = require('socket.io-client');
-var through2     = require('through2');
+	var Q            = require('q');
+	var request      = require('request');
+	var tinycolor    = require('tinycolor2');
+	var atob         = require('atob');
+	var btoa         = require('btoa');
+	var coap         = require('coap');
+	var amqp         = require('amqp');
+	var dgram        = require('dgram');
+	var net          = require('net');
+	var socketio_old = require('socket.io-client');
+	var through2     = require('through2');
+} catch (e) {
+	console.log("** Missing import in the node runtime library");
+	console.log("** This is an error with the accessor runtime module.");
+	throw e;
+}
 
 
 var info  = debug('accessors:info');

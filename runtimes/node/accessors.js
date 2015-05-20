@@ -7,6 +7,7 @@ try {
 	var semver      = require('semver');
 	var debug       = require('debug');
 	var vm          = require('vm');
+	var hashmap     = require('hashmap');
 } catch (e) {
 	console.log("** Missing import in the node runtime");
 	console.log("** This is an error with the accessor runtime module.");
@@ -169,11 +170,34 @@ function requireFromString(src) {
 //
 // We need `PortName` to exist.
 function get_port_objects (accessor) {
+	var port_obj_created = new hashmap.HashMap();
 	var port_obj_str = '';
 
 	for (var i=0; i<accessor.ports.length; i++) {
 		var port = accessor.ports[i];
-		port_obj_str += 'var ' + port.function + ' = {};';
+		var temp = port.function.split('.');
+		var name = temp.shift();
+
+		if (temp.length == 0) {
+			// This is a created port
+			port_obj_str += 'var ' + name + ' = {};';
+			continue
+		}
+
+		var dovar = !port_obj_created.has(name);
+		var extra = ''
+		while (temp.length) {
+			if (!port_obj_created.has(name)) {
+				extra += name + ' = {};';
+				port_obj_created.set(name, '');
+			}
+			name += '.' + temp.shift();
+		}
+		if (dovar) {
+			port_obj_str += 'var ' + extra + name + ' = {};';
+		} else {
+			port_obj_str += extra + name + ' = {};';
+		}
 	}
 
 	return port_obj_str;
@@ -190,7 +214,7 @@ function get_exports (accessor) {
 		var name = port.name;
 		var func = port.function;
 
-		export_str += 'module.exports.'+func+' = {';
+		export_str += 'module.exports.'+func.split('.')[0]+' = {';
 
 		// Each port can support multiple directions based on what makes
 		// sense for the particular device

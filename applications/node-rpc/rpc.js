@@ -3,12 +3,18 @@
 /* vim: set noet ts=2 sts=2 sw=2: */
 
 // w for "web server"
-var request = require('request');
-var w = require('express')();
-var bodyParser = require('body-parser');
-var dir = require('node-dir');
-var argv = require('optimist').argv;
-var s = require('underscore.string');
+try {
+	var request = require('request');
+	var w = require('express')();
+	var bodyParser = require('body-parser');
+	var dir = require('node-dir');
+	var argv = require('optimist').argv;
+	var s = require('underscore.string');
+} catch (e) {
+	console.log("** Missing import in the node-rpc library");
+	console.log("** This is an error with the node-rpc module.");
+	throw e;
+}
 
 
 
@@ -33,7 +39,8 @@ if (argv.port == undefined) {
 	console.log('Using port ' + argv.port + ' for RPC commands');
 }
 
-var aruntime = require('accessors')(argv.host_server);
+var aruntime = require('accessors');
+aruntime.set_host_server(argv.host_server);
 
 // Setup express
 w.use(bodyParser.text());
