@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import logging
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 import argparse
 import base64
@@ -59,10 +62,10 @@ for them.
 
 parser = argparse.ArgumentParser(description=DESC)
 parser.add_argument('-s', '--accessor-host-server',
-		default='http://localhost:6565',
+		default='http://accessors.io:6565',
 		help='Server to load accessors from')
 parser.add_argument('-r', '--accessor-runtime-server',
-	default='http://localhost:5577',
+	default='http://accessors.io:5577',
 		help='Server that can execute servers')
 args = parser.parse_args()
 
@@ -454,5 +457,7 @@ def accessor():
 	                             accessor_runtime_server=args.accessor_runtime_server)
 
 
+log.info("Using accessor host server at %s", args.accessor_host_server)
+log.info("Using accessor runtime server at %s", args.accessor_runtime_server)
 
 app.run(host='0.0.0.0', debug=True)
