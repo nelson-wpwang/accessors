@@ -213,17 +213,16 @@ function get_exports (accessor) {
 		var port = accessor.ports[i];
 		var name = port.name;
 		var func = port.function;
+		var export_name = func.replace(/\./g, '_');
 
-		export_str += 'module.exports.'+func.split('.')[0]+' = {';
+		export_str += 'module.exports.'+export_name+' = {};\n';
 
 		// Each port can support multiple directions based on what makes
 		// sense for the particular device
 		for (var j=0; j<port.directions.length; j++) {
 			var direction = port.directions[j];
-			export_str += direction + ': function () {_do_port_call.apply(this, ['+func+'.'+direction+',"'+name+'","'+direction+'",arguments[0],arguments[1],arguments[2]])},\n'
+			export_str += 'module.exports.'+export_name + '.' + direction + ' = function () {_do_port_call.apply(this, ['+func+'.'+direction+',"'+name+'","'+direction+'",arguments[0],arguments[1],arguments[2]])};\n'
 		}
-
-		export_str += '};';
 	}
 
 	export_str += '\nmodule.exports.init = function (succ_cb, err_cb) {\n';

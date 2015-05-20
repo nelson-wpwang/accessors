@@ -133,13 +133,27 @@ dir.readFiles('../../groups',
 
 						// Handle GET requests for this port
 						w.get(device_port_path, function (req, res) {
-							console.log("GET " + device_port_path + ": (req: " + req + ", res: " + res + ")");
-								// // TODO: this will break if the name is in the port
-								// // or something weird
-							res.send(''+accessor_runtime.get(port.name));
+							console.log(" GET " + device_port_path + ": (req: " + req + ", res: " + res + ")");
+							if (port.directions.indexOf('output') == -1) {
+								res.status(404).send('Request for output when that is not a valid direction');
+								return
+							}
+							var func = port.function;
+							var export_name = func.replace(/\./g, '_');
+							var obj = accessor_runtime[export_name];
+							var output_fn = obj.output;
+							output_fn(function (result) {
+								console.log(" --> resp: " + result);
+								res.send(''+result);
+							});
 						});
 
 						w.post(device_port_path, function (req, res) {
+							console.log("POST " + device_port_path + ": (req: " + req + ", res: " + res + ")");
+							if (port.directions.indexOf('input') == -1) {
+								res.status(404).send('Request for input when that is not a valid direction');
+								return
+							}
 							var arg = null;
 							if (port.type == 'bool') {
 								console.log('REQ BODY: ' + req.body);
@@ -148,7 +162,12 @@ dir.readFiles('../../groups',
 								arg = req.body;
 							}
 
-							accessor_runtime[port.name](arg, function () {
+							var func = port.function;
+							var export_name = func.replace(/\./g, '_');
+							var obj = accessor_runtime[export_name];
+							var input_fn = obj.input;
+
+							input_fn(arg, function () {
 								res.send('did it');
 							});
 						});
