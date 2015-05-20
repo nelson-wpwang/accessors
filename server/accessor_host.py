@@ -586,7 +586,7 @@ def find_accessors (accessor_path):
 									log.error("It must be fully qualified")
 									raise NotImplementedError("Unqualified ambiguous port")
 								else:
-									log.error("The port named " + port + " does not belong to any implemented interface")
+									log.error("The port named " + port['name'] + " does not belong to any implemented interface")
 									log.error("It is ignored.")
 						else:
 							# Port is a fully qualified name
