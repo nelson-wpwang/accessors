@@ -1,11 +1,17 @@
 /* vim: set noet ts=2 sts=2 sw=2: */
 
-var path_module = require('path');
-var request     = require('request');
-var fs          = require('fs');
-var semver      = require('semver');
-var debug       = require('debug');
-var vm          = require('vm');
+try {
+	var path_module = require('path');
+	var request     = require('request');
+	var fs          = require('fs');
+	var semver      = require('semver');
+	var debug       = require('debug');
+	var vm          = require('vm');
+} catch (e) {
+	console.log("** Missing import in the node runtime");
+	console.log("** This is an error with the accessor runtime module.");
+	throw e;
+}
 
 // We use generators which require a newer version of node. We recommend that
 // you use io.js as it runs a newer version of the V8 engine and is generally
