@@ -7,7 +7,8 @@ import serial
 
 import datetime
 
-s = serial.Serial('/dev/ttyUSB1', 115200)
+#s = serial.Serial('/dev/ttyUSB1', 115200)
+s = serial.Serial('/dev/tty.usbserial-0000111DB', 115200)
 
 
 def test_serial():

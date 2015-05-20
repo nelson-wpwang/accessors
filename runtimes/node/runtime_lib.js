@@ -1,6 +1,9 @@
 /* This runtime conforms to accessor runtime v0.1.0 */
 /* vim: set noet ts=2 sts=2 sw=2: */
 
+var debug        = require('debug');
+var urllib       = require('url');
+
 var Q            = require('q');
 var request      = require('request');
 var tinycolor    = require('tinycolor2');
@@ -8,11 +11,11 @@ var atob         = require('atob');
 var btoa         = require('btoa');
 var coap         = require('coap');
 var amqp         = require('amqp');
-var urllib       = require('url');
 var dgram        = require('dgram');
 var net          = require('net');
 var socketio_old = require('socket.io-client');
-var debug  = require('debug');
+var through2     = require('through2');
+
 
 var info  = debug('accessors:info');
 var warn  = debug('accessors:warn');
@@ -245,6 +248,20 @@ rt.coap.post = function* coapPost(url, body) {
 	ogm.write(body);
 	ogm.end();
 	yield* _coapCommon(ogm);
+}
+
+rt.coap.observe = function coapObserver(url, callback) {
+	info("CoAP OBSERVE: " + url);
+	var params = urllib.parse(url);
+	params.observe = true;
+	var ogm = coap.request(params);
+	ogm.on('response', function (resp) {
+		res.pipe(through2(function (chunk, enc, t2callback) {
+			callback(chunk.toString('utf-8'));
+			t2callback();
+		}));
+	});
+	ogm.end();
 }
 
 /*** RABBITMQ / AMQP CONNECTIONS ***/
