@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 var accessors = require('../accessors');
 
 // First step is to create a live "StockTick" accessor. This will execute
