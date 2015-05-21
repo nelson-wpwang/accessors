@@ -7,6 +7,7 @@ Accessor: {{ accessor.accessor.name }}
 {% block content %}
 
 <h1>Accessor: {{ accessor.accessor.name }}</h1>
+<em>Last Updated: {{ accessor.compilation_timestamp.humanize() }}</em>
 
 <h2>About</h2>
 <dl class="dl-horizontal">

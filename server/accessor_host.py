@@ -21,6 +21,7 @@ sys.stdout.write("\x1b]2;accessors:host_server\x07")
 import jinja2
 import markdown
 import pydblite
+import arrow
 import semantic_version as semver
 
 import tornado
@@ -92,7 +93,14 @@ ACCESSOR_SERVER_PORT = 6565
 ACCESSOR_REPO_URL = 'https://github.com/lab11/accessor-files.git'
 
 accessors_db = pydblite.Base('accessors', save_to_file=False)
-accessors_db.create('name', 'group', 'path', 'jscontents', 'accessor')
+accessors_db.create(
+		'name',
+		'compilation_timestamp',
+		'group',
+		'path',
+		'jscontents',
+		'accessor',
+		)
 
 # Helper function to get the first result from a pydblite query
 def first (iterable):
@@ -656,6 +664,7 @@ def find_accessors (accessor_path):
 
 					# Save accessor in in-memory DB
 					accessors_db.insert(name=meta['name'],
+										compilation_timestamp=arrow.utcnow(),
 										group=root,
 										path=view_path,
 										jscontents=contents,

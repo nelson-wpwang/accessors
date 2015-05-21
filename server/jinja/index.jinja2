@@ -17,6 +17,7 @@ Accessor Host Server
     <tr>
       <th>Name</th>
       <th>Group</th>
+      <th>Last Updated</th>
     </tr>
   </thead>
 
@@ -24,6 +25,7 @@ Accessor Host Server
   <tr>
     <td><a href="/view{{ record.path }}">{{ record.name }}</a></td>
     <td>{{ record.group }}</td>
+    <td>{{ record.compilation_timestamp.humanize() }}</td>
   </tr>
   {% endfor %}
 
