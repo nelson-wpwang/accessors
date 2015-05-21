@@ -40,29 +40,69 @@ whenever their input value changes. -->
 Quick Start
 -----------
 
-1. Run the Accessor Host Server. This is a webserver that parses the raw
-JavaScript accessors, converts them to the full JSON representation, and serves
-them to any interested clients.
+Accessors can be used to not only communicate with devices, but also with
+web services. To see the Node.js accessor runtime query a stock price, run:
+
+    cd runtimes/node
+    npm install
+    cd examples
+    ./stock.js
+
+This should print out the Microsoft stock price.
+
+The code looks like this:
+
+```javascript
+var accessors = require('accessors.io');
+
+// First step is to create a live "StockTick" accessor. This will execute
+// the accessor so we can interact with it.
+accessors.create_accessor('/webquery/StockTick', {}, function (accessor) {
+  // The StockTick accessor, has two ports: "StockSymbol" and "Price".
+  // To get a quote, we first set the StockSymbol port by calling the
+  // "input" function on the port.
+  accessor.StockSymbol.input('MSFT', function () {
+    // After that has been set, we call the "output" function on the
+    // Price port to get the current price.
+    accessor.Price.output(function (price) {
+      console.log('MSFT stock price: $' + price);
+    });
+  });
+},
+// Handle any errors that may occur when creating the accessor.
+function (error) {
+  console.log('Error loading accessor.');
+  console.log(error);
+});
+```
+
+The "StockTick" accessor is created, then its two ports are used to set
+the stock being queried and to read its price.
+
+
+Accessors.io
+------------
+
+Accessors must be hosted somewhere, and we currently run a hosting server
+at [accessors.io](http://accessors.io). In a browser, this service will list
+the existing accessors and show the details of each one.
+
+If you are inclined, you can run your own accessor host server locally. To
+do this:
+
+1. Install the dependencies. The server is written in Python3 and uses
+node.js to perform some validation on the accessor.
 
         cd server
+        sudo pip3 install -r requirements.pip
+        npm install
+
+2. Run the server
+
         ./accessor_host.py
 
-2. Run the RPC example application. This instantiates an Accessor Runtime (in
-Node.js) where accessors execute. It then makes the ports accessible via a RESTful
-web API.
-
-        cd applications/node-rpc
-        ./rpc.js
-
-3. Run a front-end to the RPC application. This provides a web interface for
-interacting with the accessors running in the RPC server.
-
-        cd applications/rpc-frontend
-        ./server.py
-
-4. Go to [http://localhost:5000](http://localhost:5000). You can now interact
-with the accessors that were loaded in the RPC runtime.
-
+    By default, the server will pull the `accessor-files` repo from github
+    and serve those accessors.
 
 
 Getting Started
@@ -81,6 +121,30 @@ device uses. This may be deprecated in the future.
 - `/server`: The Accessor Host Server that provides the full JSON/XML versions
 of accessors.
 - `/tests`: Test code, not used currently.
+
+
+Accessors RPC Tool
+------------------
+
+The accessor remote proceedure tool allows a server to run accessors and provides
+a browser interface to those accessors.
+
+2. Run the RPC example application. This instantiates an Accessor Runtime (in
+Node.js) where accessors execute. It then makes the ports accessible via a RESTful
+web API.
+
+        cd applications/node-rpc
+        ./rpc.js
+
+3. Run a front-end to the RPC application. This provides a web interface for
+interacting with the accessors running in the RPC server.
+
+        cd applications/rpc-frontend
+        ./server.py
+
+4. Go to [http://localhost:5000](http://localhost:5000). You can now interact
+with the accessors that were loaded in the RPC runtime.
+
 
 
 
