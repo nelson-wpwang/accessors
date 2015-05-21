@@ -1,18 +1,20 @@
 {% extends "base.jinja" %}
 
+{% set accessor = record.accessor %}
+
 {% block title %}
-Accessor: {{ accessor.accessor.name }}
+Accessor: {{ record.name }}
 {% endblock %}
 
 {% block content %}
 
-<h1>Accessor: {{ accessor.accessor.name }}</h1>
-<em>Last Updated: {{ accessor.compilation_timestamp.humanize() }}</em>
+<h1>Accessor: {{ record.name }}</h1>
+<em>Last Updated: {{ record.compilation_timestamp.humanize() }}</em>
 
 <h2>About</h2>
 <dl class="dl-horizontal">
-  <dt>Author Name</dt><dd>{{ accessor.accessor.author.name }}</dd>
-  <dt>Author Email</dt><dd>{{ accessor.accessor.author.email }}</dd>
+  <dt>Author Name</dt><dd>{{ accessor.author.name }}</dd>
+  <dt>Author Email</dt><dd>{{ accessor.author.email }}</dd>
   <dt>Links</dt><dd><a href="/accessor{{ accessor.path }}.json">JSON</a> | <a href="/accessor{{ accessor.path }}.xml">XML</a></dd>
 </dl>
 
@@ -20,14 +22,14 @@ Accessor: {{ accessor.accessor.name }}
 
 <div class="panel panel-default">
   <div class="panel-body">
-    {{ accessor.accessor.description|markdown }}
+    {{ accessor.description|markdown }}
   </div>
 </div>
 
 
 <h2>Ports</h2>
 <ul class="list-group">
-  {% for port in accessor.accessor.ports %}
+  {% for port in accessor.ports %}
   <li class="list-group-item">
     <h4>{{ port.name }}</h4>
     <p>{{ port.description }}</p>
@@ -46,7 +48,7 @@ Accessor: {{ accessor.accessor.name }}
 
 <h2>Parameters</h2>
 <ul class="list-group">
-  {% for parameter in accessor.accessor.parameters %}
+  {% for parameter in accessor.parameters %}
   <li class="list-group-item">
     <h4>{{ parameter.name }}</h4>
     <p>{{ parameter.description }}</p>
@@ -57,7 +59,7 @@ Accessor: {{ accessor.accessor.name }}
 
 <h2>Dependencies</h2>
 <ul class="list-group">
-  {% for dep in accessor.accessor.dependencies %}
+  {% for dep in accessor.dependencies %}
   <li class="list-group-item">
     <h4>{{ dep.name }}</h4>
     <p>{{ dep.description }}</p>
@@ -70,7 +72,7 @@ Accessor: {{ accessor.accessor.name }}
 <div class="panel panel-default">
   <div class="panel-body">
     <pre>
-{{ accessor.accessor.code_alternates.javascript|escape }}
+{{ accessor.code_alternates.javascript|escape }}
     </pre>
   </div>
 </div>

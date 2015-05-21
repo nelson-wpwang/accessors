@@ -100,6 +100,7 @@ accessors_db.create(
 		'path',
 		'jscontents',
 		'accessor',
+		'errors',
 		)
 
 # Helper function to get the first result from a pydblite query
@@ -401,16 +402,17 @@ def javascript_to_traceur(javascript):
 # accessor_tree = {}
 
 def find_accessors (accessor_path):
+	class ParseError(Exception):
+		pass
 
 	def parse_error(msg, path, line_no=None, line=None):
-		log.error(msg)
 		if line_no and line:
-			log.error("Found parsing %s on line %d: >>>%s<<<", path, line_no, line)
+			msg2 = "Found parsing %s on line %d: >>>%s<<<" % (path, line_no, line)
 		elif line_no:
-			log.error("Found parsing %s on line %d", path, line_no)
+			msg2 = "Found parsing %s on line %d" % (path, line_no)
 		else:
-			log.error("Found parsing %s")
-		sys.exit(1)
+			msg2 = "Found parsing" + path
+		raise ParseError(msg, msg2)
 
 	with pushd(accessor_path):
 		for root, dirs, files in os.walk('.'):
@@ -671,6 +673,18 @@ def find_accessors (accessor_path):
 										accessor=accessor)
 
 					log.info('Adding accessor {}'.format(view_path))
+				except ParseError as e:
+					for err in e.args:
+						log.error(err)
+					# meta object doesn't exist if this exception thrown
+					# accessor object doesn't exist if this exception thrown
+					accessors_db.insert(name=name if name else filename,
+										compilation_timestamp=arrow.utcnow(),
+										group=root,
+										path=view_path,
+										jscontents=contents,
+										accessor=None,
+										errors=[e.args,])
 				except Exception as e:
 					log.error(e)
 					log.info('Skipping accessor {} due to errors'.format(view_path))
@@ -777,8 +791,14 @@ class handler_accessor_page (JinjaBaseHandler):
 		records = accessors_db('path') == path
 
 		data = {
-			'accessor': first(records)
+			'record': first(records)
 		}
+
+		if not data['record']['accessor']:
+			# Basic parsing didn't even work, show a dedicated error page
+			# instead of the detail view page
+			return self.renderj('view-parse-error.jinja2', **data)
+
 		return self.renderj('view.jinja2', **data)
 
 

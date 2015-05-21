@@ -1,0 +1,30 @@
+{% extends "base.jinja" %}
+
+{% block title %}
+Accessor: {{ record.name }}
+{% endblock %}
+
+{% block content %}
+
+<h1>Accessor: {{ record.name }}</h1>
+<em>Last Updated: {{ record.compilation_timestamp.humanize() }}</em>
+
+<div class="alert alert-danger" role="alert">
+  This accessor could not be parsed.
+</div>
+
+<h2>Errors</h2>
+
+<ul>
+  {% for err in record.errors %}
+  <li>{{ err[0] }}</li>
+  <ul>
+    {% for info in err[1:] %}
+    <li>{{ info }}</li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+</ul>
+
+{% endblock %}
+

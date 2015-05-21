@@ -23,7 +23,11 @@ Accessor Host Server
 
   {% for record in accessors_db %}
   <tr>
+    {% if record.errors %}
+    <td><a href="/view{{ record.path }}" style="color: red;"><span class="glyphicon glyphicon-alert" aria-hidden="true"></span> {{ record.name }}</a></td>
+    {% else %}
     <td><a href="/view{{ record.path }}">{{ record.name }}</a></td>
+    {% endif %}
     <td>{{ record.group }}</td>
     <td>{{ record.compilation_timestamp.humanize() }}</td>
   </tr>
