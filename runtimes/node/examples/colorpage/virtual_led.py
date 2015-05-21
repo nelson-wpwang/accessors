@@ -1,20 +1,43 @@
 #!/usr/bin/env python3
 
-
 import asyncio
 import os
 
 import aiohttp.web
 
+WEBPAGE = '''
+<html>
+  <head>
+	<title>Color Led!</title>
+  </head>
 
+  <body id="b">
 
+<script type="text/javascript">
+var w;
 
-WS_FILE = os.path.join(os.path.dirname(__file__), 'color_page.html')
+function init () {
+	w = websocket = new WebSocket('ws://localhost:8765/');
+	w.onopen = function (evt) {
+		console.log('opened');
+	}
+	w.onmessage = function (evt) {
+		console.log(evt.data);
 
+		document.getElementById("b").style.backgroundColor = evt.data;
+	}
+}
 
+init();
+</script>
+
+  </body>
+</html>
+'''
 
 @asyncio.coroutine
 def colorhandler(request):
+
 	post_params = yield from request.post()
 
 	if 'color' in post_params:
@@ -31,8 +54,7 @@ def wshandler(request):
 	resp = aiohttp.web.WebSocketResponse()
 	ok, protocol = resp.can_start(request)
 	if not ok:
-		with open(WS_FILE, 'rb') as fp:
-			return aiohttp.web.Response(body=fp.read(), content_type='text/html')
+		return aiohttp.web.Response(body=WEBPAGE.encode(), content_type='text/html')
 
 	resp.start(request)
 	request.app['sockets'].append(resp)
@@ -55,13 +77,13 @@ def wshandler(request):
 def init (loop):
 	app = aiohttp.web.Application(loop=loop)
 	app['sockets'] = []
-	app['color'] = 'ffffff'
+	app['color'] = '445566'
 
 	app.router.add_route('GET', '/', wshandler)
 	app.router.add_route('POST', '/color', colorhandler)
 
 	handler = app.make_handler()
-	srv = yield from loop.create_server(handler, '0.0.0.0', 8765)
+	srv = yield from loop.create_server(handler, 'localhost', 8765)
 	return app, srv, handler
 
 @asyncio.coroutine
@@ -82,5 +104,3 @@ try:
 	loop.run_forever()
 except KeyboardInterrupt:
 	loop.run_until_complete(finish(app, srv, handler))
-
-
