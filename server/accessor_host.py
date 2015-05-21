@@ -6,6 +6,7 @@ logging.basicConfig(level=logging.INFO)
 
 import argparse
 import pprint
+import collections
 import copy
 import xml.etree.ElementTree as ET
 import json
@@ -147,6 +148,9 @@ class ServeAccessor (tornado.web.RequestHandler):
 
 		# Create a local copy of the accessor to serve so we can configure it
 		accessor = copy.deepcopy(first(accessors_db('path') == path)['accessor'])
+
+		if accessor is None:
+			raise NotImplementedError("Request for accessor with compilation errors")
 
 		# def set_dependency_js (accessor, language):
 		# 	for dep in accessor['dependencies']:
@@ -399,8 +403,6 @@ def javascript_to_traceur(javascript):
 	return code
 
 
-# accessor_tree = {}
-
 def find_accessors (accessor_path):
 	class ParseError(Exception):
 		pass
@@ -553,6 +555,7 @@ def find_accessors (accessor_path):
 					analyzed = json.loads(raw_analyzed)
 
 					meta.update(analyzed)
+					errors = collections.deque()
 
 					# Embed the actual code into the accessor
 					meta['code'] = {
@@ -592,18 +595,25 @@ def find_accessors (accessor_path):
 								norm = inferred_iface_ports[port['name']]
 							else:
 								if port['name'] in inferred_iface_ports_to_delete:
-									log.error("The port named " + port['name'] + " belongs to multiple implemented interfaces");
-									log.error("It must be fully qualified")
-									raise NotImplementedError("Unqualified ambiguous port")
+									errors.appendleft([
+										"Unqualified ambiguous port",
+										"The port named " + port['name'] + " belongs to multiple implemented interfaces",
+										"It must be fully qualified"])
+									raise NotImplementedError
 								else:
-									log.error("The port named " + port['name'] + " does not belong to any implemented interface")
-									log.error("It is ignored.")
+									errors.appendleft([
+										"The port named " + port['name'] + " does not belong to any implemented interface",
+										"It is ignored."])
 						else:
 							# Port is a fully qualified name
 							norm = Interface.normalize(port['name'])
 
 						if norm in accessor['normalized_interface_ports']:
-							raise NotImplementedError('Duplicate port conflict')
+							errors.appendleft([
+								'Duplicate port conflict',
+								'Found trying to insert ' + port['name'],
+								'But had previously inserted ' + norm])
+							raise NotImplementedError
 						accessor['normalized_interface_ports'].append(norm)
 						name_map[norm] = port
 
@@ -612,21 +622,36 @@ def find_accessors (accessor_path):
 						iface = interface_tree[claim['interface']]
 						for req in iface:
 							if req not in accessor['normalized_interface_ports']:
-								log.error("Interface %s requires %s",
-										claim['interface'], req)
-								log.error("But %s from %s only implements %s",
-										accessor['name'], accessor['_path'], accessor['normalized_interface_ports'])
+								errors.appendleft([
+									"Interface %s requires %s" % (
+										claim['interface'],
+										req,
+										),
+									"But %s from %s only implements %s" % (
+										accessor['name'],
+										accessor['_path'],
+										accessor['normalized_interface_ports'],
+										)
+									])
 								complete_interface = False
 							if iface[req]['directions'] != name_map[req]['directions']:
-								log.error("Interface %s port %s requires %s",
-										iface, req, iface[req]['directions'])
-								log.error("But %s from %s only implements %s",
-										accessor['name'], accessor['_path'], name_map[req]['directions'])
+								errors.appendleft([
+									"Interface %s port %s requires %s" % (
+										iface,
+										req,
+										iface[req]['directions'],
+										),
+									"But %s from %s only implements %s" % (
+										accessor['name'],
+										accessor['_path'],
+										name_map[req]['directions'],
+										)
+									])
 								complete_interface = False
 							accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
 					if not complete_interface:
 						# defer raising this so that all of the missing bits are reported
-						raise NotImplementedError("Incomplete interface")
+						raise NotImplementedError
 
 					# Run the other accessor checker concept
 					#err = validate_accessor.check(accessor)
@@ -651,18 +676,17 @@ def find_accessors (accessor_path):
 						accessor['code_alternates'] = {}
 						for language,v in accessor['code'].items():
 							code = ''
-							if 'include' in v:
-								raise NotImplementedError("The 'include' option has been removed")
 							if 'code' in v:
 								code += v['code']
 							accessor['code_alternates'][language] = code
 
 							if language != 'javascript':
-								raise NotImplementedError("Accessor code must be javascript")
+								errors.appendleft([
+									'Language Error',
+									'Accessor code must be javascript.',
+									])
+								raise NotImplementedError
 						del accessor['code']
-
-					# assert path not in accessor_tree
-					# accessor_tree[path] = accessor
 
 					# Save accessor in in-memory DB
 					accessors_db.insert(name=meta['name'],
@@ -685,9 +709,40 @@ def find_accessors (accessor_path):
 										jscontents=contents,
 										accessor=None,
 										errors=[e.args,])
+					log.info('Parse error adding {}'.format(view_path))
+				except sh.ErrorReturnCode as e:
+					errors = [
+							['Internal error.',
+								'Please report this issue and include the full traceback below',
+								],
+							['Full traceback',
+								e.stderr.decode("unicode_escape"),
+								]
+							]
+					# accessor object doesn't exist if this exception thrown
+					accessors_db.insert(name=meta['name'],
+										compilation_timestamp=arrow.utcnow(),
+										group=root,
+										path=view_path,
+										jscontents=contents,
+										accessor=None,
+										errors=[e.args,])
+					log.info('Parse JS error adding {}'.format(view_path))
+				except NotImplementedError as e:
+					# accessor object exists in incomplete state if this
+					# exception is thrown
+					accessors_db.insert(name=meta['name'],
+										compilation_timestamp=arrow.utcnow(),
+										group=root,
+										path=view_path,
+										jscontents=contents,
+										accessor=None,
+										errors=errors)
+					log.info('Accessor implemetnation error found when adding {}'.format(view_path))
 				except Exception as e:
+					log.error("Unhandled expection in accessor parsing")
 					log.error(e)
-					log.info('Skipping accessor {} due to errors'.format(view_path))
+					raise
 
 
 
