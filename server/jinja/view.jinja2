@@ -51,6 +51,9 @@ Accessor: {{ record.name }}
   {% for parameter in accessor.parameters %}
   <li class="list-group-item">
     <h4>{{ parameter.name }}</h4>
+    {% if parameter.default %}
+    <p><em><strong>Default: </strong>{{ parameter.default }}</em></p>
+    {% endif %}
     <p>{{ parameter.description }}</p>
   </li>
   {% endfor %}
