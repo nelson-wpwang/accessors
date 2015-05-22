@@ -103,7 +103,9 @@ accessors.get_accessor_list(function (accessor_list) {
 								rl.question(question, function (cmd) {
 
 									if (cmd == 'get') {
-										accessor[port.function].output(interact);
+										accessor[port.function].output(interact, function (err) {
+											console.log('CLI: error ' + err);
+										});
 									} else if (cmd == 'set') {
 										rl.question('value: ', function (val) {
 											if (val == 'true') {
