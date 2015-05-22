@@ -10,6 +10,7 @@ import collections
 import copy
 import xml.etree.ElementTree as ET
 import json
+import string
 import sys
 import os
 import re
@@ -294,7 +295,7 @@ class Interface():
 					self.json['extends'] = [self.json['extends'],]
 				for dep in self.json['extends']:
 					if dep not in interface_tree:
-						log.debug("Interface %s requried advance loading of extends %s", self.path, dep)
+						log.debug("Interface %s required advance loading of extends %s", self.path, dep)
 						if dep in loop:
 							log.critical("Recursive extends directives. %s", loop)
 							raise RuntimeError
@@ -604,6 +605,7 @@ def find_accessors (accessor_path):
 									errors.appendleft([
 										"The port named " + port['name'] + " does not belong to any implemented interface",
 										"It is ignored."])
+									norm = ''
 						else:
 							# Port is a fully qualified name
 							norm = Interface.normalize(port['name'])
@@ -830,6 +832,58 @@ class JinjaBaseHandler (tornado.web.RequestHandler, JinjaTemplateRendering):
 ### Website GUI Frontend
 ################################################################################
 
+###
+### Templates for creating example node.js code with an accessor
+###
+
+node_runtime_example = string.Template(
+'''var accessors = require('accessors.io');
+$parameters
+accessors.create_accessor('$path_and_name', $parameters_arg, function (accessor) {
+
+$ports}, function (err) {
+    console.log('Error when creating $path_and_name accessor.');
+    console.log(err);
+});''')
+
+node_runtime_example_parameters = string.Template(
+'''
+var parameters = {
+$parameters}
+''')
+
+node_runtime_example_parameters_entries = string.Template('''    $name: '',
+''')
+
+node_runtime_example_ports_input = string.Template(
+'''    accessor.$port_function.input(value, function () {
+        // Setting the port completed successfully.
+    }, function (err) {
+        console.log('Setting port $port_name failed.');
+    });
+
+''')
+
+node_runtime_example_ports_output = string.Template(
+'''    accessor.$port_function.output(function (value) {
+        console.log('Read $port_name and got: ' + value);
+    }, function (err) {
+        console.log('Reading port $port_name failed.');
+    });
+
+''')
+
+node_runtime_example_ports_observe = string.Template(
+'''    accessor.$port_function.observe(function (data) {
+        console.log('Callback with ' + data);
+    }, function () {
+        console.log('Observe port "$port_name" setup successfully');
+    }, function (err) {
+        console.log('Reading port $port_name failed.');
+    });
+
+''')
+
 # Main index
 class handler_index (JinjaBaseHandler):
 	def get(self, **kwargs):
@@ -844,9 +898,39 @@ class handler_accessor_page (JinjaBaseHandler):
 		path = '/'+path
 
 		records = accessors_db('path') == path
+		record = first(records)
+
+		node_ex_parameters = ''
+		node_ex_parameters_arg = '{}'
+		if len(record['accessor']['parameters']) > 0:
+			node_ex_params = ''
+			node_ex_parameters_arg = 'parameters'
+			for param in record['accessor']['parameters']:
+				node_ex_params += node_runtime_example_parameters_entries.substitute(name=param['name'])
+			node_ex_parameters = node_runtime_example_parameters.substitute(parameters=node_ex_params)
+
+		node_ex_ports = ''
+		for port in record['accessor']['ports']:
+			if 'input' in port['directions']:
+				node_ex_ports += node_runtime_example_ports_input.substitute(port_function=port['function'],
+				                                                             port_name=port['name'])
+			if 'output' in port['directions']:
+				node_ex_ports += node_runtime_example_ports_output.substitute(port_function=port['function'],
+				                                                              port_name=port['name'])
+			if 'observe' in port['directions']:
+				node_ex_ports += node_runtime_example_ports_observe.substitute(port_function=port['function'],
+				                                                              port_name=port['name'])
+
+		node_ex = node_runtime_example.substitute(path_and_name=record['path'],
+		                                          parameters=node_ex_parameters,
+		                                          parameters_arg=node_ex_parameters_arg,
+		                                          ports=node_ex_ports)
 
 		data = {
-			'record': first(records)
+			'record': record,
+			'usage_examples': {
+				'node': node_ex
+			}
 		}
 
 		if not data['record']['accessor']:
