@@ -16,3 +16,9 @@ Example:
 
     http://server.com/misc/mycolor/umhue01/onoff/Power
 
+
+Running
+-------
+
+    npm install
+    ./rpc.js

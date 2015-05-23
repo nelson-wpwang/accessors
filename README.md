@@ -59,6 +59,13 @@ __Table of Contents__
 
 1. [Example](#example)
 1. [Accessors.io](#accessorsio)
+1. [Command Line Tool](#command-line-tool)
+1. [Accessor Background](#accessor-background)
+  - [Accessor Runtime](#accessor-runtime)
+  - [Accessor Example](#accessor-example)
+  - [Ports and Interfaces](#ports-and-interfaces)
+1. [Accessors RPC Tool](#accessors-rpc-tool)
+
 
 
 Example
@@ -112,28 +119,18 @@ Accessors.io
 Accessors must be hosted somewhere, and we currently run a hosting server
 at [accessors.io](http://accessors.io). In a browser, this service will list
 the existing accessors and show the details of each one. For more information
-and for running your own hosting server, see the
-[Host Server Readme](https://github.com/lab11/accessors/tree/master/server).
+and for running your own hosting server, see the [Host Server Readme](/server).
 
 
 
+Command Line Tool
+-----------------
 
-Getting Started
-===============
+To test out an accessor you can use the command line interface tool.
 
-There's a lot going on in this accessors repository and a few different
-components.
+    sudo npm install -g accessors.io-cli
+    accessors.io-cli
 
-### Folder Structure Overview
-
-- `/android`: Android apps. Not extensively used.
-- `/applications`: Various applications that use accessors.
-- `/groups`: Organized collections of devices and the accessors that each
-device uses. This may be deprecated in the future.
-- `/runtimes`: Execution environments in different languages for accessors.
-- `/server`: The Accessor Host Server that provides the full JSON/XML versions
-of accessors.
-- `/tests`: Test code, not used currently.
 
 
 Accessors RPC Tool
@@ -141,36 +138,22 @@ Accessors RPC Tool
 
 The accessor remote proceedure tool allows a server to run accessors and provides
 a browser interface to those accessors.
-
-2. Run the RPC example application. This instantiates an Accessor Runtime (in
-Node.js) where accessors execute. It then makes the ports accessible via a RESTful
-web API.
-
-        cd applications/node-rpc
-        ./rpc.js
-
-3. Run a front-end to the RPC application. This provides a web interface for
-interacting with the accessors running in the RPC server.
-
-        cd applications/rpc-frontend
-        ./server.py
-
-4. Go to [http://localhost:5000](http://localhost:5000). You can now interact
-with the accessors that were loaded in the RPC runtime.
+See the [RPC Server](/applications/node-rpc) and
+[RPC Frontend](/applications/rpc-frontend) for how to use it.
 
 
 
+Accessor Background
+-------------------
 
-Accessor Runtime
-----------------
+### Accessor Runtime
 
 Accessors are run inside of a common accessor runtime, as described in
 `runtimes/README.md`. The runtime is responsible for presenting the accessor
 and calling accessor functions. The runtime also provides abstractions about
 the execution environment, such as logging and socket access.
 
-Accessor Example
-----------------
+### Accessor Example
 
 Consider a media player example, let's add a new device-specific
 feature "Skip 15 seconds" and look at an example accessor and its generated JSON:
@@ -258,8 +241,7 @@ An example accessor for a networked stereo.
 }
 ```
 
-Ports and Interfaces
---------------------
+### Ports and Interfaces
 
 Interfaces are a global ontology for devices. That is, they attempt
 to take all the capabilities of all devices and map them into a single, unified
@@ -284,8 +266,3 @@ disincentivized to use our API. To remedy this, we allow accessors to explicitly
 a roadmap towards new interfaces. If a critical mass of devices create the same
 port, it motivates the standardization of a new interface, while permitting for
 the immediate uptake of new features.
-
-
-
-
-
