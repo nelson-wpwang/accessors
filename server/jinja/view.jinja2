@@ -50,6 +50,7 @@ Accessor: {{ record.name }}
 
 
 <h2>Parameters</h2>
+{% if accessor.parameters %}
 <ul class="list-group">
   {% for parameter in accessor.parameters %}
   <li class="list-group-item">
@@ -61,9 +62,13 @@ Accessor: {{ record.name }}
   </li>
   {% endfor %}
 </ul>
+{% else %}
+<em>This accessor does not have any parameters</em>
+{% endif %}
 
 
 <h2>Dependencies</h2>
+{% if accessor.dependencies %}
 <ul class="list-group">
   {% for dep in accessor.dependencies %}
   <li class="list-group-item">
@@ -72,6 +77,9 @@ Accessor: {{ record.name }}
   </li>
   {% endfor %}
 </ul>
+{% else %}
+<em>This accessor does not have any dependencies</em>
+{% endif %}
 
 
 <h2>Usage Examples</h2>
