@@ -10,7 +10,11 @@ reasonable `print` mechanism).
 change until its formal release.**
 
 __Table of Contents__
+
 1. [Accessor Lifecycle](#accessor-lifecycle)
+1. [Synchronizing Asynchronous Events](#synchronizing-asynchronous-events)
+1. [Runtime Functions](#runtime-functions)
+  - [Accessor Framework Functions](#accessor-framework-functions)
 
 
 
