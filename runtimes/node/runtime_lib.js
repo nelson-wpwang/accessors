@@ -5,6 +5,7 @@ try {
 	var debug        = require('debug');
 	var urllib       = require('url');
 
+	var domain       = require('domain');
 	var Q            = require('q');
 	var request      = require('request');
 	var tinycolor    = require('tinycolor2');
@@ -82,7 +83,30 @@ rt.time.run_later = function (time_in_ms, fn_to_run, args) {
 	if (args != null) {
 		throw new AccessorRuntimeException("runtime doesn't support arguments yet");
 	}
-	setTimeout(fn_to_run, time_in_ms);
+	setTimeout(function () {
+		var d = domain.create();
+
+		var error_fn = function (err) {
+			rt.log.warn("Uncaught exception from an rt.time.run_later'd function");
+			console.trace();
+			console.log(err);
+		}
+		d.on('error', error_fn);
+
+		d.run(function() {
+			var r = fn_to_run();
+			if (r && typeof r.next == 'function') {
+				var def = Q.async(function* () {
+					r = yield* fn_to_run();
+				});
+				var finished = function () {
+					rt.log.debug("rt.time.run_later callback finished asynchronous run");
+				}
+				def().done(finished, error_fn);
+				rt.log.debug("rt.time.run_later callback running asynchronously");
+			}
+		});
+	}, time_in_ms);
 }
 
 
