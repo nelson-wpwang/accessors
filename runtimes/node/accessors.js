@@ -120,6 +120,21 @@ function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
 	var runtime_lib_file = path_module.join(__dirname, 'runtime_lib.js');
 	var requires = "var rt = require('"+runtime_lib_file+"');\n";
 
+	// Verify that all required parameters were provided, copy in default values
+	for (var i=0; i < accessor_ir.parameters.length; i++) {
+		var name = accessor_ir.parameters[i].name;
+		if (! (name in parameters) ) {
+			if (accessor_ir.parameters[i].required) {
+				throw "Missing required parameter " + name;
+			} else {
+				// Copy in default parameter value
+				parameters[name] = accessor_ir.parameters[i].default;
+			}
+		} else {
+			console.log(parameters.name);
+		}
+	}
+
 	// Add the parameters to the `eval()` string
 	var params = "var parameters = "+JSON.stringify(parameters)+";\n";
 	info('art::create_accessor Parameters: ' + params);
