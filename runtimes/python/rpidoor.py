@@ -22,8 +22,6 @@ rpidoor = accessors.get_accessor_from_server(
 			'password': password,
 		},
 		)
-try:
-	rpidoor.Lock = False
-finally:
-	# Hack until I understand bond better
-	sh.killall('node')
+
+rpidoor.Lock = False
+

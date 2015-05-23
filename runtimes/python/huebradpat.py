@@ -14,13 +14,11 @@ hues = accessors.get_accessor_by_location(
 	'University of Michigan - 4908 BBB',
 	'Brad-Pat Hue'
 	)
-try:
-	print("Fair warning, this isn't the fastest right now")
-	while True:
-		input("Press enter to turn on...")
-		hues.Power = True
-		input("Press enter to turn off...")
-		hues.Power = False
-finally:
-	# Hack until I understand bond better
-	sh.killall('node')
+
+print("Fair warning, this isn't the fastest right now")
+while True:
+	input("Press enter to turn on...")
+	hues.Power = True
+	input("Press enter to turn off...")
+	hues.Power = False
+
