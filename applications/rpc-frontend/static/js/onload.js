@@ -1,5 +1,6 @@
 /* vim: set noet ts=2 sts=2 sw=2: */
 
+var devices = {};
 
 $("#accessor-select").change(function () {
 	if ($(this).val() != 'default') {
@@ -81,57 +82,67 @@ $("#device-select").change(function () {
 	if ($(this).val() != "default") {
 		var name = $(this).val();
 
-		$.ajax({url: '/device/' + name,
-			success: function (data) {
-				var accessor = data;
+		function init_accessor (data) {
+			var accessor = data;
 
-				// accessor = devices[$(this).val()];
-				$("#accessor-interface").html(accessor.html);
+			$("#accessor-interface").html(accessor.html);
 
-				// Activate all sliders
-				$('#accessor-'+accessor.uuid+' .slider').each(function () {
-					$(this).slider().on('slideStop', function (slide_event) {
-						rpc_post(accessor.uuid, $(this).attr('id'), slide_event.value);
-					});
+			// Activate all sliders
+			$('#accessor-'+accessor.uuid+' .slider').each(function () {
+				$(this).slider().on('slideStop', function (slide_event) {
+					rpc_post(accessor.uuid, $(this).attr('id'), slide_event.value);
 				});
+			});
 
-				// Activate all color pickers
-				$('#accessor-'+accessor.uuid+' .colorpicker').colpick({
-					flat: true,
-					layout: 'hex',
-					submit: 0,
-					onChange: function (hsb, hex, rgb, el, bySetColor) {
-						rpc_post(accessor.uuid, $(this).attr('id'), hex);
-					}
-				});
+			// Activate all color pickers
+			$('#accessor-'+accessor.uuid+' .colorpicker').colpick({
+				flat: true,
+				layout: 'hex',
+				submit: 0,
+				onChange: function (hsb, hex, rgb, el, bySetColor) {
+					rpc_post(accessor.uuid, $(this).attr('id'), hex);
+				}
+			});
 
-				// Setup callbacks for buttons and check boxes
-				$('#accessor-'+accessor.uuid).on('click', '.accessor-arbitrary-input-button', function () {
-					var port = $(this).parents('.port-html-group').find('.port');
-					rpc_post(accessor.uuid, port.attr('id'), port.val());
-				});
+			// Setup callbacks for buttons and check boxes
+			$('#accessor-'+accessor.uuid).on('click', '.accessor-arbitrary-input-button', function () {
+				var port = $(this).parents('.port-html-group').find('.port');
+				rpc_post(accessor.uuid, port.attr('id'), port.val());
+			});
 
 
-				$('#accessor-'+accessor.uuid).on('click', '.accessor-get', function () {
-					var port = $(this).parents('.port-html-group').find('.output-port');
-					rpc_get(accessor.uuid, port.attr('id'));
-				});
+			$('#accessor-'+accessor.uuid).on('click', '.accessor-get', function () {
+				var port = $(this).parents('.port-html-group').find('.output-port');
+				rpc_get(accessor.uuid, port.attr('id'));
+			});
 
-				$('#accessor-'+accessor.uuid).on('click', '.accessor-checkbox', function () {
-					rpc_post(accessor.uuid, $(this).attr('id'), $(this).is(':checked'));
-				});
+			$('#accessor-'+accessor.uuid).on('click', '.accessor-checkbox', function () {
+				rpc_post(accessor.uuid, $(this).attr('id'), $(this).is(':checked'));
+			});
 
-				$('#accessor-'+accessor.uuid).on('click', '.accessor-button', function () {
-					rpc_post(accessor.uuid, $(this).attr('id'), null);
-				});
+			$('#accessor-'+accessor.uuid).on('click', '.accessor-button', function () {
+				rpc_post(accessor.uuid, $(this).attr('id'), null);
+			});
 
-				// init all with GET
-				for (var i=0; i<accessor.ports.length; i++) {
+			// init all with GET
+			for (var i=0; i<accessor.ports.length; i++) {
+				if (accessor.ports[i].directions.indexOf('output') > -1) {
 					rpc_get(accessor.uuid, accessor.ports[i].uuid, accessor.ports[i].type);
 				}
-
 			}
-		});
+		}
+
+		if (name in devices) {
+			init_accessor(devices[name]);
+
+		} else {
+			$.ajax({url: '/device/' + name,
+				success: function (data) {
+					devices[name] = data;
+					init_accessor(data);
+				}
+			});
+		}
 	}
 });
 

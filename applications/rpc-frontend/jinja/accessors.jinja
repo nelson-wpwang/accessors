@@ -69,11 +69,14 @@ Accessors / University of Michigan
 
       <div class="panel panel-info">
         <div class="panel-heading">
-          <h3 class="panel-title">To get started, choose an accessor.</h3>
+          <h3 class="panel-title">To get started, choose an existing device.</h3>
         </div>
         <div class="panel-body">
+          <p>
+            These devices have already been configured and named.
+          </p>
           <select class="form-control" id="device-select">
-            <option value="default">Select an existing accessor</option>
+            <option value="default">Select an existing device</option>
             {% for aa in active_accessors %}
             <option value="{{ aa.name }}">{{ aa.name }}</option>
             {% endfor %}
@@ -86,6 +89,10 @@ Accessors / University of Michigan
           <h3 class="panel-title">Create a new device.</h3>
         </div>
         <div class="panel-body">
+          <p>
+            Start with a bare accessor and provide the required parameters
+            to instantiate a new device. This will be saved once created.
+          </p>
           <select class="form-control" id="accessor-select">
             <option value="default">Select an accessor</option>
             {% for accessor_path in all_accessors %}
