@@ -345,6 +345,7 @@ class Interface():
 			detail = copy.deepcopy(self.json['ports'][name])
 			detail['name'] = '/' + '/'.join(port.split('.'))
 			detail['function'] = function_name
+			detail['interface_path'] = self.path
 			# We add some (currently) optional keys to make downstream stuff
 			# easier, TODO: re-think about what should be required in the
 			# definition of a complete accessor

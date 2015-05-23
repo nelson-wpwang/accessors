@@ -31,7 +31,11 @@ Accessor: {{ record.name }}
 <ul class="list-group">
   {% for port in accessor.ports %}
   <li class="list-group-item">
+    {% if port.interface_path %}
+    <h4><a href="/view/interface{{ port.interface_path }}">{{ port.name }}</a></h4>
+    {% else %}
     <h4>{{ port.name }}</h4>
+    {% endif %}
     <p>{{ port.description }}</p>
     <dl class="dl-horizontal">
       <dt>Directions</dt><dd>{{ port.directions }}</dd>
