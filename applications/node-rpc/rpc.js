@@ -14,6 +14,7 @@ try {
 	var markdown   = require('nunjucks-markdown');
 	var marked     = require('marked');
 	var uuid       = require('node-uuid');
+	var sqlite     = require('sqlite3');
 
 	var argv = require('optimist')
 		.usage('Run an accessor with a command line interface.\nUsage: $0')
@@ -76,6 +77,206 @@ var n = nunjucks.configure('templates', {
 // Add markdown support, mostly for accessor descriptions.
 markdown.register(n, marked);
 
+// Get a database to store created accessors
+var db = new sqlite.Database('accessors.db', function (err) {
+	if (err) {
+		console.log('Issue creating accessors.db');
+		return;
+	}
+
+	db.serialize(function () {
+		// Create the tables if they do not exist
+		db.run('CREATE TABLE IF NOT EXISTS accessors       \
+		        (id   INTEGER PRIMARY KEY AUTOINCREMENT,   \
+		         name VARCHAR(1024)       NOT NULL UNIQUE, \
+		         path VARCHAR(1024)       NOT NULL)        \
+		       ');
+
+		db.run('CREATE TABLE IF NOT EXISTS parameters           \
+		        (id          INTEGER PRIMARY KEY AUTOINCREMENT, \
+		         accessor_id INT                 NOT NULL,      \
+		         name        VARCHAR(1024)       NOT NULL,      \
+		         value       VARCHAR(1024)       NOT NULL,      \
+		         FOREIGN KEY(accessor_id) REFERENCES accessors(id)) \
+		       ');
+
+		// Query the tables and create accessor instances for each device
+		db.each('SELECT * FROM accessors',
+			function (err, row) {
+				if (err) {
+					console.log('Could not retrieve accessors from DB');
+					console.log(err);
+					return;
+				}
+				// Now get the parameters
+				var parameters = {};
+				db.all('SELECT * FROM parameters WHERE accessor_id=?', row.id,
+					function (err, rows) {
+						if (err) {
+							console.log('Could not retrieve parameters from DB');
+							console.log(err);
+							return;
+						}
+						for (var i=0; i<rows.length; i++) {
+							parameters[rows[i].name] = rows[i].value;
+						}
+
+					}
+				);
+
+				activate_accessor(row.name, row.path, parameters);
+			}
+		);
+
+	});
+
+	console.log('Created or opened sqlite db successfully.');
+});
+
+
+
+/******************************************************************************
+ *** RPC Server Functions
+ ******************************************************************************/
+
+function activate_accessor (name, path, parameters, callback) {
+
+	try {
+		accessors.create_accessor(path, parameters, function (accessor) {
+			// Success callback
+
+			// Add UUIDs
+			for (var i=0; i<accessor._meta.ports.length; i++) {
+				var port = accessor._meta.ports[i];
+				port.uuid = uuid.v4();
+			}
+			accessor._meta.uuid = uuid.v4();
+			accessor._meta.device_name = name;
+			accessor._meta.html = nunjucks.render('ports.html', {
+				accessor: accessor._meta
+			});
+
+			// Keep track of the accessors we are running
+			active_accessors.push({
+				name: name,
+				path: path,
+				accessor: accessor._meta
+			});
+
+			// Also save this in the database
+			db.get('SELECT count(id) as count FROM accessors WHERE name=?', name, function (err, row) {
+				if (err) {
+					console.log(err);
+					throw 'Could not query for accessor name';
+				}
+				if (row.count == 0) {
+					// Have not seen this device before, add it.
+					var ins = db.prepare('INSERT INTO accessors (name, path) \
+					                      VALUES (?, ?)');
+					ins.run([name, path], function (err) {
+						if (err) {
+							console.log(err);
+							throw 'Could not add accessor to db';
+						}
+						var accessor_id = this.lastID;
+
+						var insparam = db.prepare('INSERT INTO parameters (accessor_id, name, value) \
+						                           VALUES (?, ?, ?)');
+						for (var param_name in parameters) {
+							var param_value = parameters[param_name];
+							insparam.run([accessor_id, param_name, param_value], function (err) {
+								if (err) {
+									console.log(err);
+									throw 'Failed to add accessor parameters to db';
+								}
+							});
+						}
+						insparam.finalize();
+
+					});
+					ins.finalize();
+				}
+			});
+
+			// Iterate through all ports so we can create routes
+			// for all ports.
+			accessor._meta.ports.forEach(function (port, port_index, port_array) {
+				console.log('Adding port ' + port.name);
+
+				var slash = '';
+				if (!s.startsWith(port.name, '/')) {
+					slash = '/';
+				}
+				var port_path = slash + port.name;
+				var device_base_path = '/active/' + name;
+				var device_port_path = device_base_path + port_path;
+				console.log('path: ' + device_port_path);
+
+				// Handle GET requests for this port
+				// OUTPUT
+				w.get(device_port_path, function (req, res) {
+					console.log(" GET " + device_port_path + ": (req: " + req + ", res: " + res + ")");
+					if (port.directions.indexOf('output') == -1) {
+						res.status(404).send('Request for output when that is not a valid direction');
+						return
+					}
+					var func = port.function;
+					var export_name = func.replace(/\./g, '_');
+					var obj = accessor[export_name];
+					var output_fn = obj.output;
+					output_fn(function (result) {
+						console.log(" --> resp: " + result);
+						res.send(''+result);
+					});
+				});
+
+				// INPUT
+				w.post(device_port_path, function (req, res) {
+					console.log("POST " + device_port_path + ": (req: " + req + ", res: " + res + ")");
+					if (port.directions.indexOf('input') == -1) {
+						res.status(404).send('Request for input when that is not a valid direction');
+						return
+					}
+					var arg = null;
+					if (port.type == 'bool') {
+						console.log('REQ BODY: ' + req.body);
+						arg = (req.body == 'true');
+					} else {
+						arg = req.body;
+					}
+
+					var func = port.function;
+					var export_name = func.replace(/\./g, '_');
+					var obj = accessor[export_name];
+					var input_fn = obj.input;
+
+					input_fn(arg, function () {
+						res.send('did it');
+					});
+				});
+			});
+
+			if (typeof callback === 'function') {
+				callback({success: 1});
+			}
+		}, function (err) {
+			// Error callback
+			console.log(err);
+			throw 'error creating accessor: ' + path;
+		});
+	} catch (e) {
+		console.log(e);
+		if (typeof callback === 'function') {
+			callback({success: 0});
+		}
+	}
+}
+
+
+/******************************************************************************
+ *** API Functions
+ ******************************************************************************/
+
 // Provide list of accessors
 w.get('/list/all', function (req, res) {
 	request(argv.host_server + '/list/all', function (error, response, body) {
@@ -125,92 +326,13 @@ w.post('/create', function (req, res) {
 		return
 	}
 
-	accessors.create_accessor(create_properties.path, create_properties.parameters, function (accessor) {
-		// Success callback
-
-		// Add UUIDs
-		for (var i=0; i<accessor._meta.ports.length; i++) {
-			var port = accessor._meta.ports[i];
-			port.uuid = uuid.v4();
-		}
-		accessor._meta.uuid = uuid.v4();
-		accessor._meta.device_name = create_properties.custom_name;
-		accessor._meta.html = nunjucks.render('ports.html', {
-			accessor: accessor._meta
+	var outcome = activate_accessor(create_properties.custom_name,
+	                                create_properties.path,
+	                                create_properties.parameters,
+		function (outcome) {
+			res.header("Content-Type", "application/json");
+			res.send(JSON.stringify(outcome));
 		});
-
-		active_accessors.push({
-			name: create_properties.custom_name,
-			path: create_properties.path,
-			accessor: accessor._meta
-		});
-
-		// Iterate through all ports so we can create routes
-		// for all ports.
-		accessor._meta.ports.forEach(function (port, port_index, port_array) {
-			console.log('Adding port ' + port.name);
-
-			var slash = '';
-			if (!s.startsWith(port.name, '/')) {
-				slash = '/';
-			}
-			var port_path = slash + port.name;
-			var device_base_path = '/active/' + create_properties.custom_name;
-			var device_port_path = device_base_path + port_path;
-			console.log('path: ' + device_port_path);
-
-			// Handle GET requests for this port
-			// OUTPUT
-			w.get(device_port_path, function (req, res) {
-				console.log(" GET " + device_port_path + ": (req: " + req + ", res: " + res + ")");
-				if (port.directions.indexOf('output') == -1) {
-					res.status(404).send('Request for output when that is not a valid direction');
-					return
-				}
-				var func = port.function;
-				var export_name = func.replace(/\./g, '_');
-				var obj = accessor[export_name];
-				var output_fn = obj.output;
-				output_fn(function (result) {
-					console.log(" --> resp: " + result);
-					res.send(''+result);
-				});
-			});
-
-			// INPUT
-			w.post(device_port_path, function (req, res) {
-				console.log("POST " + device_port_path + ": (req: " + req + ", res: " + res + ")");
-				if (port.directions.indexOf('input') == -1) {
-					res.status(404).send('Request for input when that is not a valid direction');
-					return
-				}
-				var arg = null;
-				if (port.type == 'bool') {
-					console.log('REQ BODY: ' + req.body);
-					arg = (req.body == 'true');
-				} else {
-					arg = req.body;
-				}
-
-				var func = port.function;
-				var export_name = func.replace(/\./g, '_');
-				var obj = accessor[export_name];
-				var input_fn = obj.input;
-
-				input_fn(arg, function () {
-					res.send('did it');
-				});
-			});
-		});
-
-		res.end('{"success": 1}');
-	}, function (err) {
-		// Error callback
-		console.log("error creating accessor: " + create_properties.path);
-		console.log(err);
-	});
-
-
 });
 
 
