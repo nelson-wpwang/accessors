@@ -33,23 +33,23 @@ Requesting an Accessor
 
 An accessor URL looks like:
 
-    http://accessors.io/accessor/lighting/hue/SingleHue.json
+    http://accessors.io/accessor/lighting/hue/HueSingle.json
 
 
-### XML
+#### XML
 
 Accessors can also be requested in XML format. To do so simply replace '.json'
 with '.xml':
 
-    http://accessors.io/accessor/lighting/hue/SingleHue.xml
+    http://accessors.io/accessor/lighting/hue/HueSingle.xml
 
-### Options
+#### Options
 
 The accessor server can do transformations on accessors before
 they are sent to the client. These are specified by URL
 parameters. Example:
 
-    http://accessors.io/accessor/lighting/hue/SingleHue.json?language=traceur
+    http://accessors.io/accessor/lighting/hue/HueSingle.json?language=traceur
 
 
 | Option Name | Valid Values             | Default | Description |
