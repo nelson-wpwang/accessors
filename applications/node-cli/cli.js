@@ -7,17 +7,6 @@ var async = require('async');
 
 var accessors = require('accessors.io');
 
-var argv = require('optimist')
-	.usage('Run an accessor with a command line interface.\nUsage: $0')
-	.alias('s', 'host_server')
-	.describe('s', 'URL of the accessor host server to use.')
-	.argv;
-
-// Change the host server if requested
-if ('host_server' in argv) {
-	accessors.set_host_server(argv.host_server);
-}
-
 // Used to prompt for questions
 var rl = readline.createInterface({
 	input: process.stdin,

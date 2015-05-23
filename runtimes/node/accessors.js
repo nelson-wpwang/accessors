@@ -8,6 +8,12 @@ try {
 	var debug       = require('debug');
 	var vm          = require('vm');
 	var hashmap     = require('hashmap');
+
+	var argv        = require('optimist')
+		.usage('Internal options for the accessors library.')
+		.alias('host-server', 'host_server')
+		.describe('host_server', 'URL of the accessor host server to use.')
+		.argv;
 } catch (e) {
 	console.log("** Missing import in the node runtime");
 	console.log("** This is an error with the accessor runtime module.");
@@ -29,9 +35,10 @@ if (!semver.satisfies(process.version, '>=0.11.0')) {
 var info = debug('accessors:info');
 var error = debug('accessors:error');
 
-// module.exports = function (host_server) {
-// Base path to a source of accessor files.
 var host_server = 'http://accessors.io';
+if ('host_server' in argv) {
+	host_server = argv.host_server;
+}
 info('Using host server ' + host_server + ' for accessors.');
 
 /* Update the server to pull accessors from.
