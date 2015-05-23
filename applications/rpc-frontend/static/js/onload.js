@@ -1,85 +1,143 @@
 /* vim: set noet ts=2 sts=2 sw=2: */
 
-var devices = [];
-
-
-$("#group-select").change(function () {
-	if ($(this).val() != 0) {
-		$("#accessor-interface").text('');
-		$.ajax({url: '/group' + $(this).val(),
-			success: function (data) {
-				if ('status' in data && data['status'] == 'error') {
-					alert_error('Unable to load accessors for that group.');
-
-				} else {
-
-					devices = data['devices'];
-					$("#accessor-select option[data-temp='true']").remove();
-
-					for (i=0; i<devices.length; i++) {
-						$("#accessor-select").append('<option value="'+i+'" data-temp="true">'+devices[i].name+' - '+devices[i].device_name+'</option>')
-					}
-					$("#accessor-select").show();
-
-				}
-			}});
-	}
-}).trigger('change');
 
 $("#accessor-select").change(function () {
-	if ($(this).val() != "default") {
-		console.log(devices);
-		accessor = devices[$(this).val()];
-		$("#accessor-interface").html(accessor.html);
+	if ($(this).val() != 'default') {
+		$("#accessor-new form").html('');
+		var path = $(this).val();
+		$.ajax({url: '/accessor' + path + '.json',
+			success: function (data) {
+				var data = JSON.parse(data);
 
-		// Activate all sliders
-		$('#accessor-'+accessor.uuid+' .slider').each(function () {
-			$(this).slider().on('slideStop', function (slide_event) {
-				rpc_post(accessor.uuid, $(this).attr('id'), slide_event.value);
-			});
-		});
+				var parameters = data['parameters'];
+				console.log(parameters);
 
-		// Activate all color pickers
-		$('#accessor-'+accessor.uuid+' .colorpicker').colpick({
-			flat: true,
-			layout: 'hex',
-			submit: 0,
-			onChange: function (hsb, hex, rgb, el, bySetColor) {
-				rpc_post(accessor.uuid, $(this).attr('id'), hex);
+				var html = '';
+
+				// Keep the path
+				html += '<input type="hidden" id="path" value="' + path + '">';
+
+				// Need to request a title
+				html += '<label>Device Name</label>';
+				html += '<input type="text" id="name">';
+				html += '<br /><br />';
+
+				html += '<div id="accessor-new-parameters">';
+				for (var i=0; i<parameters.length; i++) {
+					var parameter = parameters[i];
+
+					html += '<label>' + parameter.name + '</label>';
+					html += '<input type="text" name="' + parameter.name + '">';
+					html += '<br />';
+				}
+				html += '</div>';
+
+				// Add a button
+				html += '<button type="button" id="button-accessor-new">Create Accessor</button>';
+
+				$("#accessor-new form").html(html);
 			}
 		});
+	}
+});
 
-		// Setup callbacks for buttons and check boxes
-		$('#accessor-'+accessor.uuid).on('click', '.accessor-arbitrary-input-button', function () {
-			var port = $(this).parents('.port-html-group').find('.port');
-			rpc_post(accessor.uuid, port.attr('id'), port.val());
-		});
+$('#accessor-new').on('click', '#button-accessor-new', function () {
+	var new_device = {
+		parameters: {},
+		path: $('#accessor-new form input#path').val(),
+		custom_name: $('#accessor-new form input#name').val()
+	};
 
+	$('#accessor-new-parameters input:text').each(function () {
+		var param_name = $(this).attr('name');
+		var param_value = $(this).val();
 
-		$('#accessor-'+accessor.uuid).on('click', '.accessor-get', function () {
-			var port = $(this).parents('.port-html-group').find('.output-port');
-			rpc_get(accessor.uuid, port.attr('id'));
-		});
+		new_device.parameters[param_name] = param_value;
+	});
 
-		$('#accessor-'+accessor.uuid).on('click', '.accessor-checkbox', function () {
-			rpc_post(accessor.uuid, $(this).attr('id'), $(this).is(':checked'));
-		});
+	$.ajax({
+		url: accessor_runtime_server + '/create',
+		type: 'POST',
+		dataType: 'json',
+		contentType: 'application/json',
+		data: JSON.stringify(new_device),
+		success: function (data) {
+			console.log('Created device.');
 
-		$('#accessor-'+accessor.uuid).on('click', '.accessor-button', function () {
-			rpc_post(accessor.uuid, $(this).attr('id'), null);
-		});
+			var html = '';
+			html += '<option value="' + new_device.custom_name + '">' + new_device.custom_name + '</option>';
+			$("#device-select").append(html);
 
-		// init all with GET
-		for (var i=0; i<accessor.ports.length; i++) {
-			rpc_get(accessor.uuid, accessor.ports[i].uuid, accessor.ports[i].type);
+			// Clear create device form
+			$("#accessor-new form").html('');
+		},
+		error: function () {
+			console.log('Failed to create device.');
 		}
+	});
+});
+
+$("#device-select").change(function () {
+	if ($(this).val() != "default") {
+		var name = $(this).val();
+
+		$.ajax({url: '/device/' + name,
+			success: function (data) {
+				var accessor = data;
+
+				// accessor = devices[$(this).val()];
+				$("#accessor-interface").html(accessor.html);
+
+				// Activate all sliders
+				$('#accessor-'+accessor.uuid+' .slider').each(function () {
+					$(this).slider().on('slideStop', function (slide_event) {
+						rpc_post(accessor.uuid, $(this).attr('id'), slide_event.value);
+					});
+				});
+
+				// Activate all color pickers
+				$('#accessor-'+accessor.uuid+' .colorpicker').colpick({
+					flat: true,
+					layout: 'hex',
+					submit: 0,
+					onChange: function (hsb, hex, rgb, el, bySetColor) {
+						rpc_post(accessor.uuid, $(this).attr('id'), hex);
+					}
+				});
+
+				// Setup callbacks for buttons and check boxes
+				$('#accessor-'+accessor.uuid).on('click', '.accessor-arbitrary-input-button', function () {
+					var port = $(this).parents('.port-html-group').find('.port');
+					rpc_post(accessor.uuid, port.attr('id'), port.val());
+				});
+
+
+				$('#accessor-'+accessor.uuid).on('click', '.accessor-get', function () {
+					var port = $(this).parents('.port-html-group').find('.output-port');
+					rpc_get(accessor.uuid, port.attr('id'));
+				});
+
+				$('#accessor-'+accessor.uuid).on('click', '.accessor-checkbox', function () {
+					rpc_post(accessor.uuid, $(this).attr('id'), $(this).is(':checked'));
+				});
+
+				$('#accessor-'+accessor.uuid).on('click', '.accessor-button', function () {
+					rpc_post(accessor.uuid, $(this).attr('id'), null);
+				});
+
+				// init all with GET
+				for (var i=0; i<accessor.ports.length; i++) {
+					rpc_get(accessor.uuid, accessor.ports[i].uuid, accessor.ports[i].type);
+				}
+
+			}
+		});
 	}
 });
 
 function rpc_post (uuid, port_uuid, arg) {
 	var accessor = $('#accessor-'+uuid);
 	var device_name = accessor.attr('data-device-name');
-	var device_group = accessor.attr('data-device-group');
 
 	if (port_uuid.indexOf('port-') == 0) {
 		port_uuid = port_uuid.substring(5, port_uuid.length);
@@ -92,7 +150,7 @@ function rpc_post (uuid, port_uuid, arg) {
 		slash = '/';
 	}
 
-	url = device_group + '/' + device_name + slash + port_name;
+	url = accessor_runtime_server + '/active/' + device_name + slash + port_name;
 
 	// Force arg to be a string
 	arg = '' + arg;
@@ -111,7 +169,6 @@ function rpc_get (uuid, port_uuid, port_type) {
 	console.log("rpc_get (" + uuid + ", " + port_uuid + ", " + port_type + ")");
 	var accessor = $('#accessor-'+uuid);
 	var device_name = accessor.attr('data-device-name');
-	var device_group = accessor.attr('data-device-group');
 
 	if (port_uuid.indexOf('port-') == 0) {
 		port_uuid = port_uuid.substring(5, port_uuid.length);
@@ -124,7 +181,7 @@ function rpc_get (uuid, port_uuid, port_type) {
 		slash = '/';
 	}
 
-	url = device_group + '/' + device_name + slash + port_name;
+	url = accessor_runtime_server + '/active/' + device_name + slash + port_name;
 
 	console.log('Get: ' + url);
 	$.get(url, function (data) {

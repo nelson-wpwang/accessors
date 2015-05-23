@@ -12,6 +12,7 @@
   "author": "Brad Campbell, Branden Ghena",
   "license": "ISC",
   "dependencies": {
+    "accessors.io": "^1.2.0",
     "body-parser": "^1.10.1",
     "express": "^4.11.0",
     "node-dir": "^0.1.6",

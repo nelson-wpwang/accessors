@@ -2,7 +2,7 @@
 
 
 {% block title %}
-Accessors / University of Michigan
+Accessors RPC / University of Michigan
 {% endblock %}
 {% block page_title %}
 Accessors / University of Michigan
@@ -69,13 +69,13 @@ Accessors / University of Michigan
 
       <div class="panel panel-info">
         <div class="panel-heading">
-          <h3 class="panel-title">To get started, choose an accessor group.</h3>
+          <h3 class="panel-title">To get started, choose an accessor.</h3>
         </div>
         <div class="panel-body">
-          <select class="form-control" id="group-select">
-            <option value="0">Select a group</option>
-            {% for group in groups %}
-            <option value="{{ group.path }}">{{ group.name }}</option>
+          <select class="form-control" id="device-select">
+            <option value="default">Select an existing accessor</option>
+            {% for aa in active_accessors %}
+            <option value="{{ aa.name }}">{{ aa.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -83,12 +83,19 @@ Accessors / University of Michigan
 
       <div class="panel panel-info">
         <div class="panel-heading">
-          <h3 class="panel-title">Choose a device (accessor) to use.</h3>
+          <h3 class="panel-title">Create a new device.</h3>
         </div>
         <div class="panel-body">
-          <select class="form-control" id="accessor-select" style="display:none;">
+          <select class="form-control" id="accessor-select">
             <option value="default">Select an accessor</option>
+            {% for accessor_path in all_accessors %}
+            <option value="{{ accessor_path }}">{{ accessor_path }}</option>
+            {% endfor %}
           </select>
+          <div id="accessor-new">
+            <form>
+            </form>
+          </div>
         </div>
       </div>
 
@@ -101,6 +108,7 @@ Accessors / University of Michigan
           <h3 class="panel-title">Use the accessor.</h3>
         </div>
         <div class="panel-body" id="accessor-interface">
+
         </div>
       </div>
 
