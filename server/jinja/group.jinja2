@@ -27,7 +27,7 @@ Accessors in {{ group }}
     {% endif %}
     <td>
       {% for iface in record.accessor.implements %}
-      <p><a href="/view/interface{{ iface.interface }}">{{ iface.interface }}</a></p>
+      <p>{{ iface.interface|interface }}</p>
       {% endfor %}
     </td>
     <td>

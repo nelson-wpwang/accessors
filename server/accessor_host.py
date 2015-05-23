@@ -832,6 +832,8 @@ class JinjaTemplateRendering:
 				extensions=['jinja2.ext.i18n'],
 				)
 		env.filters['markdown'] = jinja_filter_markdown
+		env.filters['interface'] = lambda iface:\
+			'<a class="interface" href="/view/interface{iface}">{iface}</a>'.format(iface=iface)
 		env.install_null_translations()
 
 		try:

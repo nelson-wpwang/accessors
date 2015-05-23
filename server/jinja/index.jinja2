@@ -33,7 +33,7 @@ Accessor Host Server
     <td><a href="/view/group{{ record.group }}">{{ record.group }}</a></td>
     <td>
       {% for iface in record.accessor.implements %}
-      <p><a href="/view/interface{{ iface.interface }}">{{ iface.interface }}</a></p>
+      <p>{{ iface.interface|interface }}</p>
       {% endfor %}
     </td>
     <td>
@@ -91,7 +91,7 @@ powered on or off.
 
   {% for path,iface in interface_tree.items() %}
   <tr>
-    <td><a href="/view/interface{{ path }}">{{ path }}</a></td>
+    <td>{{ path|interface }}</td>
     <td>
       {% for ext in iface.extends %}
       <p>{{ ext }}</p>
