@@ -1,13 +1,39 @@
 Accessor Hosting Server
 =======================
 
-This server compiles and hosts accessors. Accessors are compiled by including
-ports from interfaces above them in the hierarchy. Accessors URLs are created
-based on the folder hierarchy where they are stored.
+This server compiles and hosts accessors.
+Any client who wishes to use an accessor can retrieve them from an Accessor
+Host Server. The server also provides a UI for exploring accessor content.
 
-For example, a URL might look like:
 
-    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.json
+Running a Local Host Server
+---------------------------
+
+1. Install the dependencies. The server is written in Python3 and uses
+node.js to perform some validation on the accessor.
+
+        sudo pip3 install -r requirements.pip
+        npm install
+
+2. Run the server
+
+        ./accessor_host.py
+
+    By default, the server will pull the `accessor-files` repo from github
+    and serve those accessors.
+
+    To configure the accessor host, see the help:
+
+        ./accessor_host.py --help
+
+
+
+Requesting an Accessor
+----------------------
+
+An accessor URL looks like:
+
+    http://accessors.io/accessor/lighting/hue/SingleHue.json
 
 
 ### XML
@@ -15,7 +41,7 @@ For example, a URL might look like:
 Accessors can also be requested in XML format. To do so simply replace '.json'
 with '.xml':
 
-    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.xml
+    http://accessors.io/accessor/lighting/hue/SingleHue.xml
 
 ### Options
 
@@ -23,7 +49,7 @@ The accessor server can do transformations on accessors before
 they are sent to the client. These are specified by URL
 parameters. Example:
 
-    http://accessors.com/accessor/onoffdevice/light/hue/SingleHue.json?language=traceur
+    http://accessors.io/accessor/lighting/hue/SingleHue.json?language=traceur
 
 
 | Option Name | Valid Values             | Default | Description |

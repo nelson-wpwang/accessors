@@ -37,8 +37,8 @@ respectively. Input (and inout) ports define port functions that are called
 whenever their input value changes. -->
 
 
-Quick Start
------------
+Example
+-------
 
 Accessors can be used to not only communicate with devices, but also with
 web services. To see the Node.js accessor runtime query a stock price, run:
@@ -79,30 +79,19 @@ function (error) {
 The "StockTick" accessor is created, then its two ports are used to set
 the stock being queried and to read its price.
 
+There are other examples in that folder that you can explore.
+
 
 Accessors.io
 ------------
 
 Accessors must be hosted somewhere, and we currently run a hosting server
 at [accessors.io](http://accessors.io). In a browser, this service will list
-the existing accessors and show the details of each one.
+the existing accessors and show the details of each one. For more information
+and for running your own hosting server, see the
+[Host Server Readme](https://github.com/lab11/accessors/tree/master/server).
 
-If you are inclined, you can run your own accessor host server locally. To
-do this:
 
-1. Install the dependencies. The server is written in Python3 and uses
-node.js to perform some validation on the accessor.
-
-        cd server
-        sudo pip3 install -r requirements.pip
-        npm install
-
-2. Run the server
-
-        ./accessor_host.py
-
-    By default, the server will pull the `accessor-files` repo from github
-    and serve those accessors.
 
 
 Getting Started
