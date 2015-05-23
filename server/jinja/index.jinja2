@@ -116,12 +116,12 @@ powered on or off.
     </td>
     <td>
       {% for acc in iface.accessors %}
-      <p><a href="/view/accessors{{ acc }}">{{ acc }}</a></p>
+      <p><a href="/view/accessor{{ acc }}">{{ acc }}</a></p>
       {% endfor %}
     </td>
     <td>
       {% for acc in iface.accessors_by_extends %}
-      <p><a href="/view/accessors{{ acc }}">{{ acc }}</a></p>
+      <p><a href="/view/accessor{{ acc }}">{{ acc }}</a></p>
       {% endfor %}
     </td>
   </tr>
