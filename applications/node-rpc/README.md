@@ -21,4 +21,8 @@ Running
 -------
 
     npm install
+    sudo npm install -g bower
+    cd static
+    bower install
+    cd ..
     ./rpc.js

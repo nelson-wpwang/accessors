@@ -39,7 +39,7 @@ if (argv.host_server == undefined) {
 	console.log('Using Accessor Host Server: ' + argv.host_server);
 }
 if (argv.port == undefined) {
-	argv.port = 5577;
+	argv.port = 5000;
 	console.log('Using default port for RPC commands: ' + argv.port);
 	console.log('To specify, use option --port');
 } else {
