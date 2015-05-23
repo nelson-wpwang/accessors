@@ -43,6 +43,9 @@ accessors.get_accessor_list(function (accessor_list) {
 			console.log('Ports:');
 			for (var i=0; i<accessor_ir.ports.length; i++) {
 				console.log('  ' + i + ': ' + accessor_ir.ports[i].function);
+
+				// ppannuto: TEMPORARY HACK
+				accessor_ir.ports[i].function = accessor_ir.ports[i].function.replace(/\./g, '_');
 			}
 
 			function subscribe_callback (data) {
@@ -57,7 +60,7 @@ accessors.get_accessor_list(function (accessor_list) {
 				}
 
 				var port_index = parseInt(readline.question('port index: '));
-				if (port_index < 0 || port_index >= accessor_ir.ports.length) {
+				if (isNaN(port_index) || port_index < 0 || port_index >= accessor_ir.ports.length) {
 					console.log('Invalid port index');
 					interact();
 				} else {
