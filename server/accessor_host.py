@@ -600,6 +600,11 @@ def find_accessors (accessor_path):
 					# populating the ports key from a combination of created_ports
 					# and interface_ports from the validator
 					accessor['ports'] = copy.deepcopy(accessor['created_ports'])
+					for port in accessor['ports']:
+						if 'type' not in port:
+							port['type'] = 'string'
+						if 'display_name' not in port:
+							port['display_name'] = port['name'].split('.')[-1]
 
 					inferred_iface_ports = {}
 					inferred_iface_ports_to_delete = []
