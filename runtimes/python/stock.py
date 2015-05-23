@@ -9,7 +9,7 @@ stocktick = accessors.get_accessor_from_server('localhost:6565', '/webquery/Stoc
 try:
 	for symbol in ['GOOG', 'MSFT', 'YHOO']:
 		stocktick.StockSymbol = symbol
-		print("Stock {} price {}".format(stocktick.StockSymbol, stocktick.Price))
+		print("Stock {} price {}".format(symbol, stocktick.Price))
 finally:
 	# Hack until I understand bond better
 	sh.killall('node')

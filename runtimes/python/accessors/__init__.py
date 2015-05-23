@@ -113,12 +113,15 @@ def exported(fn_to_decorate):
 class Port():
 	@staticmethod
 	def create(port, accessor):
-		if port['direction'] == 'input':
-			return InputPort(port, accessor)
-		elif port['direction'] == 'output':
+		if 'observe' in port['directions']:
+			raise NotImplementedError("Python runtime doesn't support observe yet")
+		if 'input' in port['directions']:
+			if 'output' in port['directions']:
+				return InoutPort(port, accessor)
+			else:
+				return InputPort(port, accessor)
+		elif 'output' in port['directions']:
 			return OutputPort(port, accessor)
-		elif port['direction'] == 'inout':
-			return InoutPort(port, accessor)
 		else:
 			raise NotImplementedError("Unknown port direction: {}".\
 					format(port['direction']))
@@ -163,48 +166,43 @@ class Port():
 		return '<{}> {}(<{}>)'.format(self.direction, self.name, str(self.type))
 
 
-	# For the runtime use, allow anything to '_get' regardless of port direction
-	# since the runtime may want to read back the values it _set
-	def _get(self):
-		return self.value
-
 class InputPort(Port):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.direction = 'input'
 
-	# For the accessor use
-	def get(self):
-		return self.type(self.value)
+	def _get(self):
+		log.error("Attempt to get output only port %s", self)
+		raise AttributeError
 
-	# For the runtime use
 	def _set(self, value):
-		self.value = value
 		if self.accessor._js is None:
 			self.accessor._init()
-		try:
-			log.debug("%s: call accesor fn: %s(%s)", self, self.name, value)
-			r = self.accessor._js.call('_port_call', self.name, value)
-			log.debug("%s: return %s", self, r)
-			log.debug("%s: end accesor fn: %s(%s)", self, self.name, value)
-		except bond.RemoteException as e:
-			# This is maybe hack-y, maybe the best that can be done
-			if e.data == 'TypeError: undefined is not a function':
-				log.debug("%s: no port fn, default to fire", self)
-				log.debug("%s: pre-fire", self)
-				self.accessor._js.call('_port_call', 'fire')
-				log.debug("%s: post-fire", self)
-			else:
-				raise
+		fn = self.name + '.input'
+		log.debug("%s: call accesor fn: %s(%s)", self, fn, value)
+		r = self.accessor._js.call('_port_call', fn, value)
+		log.debug("%s: return %s", self, r)
+		log.debug("%s: end accesor fn: %s(%s)", self, fn, value)
 
 class OutputPort(Port):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.direction = 'output'
 
-	# For the accessor use
-	def set(self, value):
-		self.value = self.type(value)
+	def _get(self):
+		if self.accessor._js is None:
+			self.accessor._init()
+		fn = self.name + '.output'
+		log.debug("%s: call accesor fn: %s(%s)", self, fn, None)
+		r = self.accessor._js.call('_port_call', fn, None)
+		log.debug("%s: return %s", self, r)
+		log.debug("%s: end accesor fn: %s(%s)", self, fn, None)
+		return r
+
+	def _set(self):
+		log.error("Attempt to set output only port %s", self)
+		raise AttributeError
+
 
 class InoutPort(InputPort,OutputPort):
 	def __init__(self, *args, **kwargs):
@@ -288,6 +286,13 @@ class Accessor():
 				log.critical("Install via `npm install harmony-reflect`")
 				sys.exit(1)
 
+		# Need to set up empty objects to keep JS happy
+		for port in self._json['created_ports']:
+			self._js.eval_block('var ' + port['name'] + ' = {};')
+		for port in self._json['interface_ports']:
+			print(port)
+			raise NotImplementedError('interface_ports')
+
 		log.debug("%s: loading accessor", self)
 		self._js.eval_block(self._code)
 
@@ -341,8 +346,18 @@ class Accessor():
 */
 
 function _do_port_call (port, value) {
+	var r;
 	rt.log.debug("before port call of " + port + "(" + value + ")");
-	var r = global[port](value);
+	if (port.indexOf('.') == -1) {
+		r = global[port](value);
+	} else {
+		var temp = port.split('.');
+		var obj = global[temp.shift()];
+		while (temp.length) {
+			obj = obj[temp.shift()];
+		}
+		r = obj(value);
+	}
 	rt.log.debug("after port call, r: " + r);
 	if (r && typeof r.next == 'function') {
 		r = r.next().value;
@@ -648,20 +663,20 @@ rt.socket.socket = function* (family, sock_type) {
 			return r.text
 		self._js.export(http_request, '_http_request')
 
-		def http_readURL(url):
-			log.debug("%s: readUrl('%s')", self, url)
+		def http_get(url):
+			log.debug("%s: get('%s')", self, url)
 			r = requests.get(url)
 			if r.status_code != 200:
-				raise NotImplementedError("readURL: request code != 200")
+				raise NotImplementedError("get: request code != 200")
 			return r.text
-		self._js.export(http_readURL, '_http_readURL')
+		self._js.export(http_get, '_http_get')
 
 		self._js.eval_block('''\
 rt.http = Object();
 rt.http.request = function* (url, method, prop, body, timeout) {
 	return _http_request (url, method, prop, body, timeout);
 };
-rt.http.readURL = function* (url) { return _http_readURL(url); };
+rt.http.get = function* (url) { return _http_get(url); };
 ''')
 
 
