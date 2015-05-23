@@ -878,7 +878,7 @@ class JinjaBaseHandler (tornado.web.RequestHandler, JinjaTemplateRendering):
 node_runtime_example = string.Template(
 '''var accessors = require('accessors.io');
 $parameters
-accessors.create_accessor('$path_and_name', $parameters_arg, function (accessor) {
+accessors.create_accessor('$path_and_name', $parameters_arg, function ($instance) {
 
 $ports}, function (err) {
     console.log('Error when creating $path_and_name accessor.');
@@ -895,7 +895,7 @@ node_runtime_example_parameters_entries = string.Template('''    $name: '',
 ''')
 
 node_runtime_example_ports_input = string.Template(
-'''    accessor.$port_function.input(value, function () {
+'''    $instance.$port_function.input(value, function () {
         // Setting the port completed successfully.
     }, function (err) {
         console.log('Setting port $port_name failed.');
@@ -904,7 +904,7 @@ node_runtime_example_ports_input = string.Template(
 ''')
 
 node_runtime_example_ports_output = string.Template(
-'''    accessor.$port_function.output(function (value) {
+'''    $instance.$port_function.output(function (value) {
         console.log('Read $port_name and got: ' + value);
     }, function (err) {
         console.log('Reading port $port_name failed.');
@@ -913,7 +913,7 @@ node_runtime_example_ports_output = string.Template(
 ''')
 
 node_runtime_example_ports_observe = string.Template(
-'''    accessor.$port_function.observe(function (data) {
+'''    $instance.$port_function.observe(function (data) {
         console.log('Callback with ' + data);
     }, function () {
         console.log('Observe port "$port_name" setup successfully');
@@ -975,15 +975,19 @@ class handler_accessor_page (JinjaBaseHandler):
 		for port in record['accessor']['ports']:
 			if 'input' in port['directions']:
 				node_ex_ports += node_runtime_example_ports_input.substitute(port_function=port['function'],
+		                                                                     instance=record['accessor']['safe_name'],
 				                                                             port_name=port['name'])
 			if 'output' in port['directions']:
 				node_ex_ports += node_runtime_example_ports_output.substitute(port_function=port['function'],
+		                                                                      instance=record['accessor']['safe_name'],
 				                                                              port_name=port['name'])
 			if 'observe' in port['directions']:
 				node_ex_ports += node_runtime_example_ports_observe.substitute(port_function=port['function'],
+		                                                                      instance=record['accessor']['safe_name'],
 				                                                              port_name=port['name'])
 
 		node_ex = node_runtime_example.substitute(path_and_name=record['path'],
+		                                          instance=record['accessor']['safe_name'],
 		                                          parameters=node_ex_parameters,
 		                                          parameters_arg=node_ex_parameters_arg,
 		                                          ports=node_ex_ports)
