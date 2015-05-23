@@ -17,6 +17,8 @@ Accessor Host Server
     <tr>
       <th>Name</th>
       <th>Group</th>
+      <th>Provides</th>
+      <th>Creates</th>
       <th>Last Updated</th>
     </tr>
   </thead>
@@ -29,6 +31,27 @@ Accessor Host Server
     <td><a href="/view{{ record.path }}">{{ record.name }}</a></td>
     {% endif %}
     <td>{{ record.group }}</td>
+    <td>
+      {% for iface in record.accessor.implements %}
+      <p>{{ iface.interface }}</p>
+      {% endfor %}
+    </td>
+    <td>
+      {% for port in record.accessor.created_ports %}
+      <p>
+      {% if 'observe' in port.directions %}
+      <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+      {% endif %}
+      {% if 'input' in port.directions %}
+      <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+      {% endif %}
+      {{ port.name }}
+      {% if 'output' in port.directions %}
+      <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+      {% endif %}
+      </p>
+      {% endfor %}
+    </td>
     <td>{{ record.compilation_timestamp.humanize() }}</td>
   </tr>
   {% endfor %}
