@@ -43,19 +43,27 @@ The {{ interface }} Interface
   {% endif %}
 </p>
 
+<hr />
+
+{% if interface.accessors %}
 <h4>These accessors implement the {{ interface }} interface:</h4>
 <ul>
   {% for acc in interface.accessors %}
   <li><a href="/view/accessor{{ acc }}">{{ acc }}</a></li>
   {% endfor %}
 </ul>
+{% endif %}
 
+{% if interface.accessors_by_extends %}
 <h4>These accessors implement the {{ interface }} interface because they implement an interface that extends {{ interface }}:</h4>
 <ul>
   {% for acc in interface.accessors_by_extends %}
   <li><a href="/view/accessor{{ acc }}">{{ acc }}</a></li>
   {% endfor %}
 </ul>
+{% endif %}
+
+<hr />
 
 {% include "interface-detail.jinja2" %}
 
