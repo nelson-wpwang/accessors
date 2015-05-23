@@ -68,6 +68,13 @@ __Table of Contents__
 
 
 
+Dependencies
+------------
+
+We highly recommend you use [io.js](https://iojs.org) with this project
+as it has better support for newer Node.js features that we use.
+
+
 Example
 -------
 
