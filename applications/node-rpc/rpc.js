@@ -151,7 +151,7 @@ function activate_accessor (name, path, parameters, callback) {
 				port.uuid = uuid.v4();
 			}
 			accessor._meta.uuid = uuid.v4();
-			accessor._meta.device_name = name;
+			accessor._meta.device_name = escape(name);
 			accessor._meta.html = nunjucks.render('ports.html', {
 				accessor: accessor._meta
 			});
@@ -208,7 +208,7 @@ function activate_accessor (name, path, parameters, callback) {
 					slash = '/';
 				}
 				var port_path = slash + port.name;
-				var device_base_path = '/active/' + name;
+				var device_base_path = '/active/' + escape(name);
 				var device_port_path = device_base_path + port_path;
 				console.log('path: ' + device_port_path);
 
@@ -306,7 +306,7 @@ w.get('/device/:name([\\S]+)', function (req, res) {
 	for (var i=0; i<active_accessors.length; i++) {
 		var item = active_accessors[i];
 
-		if (item.name == req.params.name) {
+		if (item.name == unescape(req.params.name)) {
 			res.send(JSON.stringify(item.accessor));
 			return
 		}
