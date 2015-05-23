@@ -61,10 +61,10 @@ __Table of Contents__
 1. [Accessors.io](#accessorsio)
 1. [Command Line Tool](#command-line-tool)
 1. [Accessor Background](#accessor-background)
+1. [Accessors RPC Tool](#accessors-rpc-tool)
   - [Accessor Runtime](#accessor-runtime)
   - [Accessor Example](#accessor-example)
   - [Ports and Interfaces](#ports-and-interfaces)
-1. [Accessors RPC Tool](#accessors-rpc-tool)
 
 
 
