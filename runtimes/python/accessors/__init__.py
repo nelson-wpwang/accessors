@@ -155,7 +155,8 @@ class Port():
 	def __init__(self, port, accessor):
 		self.accessor = accessor
 
-		self.name = port['name']
+		self._name = port['name']
+		self.name = port['function']
 
 		if port['type'] == 'select':
 			self.type = Port.SelectType(port['options'])
@@ -289,9 +290,19 @@ class Accessor():
 		# Need to set up empty objects to keep JS happy
 		for port in self._json['created_ports']:
 			self._js.eval_block('var ' + port['name'] + ' = {};')
+		objs_made = set()
 		for port in self._json['interface_ports']:
-			print(port)
-			raise NotImplementedError('interface_ports')
+			to_make = port['name'].split('.')
+			top = to_make.pop(0)
+			if top not in objs_made:
+				self._js.eval_block('var ' + top + ' = {};')
+				objs_made.add(top)
+			while to_make:
+				temp = to_make.pop(0)
+				top += '.' + temp
+				if top not in objs_made:
+					self._js.eval_block(top + ' = {};')
+					objs_made.add(top)
 
 		log.debug("%s: loading accessor", self)
 		self._js.eval_block(self._code)
@@ -396,6 +407,12 @@ function _dump_stack (dump_via) {
 
 		self._js.eval_block('''\
 create_port = function () {
+	/* no-op: operation handled upstream */
+}
+''')
+
+		self._js.eval_block('''\
+provide_interface = function () {
 	/* no-op: operation handled upstream */
 }
 ''')
@@ -597,7 +614,7 @@ rt.time.run_later = function (delay_in_ms, fn_to_run, args) {
 			return r
 		self._runtime.marshall = marshall
 
-		def get_parameter(parameter_name):
+		def get_parameter(parameter_name, default=None):
 			try:
 				r = self._parameters[parameter_name]
 			except:

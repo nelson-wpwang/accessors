@@ -4,11 +4,24 @@ import sh
 
 import accessors
 
-rpidoor = accessors.get_accessor_by_location(
-	'localhost:6565',
-	'University of Michigan - 4908 BBB',
-	'rpidoor'
-	)
+import logging
+logging.getLogger('accessors').setLevel(logging.DEBUG)
+
+password = input("What's the password? ")
+
+#rpidoor = accessors.get_accessor_by_location(
+#	'localhost:6565',
+#	'University of Michigan - 4908 BBB',
+#	'rpidoor'
+#	)
+rpidoor = accessors.get_accessor_from_server(
+		'localhost:6565',
+		'/lock/door/rpidoor',
+		{
+			'host': '2607:f018:800:10f:c298:e552:5048:d86e',
+			'password': password,
+		},
+		)
 try:
 	rpidoor.Lock = False
 finally:
