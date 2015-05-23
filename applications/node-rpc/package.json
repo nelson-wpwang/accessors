@@ -1,6 +1,6 @@
 {
-  "name": "node-rpc",
-  "version": "0.1.0",
+  "name": "accessors.io-rpc",
+  "version": "1.0.0",
   "description": "HTTP webserver interface for running accessors.",
   "main": "rpc.js",
   "scripts": {
@@ -9,7 +9,11 @@
   "keywords": [
     "accessors"
   ],
-  "author": "Brad Campbell, Branden Ghena",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lab11/accessors"
+  },
+  "author": "Brad Campbell, Pat Pannuto",
   "license": "ISC",
   "dependencies": {
     "accessors.io": "^1.2.0",
@@ -25,5 +29,9 @@
     "semver": "^4.2.0",
     "sqlite3": "^3.0.8",
     "underscore.string": "^3.0.0"
+  },
+  "bin": {
+    "accessors-rpc": "./rpc.js"
   }
+
 }
