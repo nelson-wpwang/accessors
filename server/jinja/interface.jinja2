@@ -43,6 +43,13 @@ The {{ interface }} Interface
   {% endif %}
 </p>
 
+<h3>These accessors implement the {{ interface }} interface:</h3>
+<ul>
+  {% for acc in interface.accessors %}
+  <li><a href="/view/accessor{{ acc }}">{{ acc }}</a></li>
+  {% endfor %}
+</ul>
+
 {% include "interface-detail.jinja2" %}
 
 {% endblock %}

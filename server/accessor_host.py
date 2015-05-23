@@ -308,6 +308,9 @@ class Interface():
 			log.debug('---'*30)
 			log.debug(pprint.pformat(interface_tree))
 
+			# All accessors that implement this interface (by name)
+			self.accessors = set()
+
 		except:
 			log.exception("Uncaught exception generating %s", self.path)
 			raise
@@ -453,6 +456,9 @@ def find_accessors (accessor_path):
 						old_accessor = first(accessors_db('path') == view_path)
 						if old_accessor:
 							log.info('Got new version of {}'.format(path))
+							for iface in old_accessor['accessor']['implements']:
+								interface = interface_tree[iface['implements']]
+								interface.accessors.discard(old_accessor['path'])
 							accessors_db.delete(old_accessor)
 						else:
 							log.debug("NEW ACCESSOR: %s", path)
@@ -697,6 +703,11 @@ def find_accessors (accessor_path):
 										path=view_path,
 										jscontents=contents,
 										accessor=accessor)
+
+					# Save a copy of the reverse mapping as well
+					for iface in accessor['implements']:
+						interface = interface_tree[iface['interface']]
+						interface.accessors.add(view_path)
 
 					log.info('Adding accessor {}'.format(view_path))
 				except ParseError as e:
