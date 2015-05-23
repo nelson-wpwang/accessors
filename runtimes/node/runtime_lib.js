@@ -16,6 +16,7 @@ try {
 	var net          = require('net');
 	var socketio_old = require('socket.io-client');
 	var through2     = require('through2');
+	var WebSocket    = require('ws');
 } catch (e) {
 	console.log("** Missing import in the node runtime library");
 	console.log("** This is an error with the accessor runtime module.");
@@ -271,13 +272,53 @@ rt.coap.observe = function coapObserver(url, callback) {
 	ogm.end();
 }
 
+
+/*** WEBSOCKET CONNECTIONS ***/
+
+rt.websocket = Object();
+
+rt.websocket.connect = function* websocketConnect (url) {
+	var w = Object();
+
+	info('WebSocket Connect: ' + url);
+	var defer = Q.defer();
+	var ws = new WebSocket(url);
+	ws.on('open', function () {
+		defer.resolve(w);
+	});
+
+	w.subscribe = function (data_callback, error_callback, close_callback) {
+		info('WebSocket subscribe.');
+
+		ws.on('message', function (data, flags) {
+			data_callback(data);
+		});
+		if (typeof error_callback === 'function') {
+			ws.on('error', error_callback);
+		}
+		if (typeof close_callback === 'function') {
+			ws.on('close', close_callback);
+		}
+	};
+
+	w.send = function (data) {
+		if (data !== null && typeof data === 'object') {
+			data = JSON.stringify(data);
+		}
+		info('WebSocket: sending ' + data);
+		ws.send(data);
+	};
+
+	return yield defer.promise;
+}
+
+
 /*** RABBITMQ / AMQP CONNECTIONS ***/
 
 rt.amqp = Object();
 
 rt.amqp.connect = function* amqpConnect (url) {
 	var a = Object();
-	var conn;
 
 	info('AMQP Connect: ' + url);
 	var defer = Q.defer();
@@ -371,13 +412,14 @@ function getElementValueById (html, id) {
 }
 
 
-exports.version  = rt.version;
-exports.log      = rt.log;
-exports.time     = rt.time;
-exports.socket   = rt.socket;
-exports.http     = rt.http;
-exports.coap     = rt.coap;
-exports.amqp     = rt.amqp;
-exports.gatd_old = rt.gatd_old;
-exports.color    = rt.color;
-exports.encode   = rt.encode;
+exports.version   = rt.version;
+exports.log       = rt.log;
+exports.time      = rt.time;
+exports.socket    = rt.socket;
+exports.http      = rt.http;
+exports.coap      = rt.coap;
+exports.websocket = rt.websocket;
+exports.amqp      = rt.amqp;
+exports.gatd_old  = rt.gatd_old;
+exports.color     = rt.color;
+exports.encode    = rt.encode;
