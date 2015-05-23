@@ -22,7 +22,7 @@ function is *not* called if `init` fails.
 During runtime, any accessor function may be called at any time. Multiple
 calls to accessor functions are permitted.
 
-Upon termination, the runtime calls `wrapup`. After the call to `wrapup`, no
+Upon termination, the runtime calls `wrapup` (if it is defined). After the call to `wrapup`, no
 other accessor functions may be called. The behavior of currently in-flight
 functions is undefined. Upon return of `wrapup`, the accessor execution
 environment is undefined. It may be destroyed immediately or may languish
@@ -121,7 +121,20 @@ Because these are not actually library functions they are not namespaced
 under the `rt` namespace.
 
 - `<void> create_port(<string> name, <object> options)`:
-Create a one-off port for this accessor.
+Create a one-off port for this accessor. Valid options:
+
+        options: {
+            display_name: <string> // Nicely formatted name for displays.
+            description: <string>  // An overview of what the port does.
+            type:        <string>  // One of: button, bool, string, numeric, integer, select, color, object.
+            units: <string>        // Port units (if applicable).
+            options: <array>       // List of options for the select type.
+            min: <numeric>         // If applicable, the minimum value of the port.
+            max: <numeric>         // If applicable, the maximum value of the port.
+        }
+
+    Options are optional, and the `options` argument can be omitted entirely
+    if not used.
 
 - `<void> provide_interface(<string> path, <object> mapping)`: Specify that this
 accessor implements a particular interface. The mapping assigns ports, specified
