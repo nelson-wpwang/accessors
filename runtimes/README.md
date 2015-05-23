@@ -9,9 +9,13 @@ reasonable `print` mechanism).
 **This document describes accessor runtime version 0.1, which is subject to
 change until its formal release.**
 
+__Table of Contents__
+1. [Accessor Lifecycle](#accessor-lifecycle)
 
-Lifecycle
----------
+
+
+Accessor Lifecycle
+------------------
 
 When an accessor is first loaded, its `init` method is called. No other
 accessor functions may be called until `init` has returned. If `init` fails
@@ -138,9 +142,13 @@ Create a one-off port for this accessor. Valid options:
 
 - `<void> provide_interface(<string> path, <object> mapping)`: Specify that this
 accessor implements a particular interface. The mapping assigns ports, specified
-as `'/interface/path.Port': <function name>`.
+as:
 
-- `<accessor> load_dependency(<string> path, <object> parameters=null)`: Loads a
+        mapping: {
+            '/interface/path.Port': <function name>
+        }
+
+- `<accessor> load_dependency(<string> path, <object> parameters)`: Loads a
   new accessor as a dependency. Dependencies are guaranteed to exist at
   runtime.
    - Dependencies are lazily init-ed, meaning that the dependency's `init`
@@ -158,7 +166,8 @@ allow for configuring generic accessors to specific instances of devices.
 port. This is not supported in all runtimes.
 
 - `<void> send(<string> port_name, <T> val)`: Send a value to an ouptut
-observe port.
+observe port. This is used for "observe" ports to push new data when it is
+available.
 
 
 
@@ -192,28 +201,6 @@ least the amount of time requested.
 
 - `<null> rt.time.run_later(<float> delay_in_ms, <fn> fn_to_run, <T> args)`:
 Schedules `fn_to_run` for execution in the future.
-
-### Encoding Functions
-
-Various devices may need data in a variety of encodings. These functions help
-convert between them.
-
-- `<string> rt.encode.atob(<base64> str)`: Decode a base64 encoded string.
-
-- `<base64> rt.encode.btoa(<string> str)`: Encode a string in the base64 format.
-
-### Color Functions
-
-When writing accessors that use colors (such as lighting) it may be useful
-to change colors between various color representations. The `color` object
-makes this easier.
-
-- `<hsv object> rt.color.hex_to_hsv(<string> hex_color)`: Convert a hex color
-string (like "0000FF") to an HSV object (like
-`{h: [hue (0-360)], s: [saturation (0-1)], v: [value (0-1)]}`).
-
-- `<string> rt.color.hsv_to_hex(<hsv object> hsv_color)`: Convert an HSV object
-to an RGB hex string.
 
 
 ### Sockets
@@ -254,6 +241,7 @@ Open a TCP connection to the specified host.
 Send data on an open TCP connection. It is an error to call `send` before
 calling `connect`.
 
+
 ### HTTP Requests
 
 All HTTP related functions are scoped under the `http` object.
@@ -269,6 +257,7 @@ properties=null, <string> body=null, <int> timeout=null)`: Currently mimics the
 
 - _Blocking_ `<void> rt.http.put(<string> url, <string> body)`: HTTP PUT.
 
+
 ### CoAP Requests
 
 - _Blocking_ `<string> rt.coap.get(<string> url)`: Create a CoAP get request
@@ -280,6 +269,26 @@ CoAP to a specified resource.
 - `<void> rt.coap.observe(<string> url, <function> callback)`: Connect to an
 observe port and call `callback` every time new data is available.
 
+
+### WebSockets
+
+- _Blocking_ `<websocket> rt.websocket.connect(<string> url)`: Create a
+WebSocket connection to the given URL. URL should look like `ws://host.com/path`.
+
+- `<void> [websocket].subscribe(<function> data_callback, <function> error_callback, <function> close_callback)`:
+Register callbacks for the WebSocket connection.
+
+        // Called with the data returned from the socket.
+        function data_callback (data) {}
+        // Called if an error arises from the socket.
+        function error_callback (error) {}
+        // Called if the connection is closed.
+        function close_callback () {}
+
+- `<void> [websocket].send(<string|object> data)`: Sends `data` in the WebSocket
+connection to the other host.
+
+
 ### RabbitMQ / AMQP
 
 - _Blocking_ `<amqp_connection> rt.amqp.connect(<string> url)`: Connect
@@ -288,6 +297,7 @@ to an AMQP server will a fully defined AMQP URL.
 - `<void> [amqp_connection].subscribe(<string> exchange, <string> routing_key, <function> callback)`:
 Create a queue from a RabbitMQ exchange with the given routing key call `callback`
 with all incoming data packets.
+
 
 ### GATD v0.1
 
@@ -299,4 +309,28 @@ to a socket.io server (0.9).
 - `<void> [socketio_connection].query(<object> query, <function> callback)`:
 Query the GATD streamer with the given query and call `callback` will all
 returned data packets.
+
+
+### Encoding Functions
+
+Various devices may need data in a variety of encodings. These functions help
+convert between them.
+
+- `<string> rt.encode.atob(<base64> str)`: Decode a base64 encoded string.
+
+- `<base64> rt.encode.btoa(<string> str)`: Encode a string in the base64 format.
+
+
+### Color Functions
+
+When writing accessors that use colors (such as lighting) it may be useful
+to change colors between various color representations. The `color` object
+makes this easier.
+
+- `<hsv object> rt.color.hex_to_hsv(<string> hex_color)`: Convert a hex color
+string (like "0000FF") to an HSV object (like
+`{h: [hue (0-360)], s: [saturation (0-1)], v: [value (0-1)]}`).
+
+- `<string> rt.color.hsv_to_hex(<hsv object> hsv_color)`: Convert an HSV object
+to an RGB hex string.
 
