@@ -58,4 +58,75 @@ Accessor Host Server
 
 </table>
 
+<h1>Interfaces</h1>
+
+<p>
+Interfaces define a standard API for devices. Many interfaces <em>extend</em>
+other interfaces. Extending an interface means the new interface implements
+exactly the same ports as the extended interface, but the ports are labeled
+under a different name. An interface can extend several interfaces and can also
+create new ports in addition to extending an interface. In other cases, an
+interface may simply extend an existing interface.
+</p>
+<p>
+As an example, the <code>/onoff</code> interface provides a single
+<code>Power</code> port.  The <code>/lighting/light</code> interface extends
+the <code>/onoff</code> interface, as lights are also something that can be
+turned on and off. While the functional interface&mdash;a single boolean
+<code>Power</code> port&mdash;is the same, the <code>/lighting/light</code>
+interface adds <em>semantic</em> information about the device that is being
+powered on or off.
+</p>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Interface</th>
+      <th>Extends</th>
+      <th>Creates</th>
+      <th>Implemented Directly By</th>
+      <th>Implemented Indirectly By</th>
+    </tr>
+  </thead>
+
+  {% for path,iface in interface_tree.items() %}
+  <tr>
+    <td><a href="/view/interface{{ path }}">{{ path }}</a></td>
+    <td>
+      {% for ext in iface.extends %}
+      <p>{{ ext }}</p>
+      {% endfor %}
+    </td>
+    <td>
+      {% for name in iface.ports %}
+      {% set port = iface.ports[name] %}
+      <p>
+      {% if 'observe' in port.directions %}
+      <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+      {% endif %}
+      {% if 'input' in port.directions %}
+      <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+      {% endif %}
+      {{ name.split('.')[-1] }}
+      {% if 'output' in port.directions %}
+      <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+      {% endif %}
+      </p>
+      {% endfor %}
+    </td>
+    <td>
+      {% for acc in iface.accessors %}
+      <p><a href="/view/accessors{{ acc }}">{{ acc }}</a></p>
+      {% endfor %}
+    </td>
+    <td>
+      {% for acc in iface.accessors_by_extends %}
+      <p><a href="/view/accessors{{ acc }}">{{ acc }}</a></p>
+      {% endfor %}
+    </td>
+  </tr>
+  {% endfor %}
+
+</table>
+
 {% endblock %}

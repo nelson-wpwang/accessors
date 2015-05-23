@@ -925,7 +925,8 @@ node_runtime_example_ports_observe = string.Template(
 class handler_index (JinjaBaseHandler):
 	def get(self, **kwargs):
 		data = {
-			'accessors_db': accessors_db
+			'accessors_db': accessors_db,
+			'interface_tree': interface_tree,
 		}
 		return self.renderj('index.jinja2', **data)
 
