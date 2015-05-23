@@ -138,7 +138,7 @@ function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
 				parameters[name] = accessor_ir.parameters[i].default;
 			}
 		} else {
-			console.log(parameters.name);
+			info('Parameter: ' + parameters['name']);
 		}
 	}
 
