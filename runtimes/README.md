@@ -15,6 +15,16 @@ __Table of Contents__
 1. [Synchronizing Asynchronous Events](#synchronizing-asynchronous-events)
 1. [Runtime Functions](#runtime-functions)
   - [Accessor Framework Functions](#accessor-framework-functions)
+  - [General Utility](#general-utility)
+  - [Time](#time)
+  - [Sockets](#sockets)
+  - [HTTP Requests](#http-requests)
+  - [CoAP Requests](#coap-requests)
+  - [WebSockets](#websockets)
+  - [RabbitMQ / AMQP](#rabbitmq--amqp)
+  - [GATD v0.1](#gatd-v01)
+  - [Encoding Functions](#encoding-functions)
+  - [Color Functions](#color-functions)
 
 
 
