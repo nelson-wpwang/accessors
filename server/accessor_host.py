@@ -308,8 +308,12 @@ class Interface():
 			log.debug('---'*30)
 			log.debug(pprint.pformat(interface_tree))
 
-			# All accessors that implement this interface (by name)
+			# All accessors that directly implement this interface (by accessor path)
 			self.accessors = set()
+
+			# All accessors that implement this interface because they implement
+			# an interface that extends this one
+			self.accessors_by_extends = set()
 
 		except:
 			log.exception("Uncaught exception generating %s", self.path)
@@ -352,6 +356,23 @@ class Interface():
 		iface = '/' + '/'.join(port.split('.')[:-1])
 		log.debug(iface)
 		return interface_tree[iface].get_port_detail(port, function_name)
+
+	def register_accessor(self, acc_path, from_ext=False):
+		'''Record accessors that implement this interface and recurse into extends'''
+		if from_ext:
+			self.accessors_by_extends.add(acc_path)
+		else:
+			self.accessors.add(acc_path)
+		for ext in self.extends:
+			ext.register_accessor(acc_path, from_ext=True)
+
+	def unregister_accessor(self, acc_path, from_ext=False):
+		if from_ext:
+			self.accessors_by_extends.discard(acc_path)
+		else:
+			self.accessors.discard(acc_path)
+		for ext in self.extends:
+			ext.unregister_accessor(acc_path, from_ext=True)
 
 	@staticmethod
 	def normalize(fq_port):
@@ -458,7 +479,7 @@ def find_accessors (accessor_path):
 							log.info('Got new version of {}'.format(path))
 							for iface in old_accessor['accessor']['implements']:
 								interface = interface_tree[iface['implements']]
-								interface.accessors.discard(old_accessor['path'])
+								interface.unregister_accessor(old_accessor['path'])
 							accessors_db.delete(old_accessor)
 						else:
 							log.debug("NEW ACCESSOR: %s", path)
@@ -707,7 +728,7 @@ def find_accessors (accessor_path):
 					# Save a copy of the reverse mapping as well
 					for iface in accessor['implements']:
 						interface = interface_tree[iface['interface']]
-						interface.accessors.add(view_path)
+						interface.register_accessor(view_path)
 
 					log.info('Adding accessor {}'.format(view_path))
 				except ParseError as e:

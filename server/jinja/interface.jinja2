@@ -43,9 +43,16 @@ The {{ interface }} Interface
   {% endif %}
 </p>
 
-<h3>These accessors implement the {{ interface }} interface:</h3>
+<h4>These accessors implement the {{ interface }} interface:</h4>
 <ul>
   {% for acc in interface.accessors %}
+  <li><a href="/view/accessor{{ acc }}">{{ acc }}</a></li>
+  {% endfor %}
+</ul>
+
+<h4>These accessors implement the {{ interface }} interface because they implement an interface that extends {{ interface }}:</h4>
+<ul>
+  {% for acc in interface.accessors_by_extends %}
   <li><a href="/view/accessor{{ acc }}">{{ acc }}</a></li>
   {% endfor %}
 </ul>
