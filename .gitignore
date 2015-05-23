@@ -1,4 +1,6 @@
 Dockerfile
+config.js
+parameters.js
 
 
 # Byte-compiled / optimized / DLL files
