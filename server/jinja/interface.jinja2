@@ -1,0 +1,49 @@
+{% extends "base.jinja" %}
+
+{% block title %}
+The {{ interface }} Interface
+{% endblock %}
+
+{% block content %}
+
+<h1>The {{ interface }} interface.</h1>
+
+<p>
+  {% if interface.ports %}
+  {% trans count=interface.ports|length %}
+  This interface defines {{ count }} port.
+  {% pluralize %}
+  This interface defines {{ count }} ports.
+  {% endtrans %}
+  {% if interface.extends %}
+  {% trans count=interface.extends|length %}
+  Additionally, this interface extends {{ count }} other interface.
+  {% pluralize %}
+  Additionally, this interface extends {{ count }} other interfaces.
+  {% endtrans %}
+  {% endif %}
+  {% else %}
+  This interface does not define any ports.
+  {% trans count=interface.extends|length %}
+  This interface does, however, extend {{ count }} other interface.
+  {% pluralize %}
+  This interface does, however, extend {{ count }} other interfaces.
+  {% endtrans %}
+  The purpose of this interface is to help create more logical semantic
+  groupings, even though the actual functions are the same.
+  {% endif %}
+  {% if interface.extends %}
+  Extending an interface means that this interface includes the whole interface
+  that it extends. A query for the <code>{{ interface }}</code> interface will
+  only return devices that implement specifically this interface. A query for
+  one of the interfaces this extends, such as
+  <code>{{ interface.extends[0] }}</code>, will return devices that implement
+  this interface as well as any other devices that implement the
+  <code>{{ interface.extends[0] }}</code> interface.
+  {% endif %}
+</p>
+
+{% include "interface-detail.jinja2" %}
+
+{% endblock %}
+

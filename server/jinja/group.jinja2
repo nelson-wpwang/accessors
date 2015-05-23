@@ -1,36 +1,30 @@
 {% extends "base.jinja" %}
 
 {% block title %}
-Accessor Host Server
+Accessors in {{ group }}
 {% endblock %}
 
 {% block content %}
 
-<h1>Accessors</h1>
-
-<p>
-  This server hosts accessors and makes them available in JSON and XML formats.
-</p>
+<h1>Accessors in the {{ group }} group</h1>
 
 <table class="table">
   <thead>
     <tr>
       <th>Name</th>
-      <th>Group</th>
       <th>Provides</th>
       <th>Creates</th>
       <th>Last Updated</th>
     </tr>
   </thead>
 
-  {% for record in accessors_db %}
+  {% for record in records %}
   <tr>
     {% if record.errors %}
     <td><a href="/view/accessor{{ record.path }}" style="color: red;"><span class="glyphicon glyphicon-alert" aria-hidden="true"></span> {{ record.name }}</a></td>
     {% else %}
     <td><a href="/view/accessor{{ record.path }}">{{ record.name }}</a></td>
     {% endif %}
-    <td><a href="/view/group{{ record.group }}">{{ record.group }}</a></td>
     <td>
       {% for iface in record.accessor.implements %}
       <p><a href="/view/interface{{ iface.interface }}">{{ iface.interface }}</a></p>
@@ -59,3 +53,4 @@ Accessor Host Server
 </table>
 
 {% endblock %}
+

@@ -313,7 +313,7 @@ class Interface():
 			raise
 
 	def __str__(self):
-		return self.file_path
+		return self.file_path[1:][:-5]
 
 	def __iter__(self):
 		for port in self.ports:
@@ -794,8 +794,12 @@ class JinjaTemplateRendering:
                 self.settings["template_path"]
             )
 
-        env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dirs))
+        env = jinja2.Environment(
+                loader=jinja2.FileSystemLoader(template_dirs),
+                extensions=['jinja2.ext.i18n'],
+                )
         env.filters['markdown'] = jinja_filter_markdown
+        env.install_null_translations()
 
         try:
             template = env.get_template(template_name)
@@ -892,6 +896,21 @@ class handler_index (JinjaBaseHandler):
 		}
 		return self.renderj('index.jinja2', **data)
 
+
+# Page for a summary of all the accessors in a group
+class handler_group_page (JinjaBaseHandler):
+	def get(self, path, **kwargs):
+		path = '/'+path
+
+		records = accessors_db('group') == path
+		record = first(records)
+
+		data = {
+				'records': records,
+				'group': path,
+				}
+		return self.renderj('group.jinja2', **data)
+
 # Page for each accessor
 class handler_accessor_page (JinjaBaseHandler):
 	def get(self, path, **kwargs):
@@ -940,6 +959,16 @@ class handler_accessor_page (JinjaBaseHandler):
 
 		return self.renderj('view.jinja2', **data)
 
+
+# Page that describes an interface
+class handler_interface_page (JinjaBaseHandler):
+	def get(self, path, **kwargs):
+		path = '/'+path
+
+		data = {
+				'interface': interface_tree[path],
+				}
+		return self.renderj('interface.jinja2', **data)
 
 
 ################################################################################
@@ -1001,7 +1030,9 @@ accessor_server = tornado.web.Application(
 	[
 		# User viewable web gui
 		(r'/', handler_index),
-		(r'/view/(.*)', handler_accessor_page),
+		(r'/view/accessor/(.*)', handler_accessor_page),
+		(r'/view/group/(.*)', handler_group_page),
+		(r'/view/interface/(.*)', handler_interface_page),
 		# Accessor IR
 		(r'/accessor/(.*).json', ServeAccessorJSON),
 		(r'/accessor/(.*).xml', ServeAccessorXML),
