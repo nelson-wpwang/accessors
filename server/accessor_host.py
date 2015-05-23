@@ -955,6 +955,13 @@ class handler_accessor_page (JinjaBaseHandler):
 		records = accessors_db('path') == path
 		record = first(records)
 
+		# !! Must be checked first
+		if not record['accessor']:
+			data = { 'record': record }
+			# Basic parsing didn't even work, show a dedicated error page
+			# instead of the detail view page
+			return self.renderj('view-parse-error.jinja2', **data)
+
 		node_ex_parameters = ''
 		node_ex_parameters_arg = '{}'
 		if len(record['accessor']['parameters']) > 0:
@@ -987,11 +994,6 @@ class handler_accessor_page (JinjaBaseHandler):
 				'node': node_ex
 			}
 		}
-
-		if not data['record']['accessor']:
-			# Basic parsing didn't even work, show a dedicated error page
-			# instead of the detail view page
-			return self.renderj('view-parse-error.jinja2', **data)
 
 		return self.renderj('view.jinja2', **data)
 
