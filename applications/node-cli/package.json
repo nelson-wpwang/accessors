@@ -21,7 +21,8 @@
     "async": "^0.9.2",
     "lodash": "^3.9.1",
     "optimist": "^0.6.1",
-    "readline-sync": "^1.2.16"
+    "readline-sync": "^1.2.16",
+    "yargs": "^3.9.1"
   },
   "bin": {
     "accessors-cli": "./cli.js"

@@ -65,12 +65,46 @@ function get_accessor_list (success_cb, error_cb) {
 	})
 }
 
+/* Compile an accessor under development without committing. Note this still
+ * sends the accessor to a remote server for compilation
+ */
+function compile_dev_accessor (path, success_cb, error_cb) {
+	info('art::compile_dev_accessor ' + path);
+
+	var buf = fs.readFileSync(path, 'utf8');
+	request(
+			{ method: 'POST'
+			, uri: host_server + '/dev/upload/'
+			, body: buf
+			}
+		, function (err, response, body) {
+				info('art::server resp');
+				if (!err && response.statusCode == 200) {
+					success_cb(response.headers['x-acc-name']);
+				} else {
+					error(err)
+					error('Response code: ' + response.statusCode)
+					error(body);
+				}
+			}
+		);
+}
+
+function get_dev_accessor_ir (path, success_cb, error_cb) {
+	info('art::get_dev_accessor_ir from path: ' + path);
+	var url = host_server + '/dev/accessor/' + path + '.json';
+	get_accessor_ir_from_url(url, success_cb, error_cb);
+}
+
 // Ask for an accessor from the accessor host server and return the
 // Accessor Intermediate Representation object.
 function get_accessor_ir (path, success_cb, error_cb) {
 	info('art::get_accessor_ir from path: ' + path);
 	var url = host_server + '/accessor' + path + '.json';
+	get_accessor_ir_from_url(url, success_cb, error_cb);
+}
 
+function get_accessor_ir_from_url (url, success_cb, error_cb) {
 	info('art::gair Retrieving ' + url);
 	request(url, function (err, response, body) {
 		if (!err && response.statusCode == 200) {
@@ -105,7 +139,6 @@ function create_accessor (path, parameters, success_cb, error_cb) {
 	get_accessor_ir(path, function (accessor) {
 		load_accessor(accessor, parameters, success_cb, error_cb);
 	}, error_cb);
-
 }
 
 /*
@@ -272,6 +305,8 @@ function get_exports (accessor) {
 module.exports= {
 	set_host_server: set_host_server,
 	get_accessor_list: get_accessor_list,
+	compile_dev_accessor: compile_dev_accessor,
+	get_dev_accessor_ir: get_dev_accessor_ir,
 	create_accessor: create_accessor,
 	load_accessor: load_accessor,
 	get_accessor_ir: get_accessor_ir
