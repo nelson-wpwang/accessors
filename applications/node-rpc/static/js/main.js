@@ -1,19 +1,45 @@
 
+/*
+ * Alerts for trying to create a new device.
+ */
+function new_device_alert_error (error_str) {
+	html = '<div class="alert alert-danger" role="alert">'+error_str+'</div>';
+	$('#new-device-alerts').empty();
+	$('#new-device-alerts').html(html);
+}
+
+function new_device_alert_success (success_str) {
+	html = '<div class="alert alert-success" role="alert">'+success_str+'</div>';
+	$('#new-device-alerts').empty();
+	$('#new-device-alerts').html(html);
+}
+
+function new_device_alert_clear () {
+	$('#new-device-alerts').empty();
+}
+
+/*
+ * Main page alerts.
+ */
 function alert_error (error_str) {
 	html = '<div class="alert alert-danger" role="alert">'+error_str+'</div>';
 	$('#alerts').empty();
 	$('#alerts').html(html);
 }
 
-function accessor_alert_error (accessorname, error_str) {
+/*
+ * Alerts on individual accessors running.
+ */
+function accessor_alert_error (accessor_uuid, error_str) {
 	html = '<div class="alert alert-danger" role="alert">'+error_str+'</div>';
-	$('#accessor-'+accessorname+'-alerts').empty();
-	$('#accessor-'+accessorname+'-alerts').html(html);
+	$('#accessor-'+accessor_uuid+'-alerts').empty();
+	$('#accessor-'+accessor_uuid+'-alerts').html(html);
 }
 
-function accessor_alert_clear (accessorname) {
-	$('#accessor-'+accessorname+'-alerts').empty();
+function accessor_alert_clear (accessor_uuid) {
+	$('#accessor-'+accessor_uuid+'-alerts').empty();
 }
+
 
 function format_currency_usd (price) {
 	p = price.toFixed(2);
@@ -25,78 +51,6 @@ function format_currency_usd (price) {
 	}
 }
 
-var AccessorRuntimeException = Error;
-
-function accessor_get (accessorname, field) {
-	var port = $('#port-'+accessorname+field);
-
-	// Check if this is a valid port
-	if (!port.length) {
-		throw new AccessorRuntimeException('Error calling get(): "'+field+'" is not a valid port name.');
-	}
-	// Can't call get() on an output
-	if (port.attr('data-portdirection') == 'output') {
-		throw new AccessorRuntimeException('Error calling get() on port: "'+field+'". Cannot call get() on an output.');
-	}
-	// Check if this field is being accessed before it was ever set
-	// if (port.attr('value') === undefined) {
-	// 	// If there was never a value
-	// 	throw new AccessorRuntimeException('Error calling get() on uninitialized port: "'+field);
-	// }
-
-	if (port.attr('type') == 'checkbox') {
-		return port.prop('checked');
-	}
-
-	if (port.attr('data-porttype') == 'bool') {
-		return port.val() == 'true';
-	}
-
-	return port.val();
-}
-
-function accessor_set (accessorname, field, value) {
-	var port = $('#port-'+accessorname+field);
-
-	if (!port.length) {
-		throw new AccessorRuntimeException('Error calling set(): "'+field+'" is not a valid port name.');
-	}
-	if (port.attr('data-portdirection') == 'input') {
-		throw new AccessorRuntimeException('Error calling set() on port: "'+field+'". Cannot call set on an input.');
-	}
-
-	if (port.attr('type') == 'checkbox') {
-		if (value) {
-			port.prop('checked', true);
-		} else {
-			port.prop('checked', false);
-		}
-
-	} else if (port.attr('type') == 'text' ||
-	           port.attr('type') == 'hidden') {
-		if (port.hasClass('slider')) {
-			port.slider('setValue', Number(value));
-		}
-
-		port.val(value);
-
-	} else if (port.prop('tagName') == 'SELECT') {
-		$('#port-'+accessorname+field+' option:eq('+value+')').prop('selected', true);
-
-	} else if (port.attr('data-portdirection') == 'output') {
-		if (port.attr('data-porttype') == 'currency_usd') {
-			console.log(format_currency_usd(value));
-			port.html(format_currency_usd(value));
-		} else {
-			port.text(value);
-		}
-
-	} else if (port.prop('tagName') == 'DIV' && port.hasClass('colorpicker')) {
-		port.colpickSetColor(value);
-
-	}
-};
-
 function accessor_function_start (name) {
 	accessor_alert_clear(name);
 	$('#accessor-'+name+' .spinner').show();
@@ -104,8 +58,4 @@ function accessor_function_start (name) {
 
 function accessor_function_stop (name) {
 	$('#accessor-'+name+' .spinner').hide();
-}
-
-function accessor_exception (accessorname, err) {
-	accessor_alert_error(accessorname, err.message);
 }

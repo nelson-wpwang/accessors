@@ -23,3 +23,7 @@
 .port-divider {
 	border-bottom: 1px solid #ccc;
 }
+
+.port-group label {
+	font-size: 90%;
+}

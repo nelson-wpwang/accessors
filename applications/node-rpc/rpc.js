@@ -109,18 +109,16 @@ var db = new sqlite.Database('accessors.db', function (err) {
 		db.each('SELECT * FROM accessors',
 			function (err, row) {
 				if (err) {
-					console.log('Could not retrieve accessors from DB');
 					console.log(err);
-					return;
+					throw 'Could not retrieve accessors from DB';
 				}
 				// Now get the parameters
 				var parameters = {};
 				db.all('SELECT * FROM parameters WHERE accessor_id=?', row.id,
 					function (err, rows) {
 						if (err) {
-							console.log('Could not retrieve parameters from DB');
 							console.log(err);
-							return;
+							throw 'Could not retrieve parameters from DB';
 						}
 						for (var i=0; i<rows.length; i++) {
 							parameters[rows[i].name] = rows[i].value;
@@ -146,8 +144,8 @@ var db = new sqlite.Database('accessors.db', function (err) {
 
 function activate_accessor (name, path, parameters, callback) {
 
-	try {
-		accessors.create_accessor(path, parameters, function (accessor) {
+	accessors.create_accessor(path, parameters, function (accessor) {
+		try {
 			// Success callback
 
 			// Add UUIDs
@@ -221,25 +219,40 @@ function activate_accessor (name, path, parameters, callback) {
 				// OUTPUT
 				w.get(device_port_path, function (req, res) {
 					console.log(" GET " + device_port_path + ": (req: " + req + ", res: " + res + ")");
+					res.header("Content-Type", "application/json");
+
 					if (port.directions.indexOf('output') == -1) {
-						res.status(404).send('Request for output when that is not a valid direction');
-						return
+						res.send(JSON.stringify({
+							success: false,
+							message: 'Request for output when that is not a valid direction'
+						}));
+						return;
 					}
-					var func = port.function;
-					var export_name = func.replace(/\./g, '_');
-					var obj = accessor[export_name];
-					var output_fn = obj.output;
-					output_fn(function (result) {
+
+					// This is ugly. Maybe we will fix it someday.
+					var temp = port.function.split('.');
+					var port_func = accessor[temp.shift()];
+					while (temp.length) port_func = port_func[temp.shift()];
+
+					port_func.output(function (result) {
 						console.log(" --> resp: " + result);
-						res.send(''+result);
+						res.send(JSON.stringify({
+							success: true,
+							data: result
+						}));
 					});
 				});
 
 				// INPUT
 				w.post(device_port_path, function (req, res) {
 					console.log("POST " + device_port_path + ": (req: " + req + ", res: " + res + ")");
+					res.header("Content-Type", "application/json");
+
 					if (port.directions.indexOf('input') == -1) {
-						res.status(404).send('Request for input when that is not a valid direction');
+						res.send(JSON.stringify({
+							success: false,
+							message: 'Request for input when that is not a valid direction'
+						}));
 						return
 					}
 					var arg = null;
@@ -250,31 +263,40 @@ function activate_accessor (name, path, parameters, callback) {
 						arg = req.body;
 					}
 
-					var func = port.function;
-					var export_name = func.replace(/\./g, '_');
-					var obj = accessor[export_name];
-					var input_fn = obj.input;
+					// This is ugly. Maybe we will fix it someday.
+					var temp = port.function.split('.');
+					var port_func = accessor[temp.shift()];
+					while (temp.length) port_func = port_func[temp.shift()];
 
-					input_fn(arg, function () {
-						res.send('did it');
+					port_func.input(arg, function () {
+						res.send(JSON.stringify({
+							success: true
+						}));
 					});
 				});
 			});
 
 			if (typeof callback === 'function') {
-				callback({success: 1});
+				callback({success: true});
 			}
-		}, function (err) {
-			// Error callback
-			console.log(err);
-			throw 'error creating accessor: ' + path;
-		});
-	} catch (e) {
-		console.log(e);
-		if (typeof callback === 'function') {
-			callback({success: 0});
+
+		} catch (e) {
+			console.log('outside catch')
+			console.log(e);
+			if (typeof callback === 'function') {
+				callback({success: false, message: e.message});
+			}
 		}
-	}
+
+	}, function (e) {
+		// Error callback
+		console.log('Create_Accessor error');
+
+		if (typeof callback === 'function') {
+			callback({success: false, message: 'init() failed when creating the accessor. Are the parameters valid?'});
+		}
+	});
+
 }
 
 
@@ -286,7 +308,17 @@ function activate_accessor (name, path, parameters, callback) {
 w.get('/list/all', function (req, res) {
 	request(argv.host_server + '/list/all', function (error, response, body) {
 		res.header("Content-Type", "application/json");
-		res.send(body);
+		if (error || response.statusCode != 200) {
+			res.send(JSON.stringify({
+				success: false,
+				message: 'Failed to retrieve accessor list.'
+			}));
+		} else {
+			res.send(JSON.stringify({
+				success: true,
+				data: JSON.parse(body)
+			}));
+		}
 	});
 });
 
@@ -294,14 +326,27 @@ w.get('/list/all', function (req, res) {
 w.get('/accessor/:path([/\\.\\S]+)', function (req, res) {
 	request(argv.host_server + '/accessor/' + req.params.path, function (error, response, body) {
 		res.header("Content-Type", "application/json");
-		res.send(body);
+		if (error || response.statusCode != 200) {
+			res.send(JSON.stringify({
+				success: false,
+				message: 'Failed to retrieve accessor IR for ' + req.params.path + '.'
+			}));
+		} else {
+			res.send(JSON.stringify({
+				success: true,
+				data: JSON.parse(body)
+			}));
+		}
 	});
 });
 
 // List all active accessors in this server
 w.get('/list/active', function (req, res) {
 	res.header("Content-Type", "application/json");
-	res.send(JSON.stringify(active_accessors));
+	res.send(JSON.stringify({
+		success: true,
+		data: active_accessors
+	}));
 });
 
 // Get info on a particular instantiated device
@@ -312,12 +357,18 @@ w.get('/device/:name([\\S]+)', function (req, res) {
 		var item = active_accessors[i];
 
 		if (item.name == unescape(req.params.name)) {
-			res.send(JSON.stringify(item.accessor));
-			return
+			res.send(JSON.stringify({
+				success: true,
+				data: item.accessor
+			}));
+			return;
 		}
 	}
 
-	res.send(JSON.stringify({success: 0}));
+	res.send(JSON.stringify({
+		success: false,
+		message: 'Found no device matching ' + unescape(req.params.name) + '.'
+	}));
 });
 
 // Create a new accessor
