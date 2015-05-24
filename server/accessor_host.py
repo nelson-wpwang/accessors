@@ -881,7 +881,9 @@ class JinjaBaseHandler (tornado.web.RequestHandler, JinjaTemplateRendering):
 ###
 
 node_runtime_example = string.Template(
-'''var accessors = require('accessors.io');
+'''#!/usr/bin/env node
+
+var accessors = require('accessors.io');
 $parameters
 accessors.create_accessor('$path_and_name', $parameters_arg, function ($instance) {
 
@@ -1003,19 +1005,7 @@ class handler_group_page (JinjaBaseHandler):
 
 # Page for each accessor
 class handler_accessor_page (JinjaBaseHandler):
-	def get(self, path, **kwargs):
-		path = '/'+path
-
-		records = accessors_db('path') == path
-		record = first(records)
-
-		# !! Must be checked first
-		if not record['accessor']:
-			data = { 'record': record }
-			# Basic parsing didn't even work, show a dedicated error page
-			# instead of the detail view page
-			return self.renderj('view-parse-error.jinja2', **data)
-
+	def generate_examples(self, record):
 		node_ex_parameters = ''
 		node_ex_parameters_arg = '{}'
 		python_ex_parameters = ''
@@ -1077,15 +1067,64 @@ class handler_accessor_page (JinjaBaseHandler):
 		while python_ex[-1] == '\n':
 			python_ex = python_ex[:-1]
 
-		data = {
-			'record': record,
-			'usage_examples': {
+		return {
 				'node': node_ex,
 				'python': python_ex,
-			}
+				}
+
+	def get(self, path, **kwargs):
+		path = '/'+path
+
+		records = accessors_db('path') == path
+		record = first(records)
+
+		# !! Must be checked first
+		if not record['accessor']:
+			data = { 'record': record }
+			# Basic parsing didn't even work, show a dedicated error page
+			# instead of the detail view page
+			return self.renderj('view-parse-error.jinja2', **data)
+
+		examples = self.generate_examples(record)
+
+		data = {
+			'record': record,
+			'usage_examples': examples,
 		}
 
 		return self.renderj('view.jinja2', **data)
+
+
+# Page for each accessor
+#
+# This "subclass" is a bit of a hack to grab the example-gen'ing function.
+# Should probably refactor at some point to generate examples only once and put
+# the rendered example in the db or something
+class handler_accessor_example (handler_accessor_page):
+	def get(self, path, **kwargs):
+		path = '/'+path
+
+		path,ext = path.split('.')
+
+		records = accessors_db('path') == path
+		record = first(records)
+
+		examples = self.generate_examples(record)
+
+		if ext == 'js':
+			self.set_header('Content-Type', 'text/javascript')
+			ex = examples['node']
+		elif ext == 'py':
+			self.set_header('Content-Type', 'text/python')
+			ex = examples['python']
+		else:
+			raise NotImplementedError("Request for unknown example file type: " + ext)
+
+		self.set_header('Content-Length', len(ex))
+
+		self.write(ex)
+		self.flush()
+		self.finish()
 
 
 # Page that describes an interface
@@ -1159,6 +1198,7 @@ accessor_server = tornado.web.Application(
 		# User viewable web gui
 		(r'/', handler_index),
 		(r'/view/accessor/(.*)', handler_accessor_page),
+		(r'/view/example/(.*)', handler_accessor_example),
 		(r'/view/group/(.*)', handler_group_page),
 		(r'/view/interface/(.*)', handler_interface_page),
 		# Accessor IR
