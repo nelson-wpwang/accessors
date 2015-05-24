@@ -4,6 +4,7 @@
 
 // w for "web server"
 try {
+	var os         = require('os');
 	var accessors  = require('accessors.io');
 	var request    = require('request');
 	var express    = require('express');
@@ -18,8 +19,15 @@ try {
 
 	var argv = require('optimist')
 		.usage('Run an accessor with a command line interface.\nUsage: $0')
-		.alias('s', 'host_server')
+		.alias   ('s', 'host_server')
 		.describe('s', 'URL of the accessor host server to use.')
+		.default ('s', 'http://accessors.io')
+		.alias   ('d', 'db_location')
+		.describe('d', 'Filename to use as the device database.')
+		.default ('d', os.tmpdir() + '/accessors-rpc.db')
+		.alias   ('p', 'port')
+		.describe('p', 'Port to run server on.')
+		.default ('p', 5000)
 		.argv;
 } catch (e) {
 	console.log("** Missing import in the node-rpc library");
@@ -28,24 +36,12 @@ try {
 }
 
 
-// Check command line arguments
-if (argv.host_server == undefined) {
-	argv.host_server = 'http://accessors.io';
-	console.log('Using default Accessor Host Server: ' + argv.host_server);
-	console.log('To specify, use option --host_server');
-} else {
-	if (argv.host_server.slice(0, 7) != 'http://') {
-		argv.host_server = 'http://' + argv.host_server;
-	}
-	console.log('Using Accessor Host Server: ' + argv.host_server);
+if (argv.host_server.slice(0, 7) != 'http://') {
+	argv.host_server = 'http://' + argv.host_server;
 }
-if (argv.port == undefined) {
-	argv.port = 5000;
-	console.log('Using default port for RPC commands: ' + argv.port);
-	console.log('To specify, use option --port');
-} else {
-	console.log('Using port ' + argv.port + ' for RPC commands');
-}
+console.log('Using Accessor Host Server: ' + argv.host_server);
+console.log('Using port ' + argv.port + ' for RPC commands');
+console.log('Using ' + argv.db_location + ' to store devices.');
 
 // Configure the library
 accessors.set_host_server(argv.host_server);
@@ -68,7 +64,7 @@ w.use(function(req, res, next) {
 });
 
 // Configure nunjucks
-var n = nunjucks.configure('templates', {
+var n = nunjucks.configure(__dirname + '/templates', {
 	autoescape: true,
 	express: w,
 	watch: false
@@ -83,7 +79,7 @@ n.addFilter('json', function (s, n) {
 });
 
 // Get a database to store created accessors
-var db = new sqlite.Database('accessors.db', function (err) {
+var db = new sqlite.Database(argv.db_location, function (err) {
 	if (err) {
 		console.log('Issue creating accessors.db');
 		return;

@@ -17,8 +17,21 @@ Example:
     http://server.com/misc/mycolor/umhue01/onoff/Power
 
 
-Running
--------
+Install From npm
+----------------
+
+    sudo npm install -g --unsafe-perm accessors.io-rpc
+
+The `--unsafe-perm` flag allows the bower dependencies to be installed.
+
+Run it:
+
+    accessors-rpc
+
+Then browse to [http://localhost:5000](http://localhost:5000).
+
+Running Locally
+---------------
 
     npm install
     sudo npm install -g bower

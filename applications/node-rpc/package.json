@@ -4,7 +4,8 @@
   "description": "HTTP webserver interface for running accessors.",
   "main": "rpc.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "cd static && sudo ../node_modules/.bin/bower --allow-root install"
   },
   "keywords": [
     "accessors"
@@ -18,6 +19,7 @@
   "dependencies": {
     "accessors.io": "^1.2.0",
     "body-parser": "^1.10.1",
+    "bower": "^1.4.1",
     "express": "^4.11.0",
     "marked": "^0.3.3",
     "node-dir": "^0.1.6",
@@ -33,5 +35,4 @@
   "bin": {
     "accessors-rpc": "./rpc.js"
   }
-
 }
