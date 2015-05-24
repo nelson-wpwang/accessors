@@ -589,6 +589,10 @@ def process_accessor(
 		# Verify interfaces are fully implemented. We do this by
 		# populating the ports key from a combination of created_ports
 		# and interface_ports from the validator
+
+		# TODO: Doesn't currently validate that all create_port()'s are
+		#       implemented. Fixing requires validate.js updates
+
 		accessor['ports'] = copy.deepcopy(accessor['created_ports'])
 		for port in accessor['ports']:
 			if 'type' not in port:
