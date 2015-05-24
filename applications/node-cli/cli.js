@@ -1,30 +1,108 @@
 #!/usr/bin/env node
 
-var _ = require('lodash');
-var async = require('async');
-var readline = require('readline-sync');
-var argv = require('yargs').argv;
+/* Interact with an accessor via a command line interface.
+ * Can use accessors in a host server or locally defined accessors.
+ */
 
 var accessors = require('accessors.io');
 
-function console_from_ir(accessor_ir) {
+var fs        = require('fs');
+var _         = require('lodash');
+var async     = require('async');
+var readline  = require('readline-sync');
+var argv      = require('yargs')
+                       .usage('Usage: $0 [accessor]')
+                       .example('$0', 'Choose an accessor from a list to execute.')
+                       .example('$0 /path/to/MyNewAccessor.js', 'Run a local accessor file.')
+                       .example('$0 --no-save', 'Newly created devices will not have their parameters stored.')
+                       .options(_.assign({
+                        		'no_save': {
+                        			describe: 'Do not save entered parameters in a local .json file.',
+                        			type: 'boolean'
+                        		},
+                        		'parameters': {
+                        			describe: 'Path of a parameters .json file.',
+                        			type: 'string',
+                        			default: './accessors-cli-parameters.json'
+                        		}
+                        	},
+                        	accessors.options))
+                       .help('h')
+                       .alias('h', 'help')
+                       .argv;
+
+var saved_parameters = {}
+
+
+function console_from_ir (accessor_id, accessor_ir) {
+
+
 	// Ask the user for all parameters
+	var saved_device = false; // keep track of if we know about this device
 	var parameters = {};
-
 	if (accessor_ir.parameters.length > 0) {
-		console.log('Please enter parameters: ');
-	}
 
-	for (var i=0; i<accessor_ir.parameters.length; i++) {
-		var param = accessor_ir.parameters[i];
-		var answer = readline.question('  ' + param.name + ': ');
-		parameters[param.name] = answer;
+		// Check to see if we have any saved parameters for this accessor
+		if (accessor_id in saved_parameters) {
+			while (true) {
+				console.log('Found the following saved instances:');
+				for (var i=0; i<saved_parameters[accessor_id].length; i++) {
+					var saved_entry = saved_parameters[accessor_id][i];
+					process.stdout.write(i+':  ');
+
+					var j = 0;
+					for (var parameter_name in saved_entry.parameters) {
+						if (saved_entry.parameters.hasOwnProperty(parameter_name)) {
+							if (j != 0) process.stdout.write('    ');
+							console.log(parameter_name + ': ' + saved_entry.parameters[parameter_name]);
+							j += 1;
+						}
+					}
+				}
+				console.log(i+':  Create New');
+
+				var answer = parseInt(readline.question('Which device: '));
+				if (isNaN(answer) || answer < 0 || answer > saved_parameters[accessor_id].length + 1) {
+					console.log('Invalid entry, try again.');
+				} else {
+					break;
+				}
+			}
+
+			if (answer < saved_parameters[accessor_id].length) {
+				// Use saved parameters
+				parameters = saved_parameters[accessor_id][answer].parameters;
+				saved_device = true;
+			}
+		}
+		if (!(accessor_id in saved_parameters) || answer >= saved_parameters[accessor_id].length) {
+			// Use new parameters
+			console.log('Please enter parameters: ');
+			for (var i=0; i<accessor_ir.parameters.length; i++) {
+				var param = accessor_ir.parameters[i];
+				var answer = readline.question('  ' + param.name + ': ');
+				parameters[param.name] = answer;
+			}
+		}
 	}
 
 	// Now actually ask questions about the accessor for interacting with
 	console.log('Getting real accessor.');
 
 	accessors.load_accessor(accessor_ir, parameters, function (accessor) {
+
+		// Successfully loaded this device. If this is new and we are saving,
+		// now would be a good time to save it.
+		if (!argv.no_save && !saved_device) {
+			if (!(accessor_id in saved_parameters)) {
+				saved_parameters[accessor_id] = [];
+			}
+			saved_parameters[accessor_id].push({
+				parameters: parameters
+			});
+			fs.writeFileSync(argv.parameters, JSON.stringify(saved_parameters));
+		}
+
 		console.log('Ports:');
 		for (var i=0; i<accessor_ir.ports.length; i++) {
 			console.log('  ' + i + ': ' + accessor_ir.ports[i].function);
@@ -105,8 +183,26 @@ function console_from_ir(accessor_ir) {
 	});
 }
 
+// Read in any save parameters
+// Format:
+// {
+// 	'<accessor path>': [
+//		{
+// 			'parameters': {
+// 				'<parameter name>': '<parameter value>'
+// 			}
+// 		}
+//	]
+// }
+if (fs.existsSync(argv.parameters)) {
+	saved_parameters = JSON.parse(fs.readFileSync(argv.parameters));
+}
 
+// This tool supports pulling an accessor from the host server or from
+// a local file.
 if (argv._.length == 0) {
+	// Use the host server. Allow the user to choose from a list.
+
 	// Get list of all valid accessors
 	accessors.get_accessor_list(function (accessor_list) {
 		accessor_list_sorted = accessor_list.sort()
@@ -123,7 +219,7 @@ if (argv._.length == 0) {
 		// which parameters to ask for)
 
 		accessors.get_accessor_ir(path, function (accessor_ir) {
-			console_from_ir(accessor_ir);
+			console_from_ir(path, accessor_ir);
 		},
 		function (error) {
 			console.log('Error getting accessor IR');
@@ -134,9 +230,12 @@ if (argv._.length == 0) {
 		console.log(error);
 	});
 } else {
-	accessors.compile_dev_accessor(argv._[0], function (path) {
+	// Use a local file as an accessor
+	var accessor_local_path = argv._[0];
+	console.log('Loading and running ' + accessor_local_path);
+	accessors.compile_dev_accessor(accessor_local_path, function (path) {
 		accessors.get_dev_accessor_ir(path, function (accessor_ir) {
-			console_from_ir(accessor_ir);
+			console_from_ir(accessor_local_path, accessor_ir);
 		},
 		function (error) {
 			console.log('Error getting dev accessor IR');

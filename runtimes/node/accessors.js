@@ -1,5 +1,25 @@
 /* vim: set noet ts=2 sts=2 sw=2: */
 
+/******************************************************************************/
+/******************************************************************************/
+/***                    ACCESSORS RUNTIME FOR NODE.JS                       ***/
+/***                                                                        ***/
+/***  This tool can execute an accessor inside of a Node.js (io.js)         ***/
+/***  environment.                                                          ***/
+/***                                                                        ***/
+/******************************************************************************/
+/******************************************************************************/
+
+
+// Make explicit our options. We can then export these to be displayed in higher
+// level tools.
+var options = {
+	'host-server': {
+		alias: 'host_server',
+		describe: 'URL of the accessor host server to use.'
+	}
+};
+
 try {
 	var path_module = require('path');
 	var request     = require('request');
@@ -9,10 +29,9 @@ try {
 	var vm          = require('vm');
 	var hashmap     = require('hashmap');
 
-	var argv        = require('optimist')
+	var argv        = require('yargs')
 		.usage('Internal options for the accessors library.')
-		.alias('host-server', 'host_server')
-		.describe('host_server', 'URL of the accessor host server to use.')
+		.options(options)
 		.argv;
 } catch (e) {
 	console.log("** Missing import in the node runtime");
@@ -24,7 +43,8 @@ try {
 // you use io.js as it runs a newer version of the V8 engine and is generally
 // just easier to use.
 if (!semver.satisfies(process.version, '>=0.11.0')) {
-	throw "Your node version (" + process.version + ") is too old. Need >=0.11";
+	throw 'Your node version (' + process.version + ') is too old. Need >=0.11. \
+Consider using io.js instead of Node.js';
 }
 
 // We have info and error level print outs
@@ -38,6 +58,9 @@ var error = debug('accessors:error');
 var host_server = 'http://accessors.io';
 if ('host_server' in argv) {
 	host_server = argv.host_server;
+	if (host_server.slice(0, 7) != 'http://') {
+		host_server = 'http://' + host_server;
+	}
 }
 info('Using host server ' + host_server + ' for accessors.');
 
@@ -59,7 +82,7 @@ function get_accessor_list (success_cb, error_cb) {
 		} else {
 			error('Could not get list of accessors.')
 			error(err)
-			error('Response code: ' + response.statusCode)
+			if (response) error('Response code: ' + response.statusCode)
 			error_cb('Could not retrieve accessor list from host server');
 		}
 	})
@@ -72,22 +95,20 @@ function compile_dev_accessor (path, success_cb, error_cb) {
 	info('art::compile_dev_accessor ' + path);
 
 	var buf = fs.readFileSync(path, 'utf8');
-	request(
-			{ method: 'POST'
-			, uri: host_server + '/dev/upload/'
-			, body: buf
-			}
-		, function (err, response, body) {
-				info('art::server resp');
-				if (!err && response.statusCode == 200) {
-					success_cb(response.headers['x-acc-name']);
-				} else {
-					error(err)
-					error('Response code: ' + response.statusCode)
-					error(body);
-				}
-			}
-		);
+	request({
+		method: 'POST',
+		uri: host_server + '/dev/upload',
+		body: buf
+	}, function (err, response, body) {
+		info('art::server resp');
+		if (!err && response.statusCode == 200) {
+			success_cb(response.headers['x-acc-name']);
+		} else {
+			error(err)
+			if (response) error('Response code: ' + response.statusCode)
+			error(body);
+		}
+	});
 }
 
 function get_dev_accessor_ir (path, success_cb, error_cb) {
@@ -113,7 +134,7 @@ function get_accessor_ir_from_url (url, success_cb, error_cb) {
 		} else {
 			error('Accessor retrieval failed.')
 			error(err)
-			error('Response code: ' + response.statusCode)
+			if (response) error('Response code: ' + response.statusCode)
 			error_cb('Could not retrieve accessor from host server');
 		}
 	});
@@ -302,12 +323,13 @@ function get_exports (accessor) {
 	return export_str;
 }
 
-module.exports= {
-	set_host_server: set_host_server,
-	get_accessor_list: get_accessor_list,
+module.exports = {
+	set_host_server:      set_host_server,
+	get_accessor_list:    get_accessor_list,
 	compile_dev_accessor: compile_dev_accessor,
-	get_dev_accessor_ir: get_dev_accessor_ir,
-	create_accessor: create_accessor,
-	load_accessor: load_accessor,
-	get_accessor_ir: get_accessor_ir
+	get_dev_accessor_ir:  get_dev_accessor_ir,
+	create_accessor:      create_accessor,
+	load_accessor:        load_accessor,
+	get_accessor_ir:      get_accessor_ir,
+	options:              options
 }
