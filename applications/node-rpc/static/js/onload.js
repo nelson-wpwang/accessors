@@ -88,7 +88,9 @@ $("#device-select").change(function () {
 			// Activate all sliders
 			$('#accessor-'+accessor.uuid+' .slider').each(function () {
 				$(this).slider().on('slideStop', function (slide_event) {
-					rpc_post(accessor.uuid, $(this).attr('id'), slide_event.value);
+					var port_meta = get_port_meta($(this));
+					var port = $('#port-' + port_meta.uuid);
+					rpc_post(accessor.uuid, port_meta.name, slide_event.value);
 				});
 			});
 
@@ -98,34 +100,51 @@ $("#device-select").change(function () {
 				layout: 'hex',
 				submit: 0,
 				onChange: function (hsb, hex, rgb, el, bySetColor) {
-					rpc_post(accessor.uuid, $(this).attr('id'), hex);
+					var port_meta = get_port_meta($(this));
+					var port = $('#port-' + port_meta.uuid);
+					rpc_post(accessor.uuid, port_meta.name, hex);
 				}
 			});
 
 			// Setup callbacks for buttons and check boxes
-			$('#accessor-'+accessor.uuid).on('click', '.accessor-arbitrary-input-button', function () {
-				var port = $(this).parents('.port-html-group').find('.port');
-				rpc_post(accessor.uuid, port.attr('id'), port.val());
+			function get_port_meta (sel) {
+				var port_meta_sel = sel.parents('.port-group').find('.port-group-meta');
+				return JSON.parse(port_meta_sel.text());
+			}
+
+			// For POSTing new data (writing to an input port)
+			$('#accessor-'+accessor.uuid).on('click', '.accessor-input', function () {
+				var port_meta = get_port_meta($(this));
+				var port = $('#port-' + port_meta.uuid);
+				rpc_post(accessor.uuid, port_meta.name, port.val());
 			});
 
-
-			$('#accessor-'+accessor.uuid).on('click', '.accessor-get', function () {
-				var port = $(this).parents('.port-html-group').find('.output-port');
-				rpc_get(accessor.uuid, port.attr('id'));
+			// For refreshing a port (read from output)
+			$('#accessor-'+accessor.uuid).on('click', '.accessor-refresh', function () {
+				var port_meta = get_port_meta($(this));
+				var port = $('#port-' + port_meta.uuid);
+				rpc_get(accessor.uuid, port, port_meta.name, port_meta);
 			});
 
+			// Checkbox was clicked
 			$('#accessor-'+accessor.uuid).on('click', '.accessor-checkbox', function () {
-				rpc_post(accessor.uuid, $(this).attr('id'), $(this).is(':checked'));
+				var port_meta = get_port_meta($(this));
+				var port = $('#port-' + port_meta.uuid);
+				rpc_post(accessor.uuid, port_meta.name, $(this).is(':checked'));
 			});
 
+			// Port type of button
 			$('#accessor-'+accessor.uuid).on('click', '.accessor-button', function () {
-				rpc_post(accessor.uuid, $(this).attr('id'), null);
+				var port_meta = get_port_meta($(this));
+				var port = $('#port-' + port_meta.uuid);
+				rpc_post(accessor.uuid, port_meta.name, null);
 			});
 
 			// init all with GET
 			for (var i=0; i<accessor.ports.length; i++) {
 				if (accessor.ports[i].directions.indexOf('output') > -1) {
-					rpc_get(accessor.uuid, accessor.ports[i].uuid, accessor.ports[i].type);
+					var port = $('#port-' + accessor.ports[i].uuid);
+					rpc_get(accessor.uuid, port, accessor.ports[i].name, accessor.ports[i]);
 				}
 			}
 		}
@@ -142,17 +161,11 @@ $("#device-select").change(function () {
 			});
 		}
 	}
-});
+}).trigger('change');
 
-function rpc_post (uuid, port_uuid, arg) {
-	var accessor = $('#accessor-'+uuid);
+function rpc_post (accessor_uuid, port_name, arg) {
+	var accessor = $('#accessor-'+accessor_uuid);
 	var device_name = accessor.attr('data-device-name');
-
-	if (port_uuid.indexOf('port-') == 0) {
-		port_uuid = port_uuid.substring(5, port_uuid.length);
-	}
-	var port = $('#port-'+port_uuid);
-	var port_name = port.attr('data-port');
 
 	var slash = '';
 	if (port_name.substring(0,1) != '/') {
@@ -174,16 +187,10 @@ function rpc_post (uuid, port_uuid, arg) {
 	});
 }
 
-function rpc_get (uuid, port_uuid, port_type) {
-	console.log("rpc_get (" + uuid + ", " + port_uuid + ", " + port_type + ")");
-	var accessor = $('#accessor-'+uuid);
+function rpc_get (accessor_uuid, port, port_name, port_meta) {
+	console.log("rpc_get (" + accessor_uuid + ", " + port_name + ", " + port_meta.type + ")");
+	var accessor = $('#accessor-'+accessor_uuid);
 	var device_name = accessor.attr('data-device-name');
-
-	if (port_uuid.indexOf('port-') == 0) {
-		port_uuid = port_uuid.substring(5, port_uuid.length);
-	}
-	var port = $('#port-'+port_uuid);
-	var port_name = port.attr('data-port');
 
 	var slash = '';
 	if (port_name.substring(0,1) != '/') {
@@ -195,13 +202,13 @@ function rpc_get (uuid, port_uuid, port_type) {
 	console.log('Get: ' + url);
 	$.get(url, function (data) {
 		console.log(data);
-		if (port_type == 'output') {
+		if (port_meta.directions.length == 1 && port_meta.directions[0] == 'output') {
 			port.text(data);
-		} else if (port_type == 'bool') {
+		} else if (port_meta.type == 'bool') {
 			port.prop('checked', data=='true');
-		} else if (port_type == 'select') {
+		} else if (port_meta.type == 'select') {
 			port.val(data);
-		} else if (port_type == 'color') {
+		} else if (port_meta.type == 'color') {
 			port.colpickSetColor('#'+data, true);
 		} else if (port.hasClass('slider')) {
 			port.slider('setValue', parseFloat(data));

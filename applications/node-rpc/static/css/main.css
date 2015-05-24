@@ -10,3 +10,16 @@
 .negative {
 	color: red;
 }
+
+.slider {
+	margin-top: 8px;
+}
+
+.port-group {
+	padding-bottom: 10px;
+	padding-top: 10px;
+}
+
+.port-divider {
+	border-bottom: 1px solid #ccc;
+}

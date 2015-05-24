@@ -77,6 +77,11 @@ var n = nunjucks.configure('templates', {
 // Add markdown support, mostly for accessor descriptions.
 markdown.register(n, marked);
 
+// Add JSON filter
+n.addFilter('json', function (s, n) {
+	return JSON.stringify(s);
+});
+
 // Get a database to store created accessors
 var db = new sqlite.Database('accessors.db', function (err) {
 	if (err) {
