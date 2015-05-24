@@ -244,17 +244,14 @@ function get_exports (accessor) {
 		var temp = func.split('.');
 		var tname = temp.shift();
 
-		if (!export_obj_created.has(tname)) {
-			export_str += 'module.exports.'+tname+' = {};\n';
-			export_obj_created.set(tname, '');
-		}
-		while (temp.length) {
+		while (true) {
 			if (!export_obj_created.has(tname)) {
 				export_str += 'module.exports.'+tname+' = {};\n';
 				export_obj_created.set(tname, '');
 			}
-			name += '.' + temp.shift();
-		}
+			if (temp.length == 0) break;
+			tname += '.' + temp.shift();
+		};
 		export_name = tname;
 
 		// Each port can support multiple directions based on what makes

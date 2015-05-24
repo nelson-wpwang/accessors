@@ -85,8 +85,14 @@ accessors.get_accessor_list(function (accessor_list) {
 						cmd = readline.question(question);
 					}
 
+					// Feels like there should be some idiomatic JS way to index
+					// down several object levels, but I don't know it and this works
+					var temp = port.function.split('.');
+					port_obj = accessor[temp.shift()];
+					while (temp.length) port_obj = port_obj[temp.shift()];
+
 					if (cmd == 'get') {
-						accessor[port.function].output(interact, function (err) {
+						port_obj.output(interact, function (err) {
 							console.log('CLI: error ' + err);
 						});
 					} else if (cmd == 'set') {
@@ -96,9 +102,9 @@ accessors.get_accessor_list(function (accessor_list) {
 						} else if (val == 'false') {
 							val = false;
 						}
-						accessor[port.function].input(val, interact);
+						port_obj.input(val, interact);
 					} else if (cmd == 'listen') {
-						accessor[port.function].observe(subscribe_callback);
+						port_obj.observe(subscribe_callback);
 					} else {
 						console.log('"'+cmd+'" is not a valid choice');
 						interact();
