@@ -67,7 +67,7 @@ Accessors / University of Michigan
   <div class="row">
     <div class="col-md-6">
 
-      <div class="panel panel-info">
+      <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title">To get started, choose an existing device.</h3>
         </div>
@@ -84,7 +84,7 @@ Accessors / University of Michigan
         </div>
       </div>
 
-      <div class="panel panel-info">
+      <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title">Create a new device.</h3>
         </div>
@@ -101,7 +101,7 @@ Accessors / University of Michigan
             {% endfor %}
           </select>
           <div id="accessor-new">
-            <form>
+            <form class="form-horizontal">
             </form>
           </div>
         </div>
@@ -111,7 +111,7 @@ Accessors / University of Michigan
 
     <div class="col-md-6">
 
-      <div class="panel panel-info">
+      <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title">Use the accessor.</h3>
         </div>
@@ -125,52 +125,9 @@ Accessors / University of Michigan
   </div>
 
 
-
-
-  <div class="row">
-    <div class="col-md-12">
-
-      <div class="panel panel-info">
-        <div class="panel-heading">
-          <h3 class="panel-title">What is actually happening here?</h3>
-        </div>
-        <div class="panel-body">
-          Panel content
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-
-
-
 </div>
 
 
 </div>
-
-{#<script type="text/javascript">
-var accessor_runtime_server = '{{ accessor_runtime_server }}';
-</script>#}
-
-
-<!-- <div id="body">
-  <div>
-    <div id="graph1" class="box_shadow graph graph_short graph1"></div>
-  </div>
-  <div id="key" class="box_shadow key">
-    <table id="key_table">
-      <thead><tr>
-          <th style="width:10%;">Index</th>
-          <th style="width:20%;">ID</th>
-          <th style="width:30%;">Description</th>
-          <th style="width:30%;">Location</th>
-          <th style="width:10%;">Last Frequency</th>
-      </tr></thead>
-      <tbody id="key_table_tbody"></tbody>
-    </table>
-  </div>
-</div> -->
 
 {% endblock %}

@@ -27,3 +27,13 @@
 .port-group label {
 	font-size: 90%;
 }
+
+#accessor-new {
+	margin-top: 20px;
+}
+
+#accessor-new-parameters-title {
+	color: #888;
+	text-align: center;
+	margin: -10px 0 10px 0;
+}

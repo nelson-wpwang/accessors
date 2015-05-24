@@ -27,22 +27,29 @@ $("#accessor-select").change(function () {
 				html += '<input type="hidden" id="path" value="' + path + '">';
 
 				// Need to request a title
-				html += '<label>Device Name</label>';
-				html += '<input type="text" id="name">';
-				html += '<br /><br />';
+				html += '<div class="form-group">';
+				html +=   '<label class="col-sm-3 control-label">Device Name</label>';
+				html +=   '<div class="col-sm-9">';
+				html +=     '<input type="text" id="name" class="form-control">';
+				html +=   '</div>';
+				html += '</div>';
 
-				html += '<div id="accessor-new-parameters">';
+				html += '<div id="accessor-new-parameters" class="well">';
+				html += '<div id="accessor-new-parameters-title">Parameters</div>';
 				for (var i=0; i<parameters.length; i++) {
 					var parameter = parameters[i];
 
-					html += '<label>' + parameter.name + '</label>';
-					html += '<input type="text" name="' + parameter.name + '">';
-					html += '<br />';
+					html += '<div class="form-group">';
+					html +=   '<label class="col-sm-3 control-label">' + parameter.name + '</label>';
+					html +=   '<div class="col-sm-7">';
+					html +=     '<input type="text" class="form-control" name="' + parameter.name + '">';
+					html +=   '</div>';
+					html += '</div>';
 				}
 				html += '</div>';
 
 				// Add a button
-				html += '<button type="button" id="button-accessor-new">Create Accessor</button>';
+				html += '<button type="button" id="button-accessor-new" class="form-control">Create Device</button>';
 
 				$("#accessor-new form").html(html);
 
