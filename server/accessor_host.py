@@ -469,7 +469,7 @@ def process_accessor(
 		elif line_no:
 			msg2 = "Found parsing %s on line %d" % (path, line_no)
 		else:
-			msg2 = "Found parsing" + path
+			msg2 = "Found parsing " + path
 		raise ParseError(msg, msg2)
 
 	# Strip .js from path
@@ -631,7 +631,13 @@ def process_accessor(
 						norm = ''
 			else:
 				# Port is a fully qualified name
-				norm = Interface.normalize(port['name'])
+				try:
+					norm = Interface.normalize(port['name'])
+				except KeyError:
+					errors.appendleft([
+						"The port named " + port['name'] + " does not match any known interface",
+						])
+					raise NotImplementedError
 
 			if norm in accessor['normalized_interface_ports']:
 				errors.appendleft([
@@ -1180,9 +1186,19 @@ class handler_interface_page (JinjaBaseHandler):
 dev_dir = tempfile.TemporaryDirectory()
 
 class handler_dev (tornado.web.RequestHandler):
+	def write_error(self, status_code, **kwargs):
+		try:
+			self.write(self.error)
+		except AttributeError:
+			return super().write_error(status_code, **kwargs)
+
 	def compile (self, name, contents):
 		path = os.path.join(dev_dir.name, name) + '.js'
 		open(path, 'w').write(contents)
+
+		old_accessor = first(accessors_dev_db('path') == '/dev/'+name)
+		if old_accessor:
+			accessors_dev_db.delete(old_accessor)
 
 		process_accessor(
 				accessors_dev_db,
@@ -1194,6 +1210,19 @@ class handler_dev (tornado.web.RequestHandler):
 				)
 
 		self.add_header('X-ACC-Name', name)
+
+		new_accessor = first(accessors_dev_db('path') == '/dev/'+name)
+		if not new_accessor['accessor']:
+			self.error = "Failed to build.\n\n"
+
+		if new_accessor['errors']:
+			for error in new_accessor['errors']:
+				self.error += error[0] + '\n'
+				for e in error[1:]:
+					self.error += '\t' + e + '\n'
+			self.send_error(500)
+			return
+
 		self.add_header('X-ACC-json', '/dev/accessor/' + name + '.json')
 		self.add_header('X-ACC-xml', '/dev/accessor/' + name + '.xml')
 
@@ -1203,7 +1232,7 @@ class handler_dev (tornado.web.RequestHandler):
 			return
 		name = str(uuid.uuid4())
 
-		self.compile(name, self.request.body.decode('utf-8'))
+		return self.compile(name, self.request.body.decode('utf-8'))
 
 	def put (self, path):
 		if path == '':
@@ -1211,7 +1240,7 @@ class handler_dev (tornado.web.RequestHandler):
 			return
 		name = path
 
-		self.compile(name, self.request.body.decode('utf-8'))
+		return self.compile(name, self.request.body.decode('utf-8'))
 
 
 class ServeDevAccessorJSON (ServeAccessorJSON):
