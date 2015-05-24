@@ -5,7 +5,7 @@ import sh
 import accessors
 
 #stocktick = accessors.get_accessor_by_location('localhost:6565', 'Anywhere', 'StockTick')
-stocktick = accessors.get_accessor_from_server('localhost:6565', '/webquery/StockTick')
+stocktick = accessors.get_accessor('/webquery/StockTick')
 
 for symbol in ['GOOG', 'MSFT', 'YHOO']:
 	stocktick.StockSymbol = symbol

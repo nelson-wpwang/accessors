@@ -14,8 +14,7 @@ password = input("What's the password? ")
 #	'University of Michigan - 4908 BBB',
 #	'rpidoor'
 #	)
-rpidoor = accessors.get_accessor_from_server(
-		'localhost:6565',
+rpidoor = accessors.get_accessor(
 		'/lock/door/rpidoor',
 		{
 			'host': '2607:f018:800:10f:c298:e552:5048:d86e',

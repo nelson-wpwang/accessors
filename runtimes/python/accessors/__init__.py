@@ -26,6 +26,13 @@ import sh
 import markdown
 import requests
 
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--accessor-server",
+		help="Server to load accessors from",
+		default="accessors.io")
+args = parser.parse_args()
+
 try:
 	node_version = str(sh.node('--version')).strip()
 except sh.CommandNotFound:
@@ -734,7 +741,7 @@ def get_accessor_by_location(server, location, name):
 		pprint.pprint(accessors)
 		raise
 
-def get_accessor_from_server(server, url, parameters={}):
+def get_accessor(url, parameters={}, server=args.accessor_server):
 	server = format_accessor_server(server)
 
 	accessor_path = url + '.json'
