@@ -2,7 +2,7 @@
 
 import logging
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 import argparse
 import pprint
@@ -14,6 +14,8 @@ import string
 import sys
 import os
 import re
+import uuid
+import tempfile
 
 # All I want is the terminal title to change; oh well.
 import setproctitle
@@ -105,6 +107,17 @@ accessors_db.create(
 		'errors',
 		)
 
+accessors_dev_db = pydblite.Base('accessors-dev', save_to_file=False)
+accessors_dev_db.create(
+		'name',
+		'compilation_timestamp',
+		'group',
+		'path',
+		'jscontents',
+		'accessor',
+		'errors',
+		)
+
 # Helper function to get the first result from a pydblite query
 def first (iterable):
 	for i in iterable:
@@ -129,9 +142,13 @@ class ServeAccessor (tornado.web.RequestHandler):
 	def set_default_headers(self):
 		self.set_header("Access-Control-Allow-Origin", "*")
 
+	def get_accessors_db(self):
+		return accessors_db
+
 	def get (self, path):
-		log.debug("get accessor {}".format(self))
-		path = '/' + path
+		log.debug("get accessor >>{}<<".format(path))
+		if path[0] != '/':
+			path = '/' + path
 
 		# Look for any parameters that change how we will respond
 		language = self.get_argument('language', 'es6')
@@ -148,7 +165,13 @@ class ServeAccessor (tornado.web.RequestHandler):
 				create_traceur_alternate(self.accessor)
 
 		# Create a local copy of the accessor to serve so we can configure it
-		accessor = copy.deepcopy(first(accessors_db('path') == path)['accessor'])
+		db  = self.get_accessors_db()
+		orig = first(db('path') == path)
+		if not orig:
+			log.debug("Accessor not found in db")
+			self.send_error(404)
+			return
+		accessor = copy.deepcopy(orig['accessor'])
 
 		if accessor is None:
 			raise NotImplementedError("Request for accessor with compilation errors")
@@ -429,7 +452,14 @@ def javascript_to_traceur(javascript):
 	return code
 
 
-def find_accessors (accessor_path):
+def process_accessor(
+		db,           # Accessor DB to save to
+		root,         # Just the bas '/webquery'
+		filename,     # Just the name 'Bitcoin'
+		path,         # The full path '/webquery/Bitcoin.js'
+		contents,     # The file contents
+		on_disk_path, # This really needs more refacotoring; wow
+		):
 	class ParseError(Exception):
 		pass
 
@@ -442,6 +472,309 @@ def find_accessors (accessor_path):
 			msg2 = "Found parsing" + path
 		raise ParseError(msg, msg2)
 
+	# Strip .js from path
+	view_path = path[0:-3]
+
+	try:
+		name = None
+		author = None
+		email = None
+		website = None
+		description = None
+
+		# Parse the accessor source to pull out information in the
+		# comments (name, author, email, website, description)
+		line_no = 0
+		in_comment = False
+		for line in contents.split('\n'):
+			line = line.strip()
+			line_no += 1
+			if len(line) is 0:
+				continue
+
+			if not in_comment:
+				if line == '//':
+					if description is not None:
+						description += '\n'
+					continue
+				elif line[0:3] == '// ':
+					line = line[3:]
+				elif line[0:3] == '/* ':
+					line = '* ' + line[3:]
+					in_comment = True
+				else:
+					# log.debug("non-comment line: >>%s<<", line)
+					break
+			else:
+				if line == '*':
+					if description is not None:
+						description += '\n'
+					continue
+			if '*/' in line:
+				if line[-2:] != '*/':
+					parse_error("Comment terminator `*/` must end line",
+							path, line_no, line)
+				in_comment = False
+				continue
+			if in_comment:
+				if line[0:2] != '* ':
+					parse_error("Comment block lines must begin ' * '",
+							path, line_no, line)
+				line = line[2:]
+
+			if line.strip()[:8] == 'author: ':
+				author = line.strip()[8:].strip()
+			elif line.strip()[:7] == 'email: ':
+				email = line.strip()[7:].strip()
+			elif line.strip()[:9] == 'website: ':
+				website = line.strip()[9:].strip()
+			elif line.strip()[:6] == 'name: ':
+				name = line.strip()[6:].strip()
+			elif author and email and description is None:
+				if len(line.strip()) is 0:
+					continue
+				description = line + '\n'
+			elif description is not None:
+				description += line + '\n'
+			else:
+				# Comments above our stuff in the file
+				pass
+
+		if not author:
+			parse_error("Missing required key: author", path)
+		if not email:
+			parse_error("Missing required key: email", path)
+
+		meta = {
+				'name': name if name else filename,
+				'version': '0.1',
+				'author': {
+					'name': author,
+					'email': email,
+					},
+				'_path': path,
+				}
+		# http://stackoverflow.com/q/3303312
+		meta['safe_name'] = re.sub('\W|^(?=\d)', '_', meta['name'])
+		if website:
+			meta['author']['website'] = website
+		if description:
+			meta['description'] = description
+
+		# External program that validates accessor and pulls out more
+		# complex features from the source code, specifically:
+		#	runtime_imports, implements, dependencies, parameters, ports
+		try:
+			analyzed = parse_js(on_disk_path)
+		except sh.ErrorReturnCode as e:
+			log.debug('-'*50)
+			log.error(e.stderr.decode("unicode_escape"))
+			raise
+		raw_analyzed = analyzed.stdout.decode('utf-8')
+		analyzed = json.loads(raw_analyzed)
+
+		meta.update(analyzed)
+		errors = collections.deque()
+
+		# Embed the actual code into the accessor
+		meta['code'] = {
+				'javascript': {
+					'code' : contents
+					}
+				}
+
+		# Now we make it a proper accessor
+		accessor = meta
+
+		# Verify interfaces are fully implemented. We do this by
+		# populating the ports key from a combination of created_ports
+		# and interface_ports from the validator
+		accessor['ports'] = copy.deepcopy(accessor['created_ports'])
+		for port in accessor['ports']:
+			if 'type' not in port:
+				port['type'] = 'string'
+			if 'display_name' not in port:
+				port['display_name'] = port['name'].split('.')[-1]
+
+		inferred_iface_ports = {}
+		inferred_iface_ports_to_delete = []
+		for claim in accessor['implements']:
+			iface = interface_tree[claim['interface']]
+			for port in iface:
+				name = port.split('.')[-1]
+				if name in inferred_iface_ports:
+					inferred_iface_ports_to_delete.append(name)
+				else:
+					inferred_iface_ports[name] = port
+		for name in inferred_iface_ports_to_delete:
+			# Delete ambiguous entries
+			del inferred_iface_ports[name]
+
+		accessor['normalized_interface_ports'] = []
+		name_map = {}
+		for port in accessor['interface_ports']:
+			if '.' not in port['name']:
+				# Port is an unqualified name
+				if port['name'] in inferred_iface_ports:
+					norm = inferred_iface_ports[port['name']]
+				else:
+					if port['name'] in inferred_iface_ports_to_delete:
+						errors.appendleft([
+							"Unqualified ambiguous port",
+							"The port named " + port['name'] + " belongs to multiple implemented interfaces",
+							"It must be fully qualified"])
+						raise NotImplementedError
+					else:
+						errors.appendleft([
+							"The port named " + port['name'] + " does not belong to any implemented interface",
+							"It is ignored."])
+						norm = ''
+			else:
+				# Port is a fully qualified name
+				norm = Interface.normalize(port['name'])
+
+			if norm in accessor['normalized_interface_ports']:
+				errors.appendleft([
+					'Duplicate port conflict',
+					'Found trying to insert ' + port['name'],
+					'But had previously inserted ' + norm])
+				raise NotImplementedError
+			accessor['normalized_interface_ports'].append(norm)
+			name_map[norm] = port
+
+		complete_interface = True
+		for claim in accessor['implements']:
+			iface = interface_tree[claim['interface']]
+			for req in iface:
+				if req not in accessor['normalized_interface_ports']:
+					errors.appendleft([
+						"Interface %s requires %s" % (
+							claim['interface'],
+							req,
+							),
+						"But %s from %s only implements %s" % (
+							accessor['name'],
+							accessor['_path'],
+							accessor['normalized_interface_ports'],
+							)
+						])
+					complete_interface = False
+				if iface[req]['directions'] != name_map[req]['directions']:
+					errors.appendleft([
+						"Interface %s port %s requires %s" % (
+							iface,
+							req,
+							iface[req]['directions'],
+							),
+						"But %s from %s only implements %s" % (
+							accessor['name'],
+							accessor['_path'],
+							name_map[req]['directions'],
+							)
+						])
+					complete_interface = False
+				accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
+		if not complete_interface:
+			# defer raising this so that all of the missing bits are reported
+			raise NotImplementedError
+
+		# Run the other accessor checker concept
+		#err = validate_accessor.check(accessor)
+		#TODO: Maybe put this back someday?
+		#if err:
+		#	log.error('ERROR: Invalid accessor format.')
+		#	accessor['valid'] = False
+		#	return
+
+		# Make sure that we have at least empty fields for all of the various
+		# keys in the accessor. This simplifies logic down the line.
+		if 'ports' not in accessor:
+			accessor['ports'] = []
+		if 'parameters' not in accessor:
+			accessor['parameters'] = []
+		if 'code' not in accessor:
+			accessor['code'] = {}
+		if 'dependencies' not in accessor:
+			accessor['dependencies'] = []
+
+		if 'code' in accessor:
+			accessor['code_alternates'] = {}
+			for language,v in accessor['code'].items():
+				code = ''
+				if 'code' in v:
+					code += v['code']
+				accessor['code_alternates'][language] = code
+
+				if language != 'javascript':
+					errors.appendleft([
+						'Language Error',
+						'Accessor code must be javascript.',
+						])
+					raise NotImplementedError
+			del accessor['code']
+
+		# Save accessor in in-memory DB
+		db.insert(name=meta['name'],
+							compilation_timestamp=arrow.utcnow(),
+							group=root,
+							path=view_path,
+							jscontents=contents,
+							accessor=accessor)
+
+		# Save a copy of the reverse mapping as well
+		for iface in accessor['implements']:
+			interface = interface_tree[iface['interface']]
+			interface.register_accessor(view_path)
+
+		log.info('Adding accessor {}'.format(view_path))
+	except ParseError as e:
+		for err in e.args:
+			log.error(err)
+		# meta object doesn't exist if this exception thrown
+		# accessor object doesn't exist if this exception thrown
+		db.insert(name=name if name else filename,
+							compilation_timestamp=arrow.utcnow(),
+							group=root,
+							path=view_path,
+							jscontents=contents,
+							accessor=None,
+							errors=[e.args,])
+		log.info('Parse error adding {}'.format(view_path))
+	except sh.ErrorReturnCode as e:
+		errors = [
+				['Internal error.',
+					'Please report this issue and include the full traceback below',
+					],
+				['Full traceback',
+					e.stderr.decode("unicode_escape"),
+					]
+				]
+		# accessor object doesn't exist if this exception thrown
+		db.insert(name=meta['name'],
+							compilation_timestamp=arrow.utcnow(),
+							group=root,
+							path=view_path,
+							jscontents=contents,
+							accessor=None,
+							errors=[e.args,])
+		log.info('Parse JS error adding {}'.format(view_path))
+	except NotImplementedError as e:
+		# accessor object exists in incomplete state if this
+		# exception is thrown
+		db.insert(name=meta['name'],
+							compilation_timestamp=arrow.utcnow(),
+							group=root,
+							path=view_path,
+							jscontents=contents,
+							accessor=None,
+							errors=errors)
+		log.info('Accessor implemetnation error found when adding {}'.format(view_path))
+	except Exception as e:
+		log.error("Unhandled expection in accessor parsing")
+		log.error(e)
+		raise
+
+def find_accessors (accessor_path):
 	with pushd(accessor_path):
 		for root, dirs, files in os.walk('.'):
 			root = root[1:] # strip leading '.'
@@ -449,340 +782,43 @@ def find_accessors (accessor_path):
 				root = '/'
 
 			for item_path in files:
-				try:
-					if item_path[:6] == 'README':
-						log.debug("Ignoring %s", item_path)
+				if item_path[:6] == 'README':
+					log.debug("Ignoring %s", item_path)
+					continue
+
+				filename, ext = os.path.splitext(os.path.basename(item_path))
+				if ext != '.js':
+					log.warn("Non-.js in accessors: %s -- SKIPPED", item_path)
+					continue
+
+				path = os.path.join(root, item_path)
+
+				# Strip .js from path
+				view_path = path[0:-3]
+
+				# Check to see if we have already parsed this accessor
+				contents = ''
+				with open("." + path) as f:
+					contents = f.read()
+
+					existing_accessor = first((accessors_db('path') == view_path) &
+											  (accessors_db('jscontents') == contents))
+					if existing_accessor:
+						log.info('Already parsed {}, skipping'.format(path))
 						continue
 
-					filename, ext = os.path.splitext(os.path.basename(item_path))
-					if ext != '.js':
-						log.warn("Non-.js in accessors: %s -- SKIPPED", item_path)
-						continue
+					old_accessor = first(accessors_db('path') == view_path)
+					if old_accessor:
+						log.info('Got new version of {}'.format(path))
+						for iface in old_accessor['accessor']['implements']:
+							interface = interface_tree[iface['implements']]
+							interface.unregister_accessor(old_accessor['path'])
+						accessors_db.delete(old_accessor)
+					else:
+						log.debug("NEW ACCESSOR: %s", path)
 
-					path = os.path.join(root, item_path)
+				process_accessor(accessors_db, root, filename, path, contents, '.'+path)
 
-					# Strip .js from path
-					view_path = path[0:-3]
-
-					# Check to see if we have already parsed this accessor
-					contents = ''
-					with open("." + path) as f:
-						contents = f.read()
-
-						existing_accessor = first((accessors_db('path') == view_path) &
-												  (accessors_db('jscontents') == contents))
-						if existing_accessor:
-							log.info('Already parsed {}, skipping'.format(path))
-							continue
-
-						old_accessor = first(accessors_db('path') == view_path)
-						if old_accessor:
-							log.info('Got new version of {}'.format(path))
-							for iface in old_accessor['accessor']['implements']:
-								interface = interface_tree[iface['implements']]
-								interface.unregister_accessor(old_accessor['path'])
-							accessors_db.delete(old_accessor)
-						else:
-							log.debug("NEW ACCESSOR: %s", path)
-
-					name = None
-					author = None
-					email = None
-					website = None
-					description = None
-
-					# Parse the accessor source to pull out information in the
-					# comments (name, author, email, website, description)
-					line_no = 0
-					in_comment = False
-					with open("." + path) as f:
-						while True:
-							line = f.readline().strip()
-							line_no += 1
-							if len(line) is 0:
-								continue
-
-							if not in_comment:
-								if line == '//':
-									if description is not None:
-										description += '\n'
-									continue
-								elif line[0:3] == '// ':
-									line = line[3:]
-								elif line[0:3] == '/* ':
-									line = '* ' + line[3:]
-									in_comment = True
-								else:
-									# log.debug("non-comment line: >>%s<<", line)
-									break
-							else:
-								if line == '*':
-									if description is not None:
-										description += '\n'
-									continue
-							if '*/' in line:
-								if line[-2:] != '*/':
-									parse_error("Comment terminator `*/` must end line",
-											path, line_no, line)
-								in_comment = False
-								continue
-							if in_comment:
-								if line[0:2] != '* ':
-									parse_error("Comment block lines must begin ' * '",
-											path, line_no, line)
-								line = line[2:]
-
-							if line.strip()[:8] == 'author: ':
-								author = line.strip()[8:].strip()
-							elif line.strip()[:7] == 'email: ':
-								email = line.strip()[7:].strip()
-							elif line.strip()[:9] == 'website: ':
-								website = line.strip()[9:].strip()
-							elif line.strip()[:6] == 'name: ':
-								name = line.strip()[6:].strip()
-							elif author and email and description is None:
-								if len(line.strip()) is 0:
-									continue
-								description = line + '\n'
-							elif description is not None:
-								description += line + '\n'
-							else:
-								# Comments above our stuff in the file
-								pass
-
-					if not author:
-						parse_error("Missing required key: author", path)
-					if not email:
-						parse_error("Missing required key: email", path)
-
-					meta = {
-							'name': name if name else filename,
-							'version': '0.1',
-							'author': {
-								'name': author,
-								'email': email,
-								},
-							'_path': path,
-							}
-					# http://stackoverflow.com/q/3303312
-					meta['safe_name'] = re.sub('\W|^(?=\d)', '_', meta['name'])
-					if website:
-						meta['author']['website'] = website
-					if description:
-						meta['description'] = description
-
-					# External program that validates accessor and pulls out more
-					# complex features from the source code, specifically:
-					#	runtime_imports, implements, dependencies, parameters, ports
-					try:
-						analyzed = parse_js("." + path)
-					except sh.ErrorReturnCode as e:
-						log.debug('-'*50)
-						log.error(e.stderr.decode("unicode_escape"))
-						raise
-					raw_analyzed = analyzed.stdout.decode('utf-8')
-					analyzed = json.loads(raw_analyzed)
-
-					meta.update(analyzed)
-					errors = collections.deque()
-
-					# Embed the actual code into the accessor
-					meta['code'] = {
-							'javascript': {
-								'code' : open("."+path).read()
-								}
-							}
-
-					# Now we make it a proper accessor
-					accessor = meta
-
-					# Verify interfaces are fully implemented. We do this by
-					# populating the ports key from a combination of created_ports
-					# and interface_ports from the validator
-					accessor['ports'] = copy.deepcopy(accessor['created_ports'])
-					for port in accessor['ports']:
-						if 'type' not in port:
-							port['type'] = 'string'
-						if 'display_name' not in port:
-							port['display_name'] = port['name'].split('.')[-1]
-
-					inferred_iface_ports = {}
-					inferred_iface_ports_to_delete = []
-					for claim in accessor['implements']:
-						iface = interface_tree[claim['interface']]
-						for port in iface:
-							name = port.split('.')[-1]
-							if name in inferred_iface_ports:
-								inferred_iface_ports_to_delete.append(name)
-							else:
-								inferred_iface_ports[name] = port
-					for name in inferred_iface_ports_to_delete:
-						# Delete ambiguous entries
-						del inferred_iface_ports[name]
-
-					accessor['normalized_interface_ports'] = []
-					name_map = {}
-					for port in accessor['interface_ports']:
-						if '.' not in port['name']:
-							# Port is an unqualified name
-							if port['name'] in inferred_iface_ports:
-								norm = inferred_iface_ports[port['name']]
-							else:
-								if port['name'] in inferred_iface_ports_to_delete:
-									errors.appendleft([
-										"Unqualified ambiguous port",
-										"The port named " + port['name'] + " belongs to multiple implemented interfaces",
-										"It must be fully qualified"])
-									raise NotImplementedError
-								else:
-									errors.appendleft([
-										"The port named " + port['name'] + " does not belong to any implemented interface",
-										"It is ignored."])
-									norm = ''
-						else:
-							# Port is a fully qualified name
-							norm = Interface.normalize(port['name'])
-
-						if norm in accessor['normalized_interface_ports']:
-							errors.appendleft([
-								'Duplicate port conflict',
-								'Found trying to insert ' + port['name'],
-								'But had previously inserted ' + norm])
-							raise NotImplementedError
-						accessor['normalized_interface_ports'].append(norm)
-						name_map[norm] = port
-
-					complete_interface = True
-					for claim in accessor['implements']:
-						iface = interface_tree[claim['interface']]
-						for req in iface:
-							if req not in accessor['normalized_interface_ports']:
-								errors.appendleft([
-									"Interface %s requires %s" % (
-										claim['interface'],
-										req,
-										),
-									"But %s from %s only implements %s" % (
-										accessor['name'],
-										accessor['_path'],
-										accessor['normalized_interface_ports'],
-										)
-									])
-								complete_interface = False
-							if iface[req]['directions'] != name_map[req]['directions']:
-								errors.appendleft([
-									"Interface %s port %s requires %s" % (
-										iface,
-										req,
-										iface[req]['directions'],
-										),
-									"But %s from %s only implements %s" % (
-										accessor['name'],
-										accessor['_path'],
-										name_map[req]['directions'],
-										)
-									])
-								complete_interface = False
-							accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
-					if not complete_interface:
-						# defer raising this so that all of the missing bits are reported
-						raise NotImplementedError
-
-					# Run the other accessor checker concept
-					#err = validate_accessor.check(accessor)
-					#TODO: Maybe put this back someday?
-					#if err:
-					#	log.error('ERROR: Invalid accessor format.')
-					#	accessor['valid'] = False
-					#	return
-
-					# Make sure that we have at least empty fields for all of the various
-					# keys in the accessor. This simplifies logic down the line.
-					if 'ports' not in accessor:
-						accessor['ports'] = []
-					if 'parameters' not in accessor:
-						accessor['parameters'] = []
-					if 'code' not in accessor:
-						accessor['code'] = {}
-					if 'dependencies' not in accessor:
-						accessor['dependencies'] = []
-
-					if 'code' in accessor:
-						accessor['code_alternates'] = {}
-						for language,v in accessor['code'].items():
-							code = ''
-							if 'code' in v:
-								code += v['code']
-							accessor['code_alternates'][language] = code
-
-							if language != 'javascript':
-								errors.appendleft([
-									'Language Error',
-									'Accessor code must be javascript.',
-									])
-								raise NotImplementedError
-						del accessor['code']
-
-					# Save accessor in in-memory DB
-					accessors_db.insert(name=meta['name'],
-										compilation_timestamp=arrow.utcnow(),
-										group=root,
-										path=view_path,
-										jscontents=contents,
-										accessor=accessor)
-
-					# Save a copy of the reverse mapping as well
-					for iface in accessor['implements']:
-						interface = interface_tree[iface['interface']]
-						interface.register_accessor(view_path)
-
-					log.info('Adding accessor {}'.format(view_path))
-				except ParseError as e:
-					for err in e.args:
-						log.error(err)
-					# meta object doesn't exist if this exception thrown
-					# accessor object doesn't exist if this exception thrown
-					accessors_db.insert(name=name if name else filename,
-										compilation_timestamp=arrow.utcnow(),
-										group=root,
-										path=view_path,
-										jscontents=contents,
-										accessor=None,
-										errors=[e.args,])
-					log.info('Parse error adding {}'.format(view_path))
-				except sh.ErrorReturnCode as e:
-					errors = [
-							['Internal error.',
-								'Please report this issue and include the full traceback below',
-								],
-							['Full traceback',
-								e.stderr.decode("unicode_escape"),
-								]
-							]
-					# accessor object doesn't exist if this exception thrown
-					accessors_db.insert(name=meta['name'],
-										compilation_timestamp=arrow.utcnow(),
-										group=root,
-										path=view_path,
-										jscontents=contents,
-										accessor=None,
-										errors=[e.args,])
-					log.info('Parse JS error adding {}'.format(view_path))
-				except NotImplementedError as e:
-					# accessor object exists in incomplete state if this
-					# exception is thrown
-					accessors_db.insert(name=meta['name'],
-										compilation_timestamp=arrow.utcnow(),
-										group=root,
-										path=view_path,
-										jscontents=contents,
-										accessor=None,
-										errors=errors)
-					log.info('Accessor implemetnation error found when adding {}'.format(view_path))
-				except Exception as e:
-					log.error("Unhandled expection in accessor parsing")
-					log.error(e)
-					raise
 
 
 
@@ -1137,6 +1173,62 @@ class handler_interface_page (JinjaBaseHandler):
 				}
 		return self.renderj('interface.jinja2', **data)
 
+################################################################################
+### Development support
+################################################################################
+
+dev_dir = tempfile.TemporaryDirectory()
+
+class handler_dev (tornado.web.RequestHandler):
+	def compile (self, name, contents):
+		path = os.path.join(dev_dir.name, name) + '.js'
+		open(path, 'w').write(contents)
+
+		process_accessor(
+				accessors_dev_db,
+				'/dev/'+name,
+				name,
+				'/dev/'+name+'.js',
+				contents,
+				path,
+				)
+
+		self.add_header('X-ACC-Name', name)
+		self.add_header('X-ACC-json', '/dev/accessor/' + name + '.json')
+		self.add_header('X-ACC-xml', '/dev/accessor/' + name + '.xml')
+
+	def post (self, path):
+		if path != '':
+			self.send_error(500, reason="Can only post to / (use PUT to specify name)")
+			return
+		name = str(uuid.uuid4())
+
+		self.compile(name, self.request.body.decode('utf-8'))
+
+	def put (self, path):
+		if path == '':
+			self.send_error(500, reason="PUT requires a name in path")
+			return
+		name = path
+
+		self.compile(name, self.request.body.decode('utf-8'))
+
+
+class ServeDevAccessorJSON (ServeAccessorJSON):
+	def get_accessors_db(self):
+		for a in accessors_dev_db:
+			print('>>{}<<'.format(a['path']))
+		return accessors_dev_db
+
+	def get(self, path):
+		return super().get('/dev/' + path)
+
+class ServeDevAccessorXML (ServeAccessorXML):
+	def get_accessors_db(self):
+		return accessors_dev_db
+
+	def get(self, path):
+		return super().get('/dev/' + path)
 
 ################################################################################
 ### main()
@@ -1206,6 +1298,10 @@ accessor_server = tornado.web.Application(
 		(r'/accessor/(.*).xml', ServeAccessorXML),
 		# Accessor lists
 		(r'/list/all', ServeAccessorList),
+		# Support to help develop accessors
+		(r'/dev/accessor/(.*).json', ServeDevAccessorJSON),
+		(r'/dev/accessor/(.*).xml', ServeDevAccessorXML),
+		(r'/dev/upload/(.*)', handler_dev),
 	],
 	static_path="static/",
 	template_path='jinja/',
