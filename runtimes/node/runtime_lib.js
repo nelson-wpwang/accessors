@@ -254,8 +254,9 @@ rt.coap = Object();
 function* _coapCommon(ogm) {
 	var defer = Q.defer();
 	ogm.on('response', function (resp) {
-		info("CoAP complete, resp payload: " + resp.payload);
-		defer.resolve(resp.payload);
+		var content = resp.payload.toString('utf-8')
+		info("CoAP complete, resp payload: " + content);
+		defer.resolve(content);
 	});
 	info("CoAP yielding for I/O operation");
 	return yield defer.promise;
@@ -267,7 +268,7 @@ rt.coap.get = function* coapGet(url) {
 	params.method = 'GET';
 	var ogm = coap.request(params);
 	ogm.end();
-	yield* _coapCommon(ogm);
+	return yield* _coapCommon(ogm);
 }
 
 rt.coap.post = function* coapPost(url, body) {
@@ -278,7 +279,7 @@ rt.coap.post = function* coapPost(url, body) {
 	var ogm = coap.request(params);
 	ogm.write(body);
 	ogm.end();
-	yield* _coapCommon(ogm);
+	return yield* _coapCommon(ogm);
 }
 
 rt.coap.observe = function coapObserver(url, callback) {
