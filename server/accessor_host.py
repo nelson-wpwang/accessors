@@ -1230,21 +1230,18 @@ class handler_dev (tornado.web.RequestHandler):
 		self.add_header('X-ACC-json', '/dev/accessor/' + name + '.json')
 		self.add_header('X-ACC-xml', '/dev/accessor/' + name + '.xml')
 
-	def post (self, path):
-		if path != '':
-			self.send_error(500, reason="Can only post to / (use PUT to specify name)")
-			return
-		name = str(uuid.uuid4())
 
+class handler_dev_post (handler_dev):
+	def post (self):
+		name = str(uuid.uuid4())
 		return self.compile(name, self.request.body.decode('utf-8'))
 
+class handler_dev_put (handler_dev):
 	def put (self, path):
 		if path == '':
 			self.send_error(500, reason="PUT requires a name in path")
 			return
-		name = path
-
-		return self.compile(name, self.request.body.decode('utf-8'))
+		return self.compile(path, self.request.body.decode('utf-8'))
 
 
 class ServeDevAccessorJSON (ServeAccessorJSON):
@@ -1334,7 +1331,8 @@ accessor_server = tornado.web.Application(
 		# Support to help develop accessors
 		(r'/dev/accessor/(.*).json', ServeDevAccessorJSON),
 		(r'/dev/accessor/(.*).xml', ServeDevAccessorXML),
-		(r'/dev/upload/(.*)', handler_dev),
+		(r'/dev/upload', handler_dev_post),
+		(r'/dev/upload/(.*)', handler_dev_put),
 	],
 	static_path="static/",
 	template_path='jinja/',
