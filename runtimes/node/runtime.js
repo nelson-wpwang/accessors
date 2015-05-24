@@ -77,7 +77,10 @@ var _do_port_call = function  (port, port_name, direction, value, done_fn, error
 
 	var d = domain.create();
 
-	d.on('error', error_fn);
+	d.on('error', function (err) {
+		d.exit();
+		error_fn(err);
+	});
 
 	d.run(function() {
 		r = port(value);
@@ -85,11 +88,16 @@ var _do_port_call = function  (port, port_name, direction, value, done_fn, error
 			var def = Q.async(function* () {
 				r = yield* port(value);
 			});
-			finished = function () {
+
+			def().done(function () {
 				done_fn(r);
-			}
-			def().done(finished, error_fn);
+
+			}, function (err) {
+				// Throw this error so that the domain can pick it up.
+				throw err;
+			});
 			info("port call running asynchronously");
+
 		} else {
 			done_fn(r);
 		}
