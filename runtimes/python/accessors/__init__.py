@@ -3,10 +3,13 @@
 import logging
 log = logging.getLogger(__name__)
 
+import sys
+if sys.hexversion < 0x03000000:
+	raise NotImplementedError("This library requires at least Python 3.0")
+
 import base64
 import pprint
 import time
-import sys
 import traceback
 import os
 import copy
