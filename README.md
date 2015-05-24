@@ -143,8 +143,7 @@ Accessors RPC Tool
 
 The accessor remote proceedure tool allows a server to run accessors and provides
 a browser interface to those accessors.
-See the [RPC Server](/applications/node-rpc) and
-[RPC Frontend](/applications/rpc-frontend) for how to use it.
+See the [RPC Server](/applications/node-rpc) for how to use it.
 
 
 

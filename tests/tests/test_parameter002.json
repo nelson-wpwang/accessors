@@ -1,8 +1,0 @@
-{
-	"path": "/tests/ParameterTest001",
-	"parameters": {
-		"test_server": "$TEST_SERVER",
-		"param1": "Don't Use Default"
-	},
-	"result": "Don't Use Default"
-}
