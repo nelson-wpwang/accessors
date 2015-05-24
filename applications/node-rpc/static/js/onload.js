@@ -226,7 +226,7 @@ $("#device-select").change(function () {
 		init_accessor(devices[name]);
 
 	} else {
-		$.ajax({url: '/device/' + name,
+		$.ajax({url: '/device/' + escape(name),
 			success: function (data) {
 				if (data.success) {
 					devices[name] = data.data;
@@ -272,8 +272,8 @@ function rpc_post (accessor_uuid, port_name, arg, callback) {
 				callback();
 			}
 		},
-		error: function () {
-			accessor_alert_error(accessor_uuid, data.message);
+		error: function (err) {
+			accessor_alert_error(accessor_uuid, err);
 			if (typeof callback === 'function') {
 				callback();
 			}

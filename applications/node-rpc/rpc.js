@@ -102,7 +102,7 @@ var db = new sqlite.Database(argv.db_location, function (err) {
 		       ');
 
 		// Query the tables and create accessor instances for each device
-		db.each('SELECT * FROM accessors',
+		db.each('SELECT * FROM accessors ORDER BY name ASC',
 			function (err, row) {
 				if (err) {
 					console.log(err);
@@ -238,17 +238,16 @@ function activate_accessor (name, path, parameters, callback) {
 						}));
 					}, function (err) {
 						console.log('GET error');
-						console.log(err);
 						res.send(JSON.stringify({
 							success: false,
-							message: err
+							message: err.message
 						}));
 					});
 				});
 
 				// INPUT
 				w.post(device_port_path, function (req, res) {
-					console.log("POST " + device_port_path + ": (req: " + req + ", res: " + res + ")");
+					console.log("POST " + device_port_path);
 					res.header("Content-Type", "application/json");
 
 					if (port.directions.indexOf('input') == -1) {
@@ -256,7 +255,7 @@ function activate_accessor (name, path, parameters, callback) {
 							success: false,
 							message: 'Request for input when that is not a valid direction'
 						}));
-						return
+						return;
 					}
 					var arg = null;
 					if (port.type == 'bool') {
@@ -276,9 +275,10 @@ function activate_accessor (name, path, parameters, callback) {
 							success: true
 						}));
 					}, function (err) {
+						console.log('POST ERR')
 						res.send(JSON.stringify({
 							success: false,
-							message: error
+							message: err.message
 						}));
 					});
 				});
