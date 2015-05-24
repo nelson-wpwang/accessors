@@ -16,7 +16,8 @@
 var options = {
 	'host-server': {
 		alias: 'host_server',
-		describe: 'URL of the accessor host server to use.'
+		describe: 'URL of the accessor host server to use.',
+		type: 'string'
 	}
 };
 
