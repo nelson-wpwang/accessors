@@ -258,11 +258,21 @@ function rpc_get (accessor_uuid, port, port_name, port_meta) {
 	$.ajax({url: url,
 		type: 'GET',
 		success: function (data) {
+
+			function format_units (val, units) {
+				if (units == 'undefined') {
+					return val;
+				}
+				if (units == 'currency_usd') {
+					return format_currency_usd(parseFloat(val));
+				}
+			}
+
 			if (!data.success) {
 				accessor_alert_error(accessor_uuid, data.message);
 			} else {
 				if (port_meta.directions.length == 1 && port_meta.directions[0] == 'output') {
-					port.text(data.data);
+					port.html(format_units(data.data, port_meta.units));
 				} else if (port_meta.type == 'bool') {
 					port.prop('checked', data.data==true);
 				} else if (port_meta.type == 'select') {
@@ -272,7 +282,7 @@ function rpc_get (accessor_uuid, port, port_name, port_meta) {
 				} else if (port.hasClass('slider')) {
 					port.slider('setValue', parseFloat(data.data));
 				} else {
-					port.val(data.data);
+					port.val(format_units(data.data, port_meta.units));
 				}
 			}
 		}
