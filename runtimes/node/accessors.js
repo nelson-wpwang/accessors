@@ -229,15 +229,33 @@ function get_exports (accessor) {
 	// need to keep a list of module exports for toplevel to call
 	var export_str = "module.exports = {};\n";
 
-	// Need to add functions for each port of the accessor to the exports
-	// listing
+	// Need to play the same game as port objects here (probably could have
+	// made these one function or something; oh well)
+	var export_obj_created = new hashmap.HashMap();
+
+	// Need to add functions for each port of the accessor to the exports listing
 	for (var i=0; i<accessor.ports.length; i++) {
 		var port = accessor.ports[i];
 		var name = port.name;
 		var func = port.function;
-		var export_name = func.replace(/\./g, '_');
 
-		export_str += 'module.exports.'+export_name+' = {};\n';
+		//var export_name = func.replace(/\./g, '_');
+		var export_name = '';
+		var temp = func.split('.');
+		var tname = temp.shift();
+
+		if (!export_obj_created.has(tname)) {
+			export_str += 'module.exports.'+tname+' = {};\n';
+			export_obj_created.set(tname, '');
+		}
+		while (temp.length) {
+			if (!export_obj_created.has(tname)) {
+				export_str += 'module.exports.'+tname+' = {};\n';
+				export_obj_created.set(tname, '');
+			}
+			name += '.' + temp.shift();
+		}
+		export_name = tname;
 
 		// Each port can support multiple directions based on what makes
 		// sense for the particular device
