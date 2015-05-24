@@ -120,10 +120,9 @@ var db = new sqlite.Database(argv.db_location, function (err) {
 							parameters[rows[i].name] = rows[i].value;
 						}
 
+						activate_accessor(row.name, row.path, parameters);
 					}
 				);
-
-				activate_accessor(row.name, row.path, parameters);
 			}
 		);
 
