@@ -29,8 +29,8 @@ $("#accessor-select").change(function () {
 				// Need to request a title
 				html += '<div class="form-group">';
 				html +=   '<label class="col-sm-3 control-label">Device Name</label>';
-				html +=   '<div class="col-sm-9">';
-				html +=     '<input type="text" id="name" class="form-control">';
+				html +=   '<div class="col-sm-8">';
+				html +=     '<input type="text" id="name" class="form-control" placeholder="Name the device something memorable">';
 				html +=   '</div>';
 				html += '</div>';
 
@@ -46,6 +46,9 @@ $("#accessor-select").change(function () {
 					html +=   '</div>';
 					html += '</div>';
 				}
+				html += '</div>';
+				html += '<div id="accessor-new-detail">';
+				html +=   '<a href="http://accessors.io/view/accessor' + path + '">View Accessor Details</a>';
 				html += '</div>';
 
 				// Add a button
