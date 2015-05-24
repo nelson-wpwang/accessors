@@ -236,6 +236,13 @@ function activate_accessor (name, path, parameters, callback) {
 							success: true,
 							data: result
 						}));
+					}, function (err) {
+						console.log('GET error');
+						console.log(err);
+						res.send(JSON.stringify({
+							success: false,
+							message: err
+						}));
 					});
 				});
 
@@ -267,6 +274,11 @@ function activate_accessor (name, path, parameters, callback) {
 					port_func.input(arg, function () {
 						res.send(JSON.stringify({
 							success: true
+						}));
+					}, function (err) {
+						res.send(JSON.stringify({
+							success: false,
+							message: error
 						}));
 					});
 				});

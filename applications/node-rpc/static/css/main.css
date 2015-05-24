@@ -15,6 +15,12 @@
 	margin-top: 8px;
 }
 
+.spinner {
+	position: absolute;
+	top: 55px;
+	right: 35px;
+}
+
 .port-group {
 	padding-bottom: 10px;
 	padding-top: 10px;

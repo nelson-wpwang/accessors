@@ -51,11 +51,13 @@ function format_currency_usd (price) {
 	}
 }
 
-function accessor_function_start (name) {
-	accessor_alert_clear(name);
-	$('#accessor-'+name+' .spinner').show();
+function accessor_function_start (accessor_uuid) {
+	accessor_alert_clear(accessor_uuid);
+	$('#accessor-'+accessor_uuid+' .spinner').show();
+	console.log('show')
 }
 
-function accessor_function_stop (name) {
-	$('#accessor-'+name+' .spinner').hide();
+function accessor_function_stop (accessor_uuid) {
+	$('#accessor-'+accessor_uuid+' .spinner').hide();
+	console.log('hide')
 }
