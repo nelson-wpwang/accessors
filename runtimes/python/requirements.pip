@@ -3,3 +3,5 @@ python-bond
 requests
 semver
 sh
+socketIO-client
+ws4py

@@ -293,13 +293,13 @@ WebSocket connection to the given URL. URL should look like `ws://host.com/path`
 Register callbacks for the WebSocket connection.
 
         // Called with the data returned from the socket.
-        function data_callback (data) {}
+        function data_callback (<string> data) {}
         // Called if an error arises from the socket.
         function error_callback (error) {}
         // Called if the connection is closed.
         function close_callback () {}
 
-- `<void> [websocket].send(<string|object> data)`: Sends `data` in the WebSocket
+- `<void> [websocket].send(<string> data)`: Sends `data` in the WebSocket
 connection to the other host.
 
 

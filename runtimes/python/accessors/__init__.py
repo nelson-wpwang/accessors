@@ -7,6 +7,7 @@ import sys
 if sys.hexversion < 0x03000000:
 	raise NotImplementedError("This library requires at least Python 3.0")
 
+import threading
 import base64
 import pprint
 import time
@@ -15,9 +16,12 @@ import os
 import copy
 import socket
 import argparse
+import functools
 import string
 import json
 import colorsys
+import socketIO_client as sioc
+from ws4py.client.threadedclient import WebSocketClient
 
 try:
 	import bond
@@ -112,6 +116,7 @@ class Object():
 
 # Decorator to print tracebacks when crossing the runtime bridge
 def exported(fn_to_decorate):
+	@functools.wraps(fn_to_decorate)
 	def exported_fn_decorator(*args, **kwargs):
 		try:
 			return fn_to_decorate(*args, **kwargs)
@@ -124,7 +129,9 @@ class Port():
 	@staticmethod
 	def create(port, accessor):
 		if 'observe' in port['directions']:
-			raise NotImplementedError("Python runtime doesn't support observe yet")
+			if ('input' in port['directions']) or ('output' in port['directions']):
+				raise NotImplementedError("Python runtime only supports observe-only observe ports currently")
+			return ObservePort(port, accessor)
 		if 'input' in port['directions']:
 			if 'output' in port['directions']:
 				return InoutPort(port, accessor)
@@ -134,7 +141,7 @@ class Port():
 			return OutputPort(port, accessor)
 		else:
 			raise NotImplementedError("Unknown port direction: {}".\
-					format(port['direction']))
+					format(port['directions']))
 
 	class SelectType():
 		def __init__(self, options):
@@ -158,6 +165,7 @@ class Port():
 			'numeric': float,
 			'integer': int,
 			'string': str,
+			'object': lambda x: x,
 			'color': str, #FIXME
 			'currency_usd': float, #FIXME
 			}
@@ -174,13 +182,40 @@ class Port():
 			self.type = Port.TYPE_MAP[port['type']]
 
 	def __str__(self):
-		return '<{}> {}(<{}>)'.format(self.direction, self.name, str(self.type))
+		return '<{}> {}(<{}>)'.format(self.directions, self.name, str(self.type))
 
+
+class ObservePort(Port):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.directions = ['observe',]
+
+		self._observer_lock = threading.Lock()
+		self._observers = []
+
+	def observe(self, callback):
+		with self._observer_lock:
+			if len(self._observers) == 0:
+				if self.accessor._js is None:
+					self.accessor._init()
+				fn = self.name + '.observe'
+				log.debug("%s: call accessor fn: %s(%s)", self, fn, True)
+				r = self.accessor._js.call('_port_call', fn, True)
+				log.debug("%s: return %s", self, r)
+				log.debug("%s: end accesor fn: %s(%s)", self, fn, True)
+			self._observers.append(callback)
+
+	def _send(self, value):
+		value = self.type(value)
+		# TODO: This locks across all observers, which is very strong primitive
+		with self._observer_lock:
+			for fn in self._observers:
+				fn(value)
 
 class InputPort(Port):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		self.direction = 'input'
+		self.directions = ['input',]
 
 	def _get(self):
 		log.error("Attempt to get output only port %s", self)
@@ -198,7 +233,7 @@ class InputPort(Port):
 class OutputPort(Port):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		self.direction = 'output'
+		self.directions = ['output',]
 
 	def _get(self):
 		if self.accessor._js is None:
@@ -218,7 +253,7 @@ class OutputPort(Port):
 class InoutPort(InputPort,OutputPort):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		self.direction = 'inout'
+		self.directions = ['input', 'output']
 
 
 class Accessor():
@@ -323,6 +358,10 @@ class Accessor():
 		ret = self._js.call('_port_call', 'init')
 		log.debug("%s: accessor init ret %r", self, ret)
 
+	def _observe(self, port, fn):
+		port = self._ports[port]
+		port.observe(fn)
+
 	def __str__(self):
 		if self._parent:
 			return str(self._parent) + '.' + self._safe_name
@@ -334,6 +373,8 @@ class Accessor():
 	def __getattribute__(self, attr):
 		if attr != '_ports' and hasattr(self, '_ports') and attr in self._ports:
 			return self._ports[attr]._get()
+		if attr == 'observe':
+			return self._observe
 		return object.__getattribute__(self, attr)
 
 	def __setattr__(self, attr, value):
@@ -426,6 +467,12 @@ provide_interface = function () {
 	/* no-op: operation handled upstream */
 }
 ''')
+
+		def send(name, value):
+			log.debug("%s: Observe: %s sending %s", self, name, value)
+			port = self._ports[name]
+			port._send(value)
+		self._js.export(send, 'send')
 
 		def resolve_lazy_dependency(name):
 			log.debug("%s: Request to resolve lazy binding for: %s", self, name)
@@ -707,6 +754,122 @@ rt.http.get = function* (url) { return _http_get(url); };
 ''')
 
 
+		### WebSockets
+		# hack:
+
+		self._ws = None
+		self._ws_connect = threading.Event()
+
+		class ws_client(WebSocketClient):
+			def opened(inner_self):
+				self._ws_connect.set()
+
+			def closed(inner_self, code, reason=None):
+				raise NotImplementedError("ws close")
+
+			def received_message(inner_self, msg):
+				if not msg.is_text:
+					raise NotImplementedError("Non-text websocket message")
+				# TODO Assuming utf-8?
+				self._js.call('_websocket_data_callback', msg.data.decode('utf-8'))
+
+		@exported
+		def websocket_connect(url):
+			log.debug("%s: websocket_connect(%s)", self, url)
+			if self._ws is not None:
+				raise NotImplementedError("Only one ws connection is supported")
+			self._ws = ws_client(url)
+			self._ws.connect()
+			if not self._ws_connect.wait(15):
+				raise NotImplementedError("WebSocket didn't connect within 15 s")
+			log.debug("%s: websocket_connect success", self)
+		self._js.export(websocket_connect, '_websocket_connect')
+
+		@exported
+		def websocket_subscribe(data_cb, error_cb, close_cb):
+			log.debug("%s: websocket_subscribe(%s, %s, %s)",
+					self, data_cb, error_cb, close_cb)
+		self._js.export(websocket_subscribe, '_websocket_subscribe')
+
+		@exported
+		def websocket_send(data):
+			log.debug("%s: websocket_send(%s)", self, data)
+			self._ws.send(data)
+		self._js.export(websocket_send, '_websocket_send')
+
+		self._js.eval_block('''\
+/* Hack part II */
+var _websocket_data_callback = null;
+var _websocket_error_callback = null;
+var _websocket_close_callback = null;
+
+rt.websocket = Object();
+rt.websocket.connect = function* (url) {
+	var w = Object();
+
+	_websocket_connect(url);
+
+	w.subscribe = function (data_cb, error_cb, close_cb) {
+		if (_websocket_data_callback !== null) {
+			rt.log.critical("Python runtime only supports 1 websocket instance");
+		}
+		_websocket_data_callback = data_cb;
+		_websocket_error_callback = error_cb;
+		_websocket_close_callback = close_cb;
+	}
+	w.send = _websocket_send;
+
+	return w;
+};
+''')
+
+
+		### GATD v0.1
+		# hack:
+		self._socketIO = None
+		self._socketIO_connect = threading.Event()
+
+		class acc_soic_events (sioc.BaseNamespace):
+			def on_connect (inner_self):
+				self._socketIO_connect.set()
+
+			def on_data (self, *args):
+				pkt = args[0]
+				print(pkt)
+
+		@exported
+		def gatd_old_connect(url):
+			log.debug("%s: gatd_old_connect(%s)", self, url)
+			SOCKETIO_PORT = 8082
+			raise NotImplementedError("SocketIO library version Python3 issues")
+			if self._socketIO != None:
+				raise NotImplementedError("Only one gatd connection is supported")
+			self._socketIO = sioc.SocketIO(url, SOCKETIO_PORT)
+			self._socketIO_namespace = self._socketIO.define(acc_soic_events, '/stream')
+			if self._socketIO_connect.wait(15):
+				raise NotImplementedError("Failed to connect to gatd within 15 s")
+		self._js.export(gatd_old_connect, '_gatd_old_connect')
+
+		@exported
+		def gatd_old_query(query, callback):
+			log.debug("%s: gatd_old_query(%s, %s)", self, query, callback)
+			self._socketIO_namespace.emit('query', query)
+		self._js.export(gatd_old_query, '_gatd_old_query')
+
+		self._js.eval_block('''\
+rt.gatd_old = Object();
+rt.gatd_old.connect = function* (url) {
+	var g = Object();
+
+	g._conn = _gatd_old_connect(url);
+	g.query = function (query, callback) {
+		_gatd_old_query(query, callback)
+	};
+
+	return g;
+};
+''')
+
 		### Color
 		def color_hex_to_hsv(hex_code):
 			if hex_code[0] == '#':
@@ -758,6 +921,11 @@ def get_accessor(url, parameters={}, server=args.accessor_server):
 		raise NotImplementedError("get_accessor error case")
 
 	return accessor
+
+def observe_forever():
+	'''Convenience function that prevents termination'''
+	while True:
+		time.sleep(1e6)
 
 #accessors = {}
 #for location in get_known_locations():

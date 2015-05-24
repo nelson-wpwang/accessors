@@ -326,9 +326,6 @@ rt.websocket.connect = function* websocketConnect (url) {
 	};
 
 	w.send = function (data) {
-		if (data !== null && typeof data === 'object') {
-			data = JSON.stringify(data);
-		}
 		info('WebSocket: sending ' + data);
 		ws.send(data);
 	};
