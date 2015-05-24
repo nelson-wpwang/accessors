@@ -928,6 +928,55 @@ node_runtime_example_ports_observe = string.Template(
 
 ''')
 
+
+###
+### Templates for creating example Python code with an accessor
+###
+
+python_runtime_example_with_parameters = string.Template(
+'''#!/usr/bin/env python3
+
+import accessors
+
+$instance = accesors.get_accessor('$path_and_name', $parameters)
+
+$ports''')
+
+python_runtime_example_without_parameters = string.Template(
+'''#!/usr/bin/env python3
+
+import accessors
+
+$instance = accesors.get_accessor('$path_and_name')
+
+$ports''')
+
+python_runtime_example_parameters = string.Template(
+'''parameters = {
+$parameters}''')
+
+python_runtime_example_parameters_entries = string.Template('''\t$name: '',
+''')
+
+python_runtime_example_parameters_entries_with_default = string.Template('''\t# $name: '$default'  Parameter is optional, the default value will be used if one is not specified.
+''')
+
+python_runtime_example_ports_input = string.Template(
+'''print("Set $instance.$port_function to {}".format(value))
+$instance.$port_function = value
+''')
+
+python_runtime_example_ports_output = string.Template(
+'''value = $instance.$port_function
+print("$instance.$port_function = {}".format(value))
+''')
+
+python_runtime_example_ports_observe = string.Template(
+'''$instance.$port_function.observe(lambda observation:
+\t\tprint("Observation from $instance.$port_function: {}".format(observation))
+\t\t)
+''')
+
 # Main index
 class handler_index (JinjaBaseHandler):
 	def get(self, **kwargs):
@@ -969,38 +1018,70 @@ class handler_accessor_page (JinjaBaseHandler):
 
 		node_ex_parameters = ''
 		node_ex_parameters_arg = '{}'
+		python_ex_parameters = ''
 		if len(record['accessor']['parameters']) > 0:
 			node_ex_params = ''
 			node_ex_parameters_arg = 'parameters'
+			python_ex_params = ''
 			for param in record['accessor']['parameters']:
 				node_ex_params += node_runtime_example_parameters_entries.substitute(name=param['name'])
+				if param['required']:
+					python_ex_params += python_runtime_example_parameters_entries.substitute(name=param['name'])
+				else:
+					python_ex_params += python_runtime_example_parameters_entries_with_default.substitute(name=param['name'],default=param['default'])
 			node_ex_parameters = node_runtime_example_parameters.substitute(parameters=node_ex_params)
+			python_ex_parameters = python_runtime_example_parameters.substitute(parameters=python_ex_params)
 
 		node_ex_ports = ''
+		python_ex_ports = ''
 		for port in record['accessor']['ports']:
 			if 'input' in port['directions']:
 				node_ex_ports += node_runtime_example_ports_input.substitute(port_function=port['function'],
 		                                                                     instance=record['accessor']['safe_name'],
 				                                                             port_name=port['name'])
+				python_ex_ports += python_runtime_example_ports_input.substitute(port_function=port['function'],
+				                                                                 instance=record['accessor']['safe_name'],
+				                                                                 port_name=port['name'])
 			if 'output' in port['directions']:
 				node_ex_ports += node_runtime_example_ports_output.substitute(port_function=port['function'],
 		                                                                      instance=record['accessor']['safe_name'],
 				                                                              port_name=port['name'])
+				python_ex_ports += python_runtime_example_ports_output.substitute(port_function=port['function'],
+				                                                                  instance=record['accessor']['safe_name'],
+				                                                                  port_name=port['name'])
 			if 'observe' in port['directions']:
 				node_ex_ports += node_runtime_example_ports_observe.substitute(port_function=port['function'],
 		                                                                      instance=record['accessor']['safe_name'],
 				                                                              port_name=port['name'])
+				python_ex_ports += python_runtime_example_ports_observe.substitute(port_function=port['function'],
+				                                                                   instance=record['accessor']['safe_name'],
+				                                                                   port_name=port['name'])
+
+			python_ex_ports += '\n'
 
 		node_ex = node_runtime_example.substitute(path_and_name=record['path'],
 		                                          instance=record['accessor']['safe_name'],
 		                                          parameters=node_ex_parameters,
 		                                          parameters_arg=node_ex_parameters_arg,
 		                                          ports=node_ex_ports)
+		if len(record['accessor']['parameters']) > 0:
+			python_ex = python_runtime_example_with_parameters.substitute(path_and_name=record['path'],
+			                                                              instance=record['accessor']['safe_name'],
+			                                                              parameters=python_ex_parameters,
+			                                                              ports=python_ex_ports)
+		else:
+			python_ex = python_runtime_example_without_parameters.substitute(path_and_name=record['path'],
+			                                                                 instance=record['accessor']['safe_name'],
+			                                                                 ports=python_ex_ports)
+		# Remove spurious blank lines at end
+		while python_ex[-1] == '\n':
+			python_ex = python_ex[:-1]
 
 		data = {
 			'record': record,
 			'usage_examples': {
-				'node': node_ex
+				'node': node_ex,
+				'python': python_ex,
 			}
 		}
 
