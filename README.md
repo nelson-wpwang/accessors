@@ -46,9 +46,7 @@ part of the accessor ecosystem.
   - [Command Line Interface](/applications/node-cli): Download and interact
   with accessors using a command line interface.
   - [Accessor RPC Host](/applications/node-rpc): Execute accessors on a server
-  and provide a REST API for interacting with the accessors.
-  - [Accessor RPC Frontent](/applications/rpc-frontent): GUI for interacting
-  with the RPC server.
+  and provide a REST API and GUI for interacting with the accessors.
 1. [Runtimes](/runtimes): Execution environments that can run accessors.
   - [Node Runtime](/runtimes/node): Node.js based runtime for accessors.
   - [Python Runtime](/runtimes/python): Python based runtime for accessors.
