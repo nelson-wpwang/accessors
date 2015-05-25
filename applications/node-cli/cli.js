@@ -297,10 +297,10 @@ if (argv._.length == 0) {
 } else {
 	// Use a local file as an accessor
 	var accessor_local_path = argv._[0];
-	console.log('Loading and running ' + accessor_local_path);
+	console.log('[INFO]   '.blue + ' Loading and running ' + accessor_local_path);
 	accessors.compile_dev_accessor(accessor_local_path, function (dev_uuid) {
 
-		console.log('Created new development accessor!');
+		console.log('[SUCCESS]'.green + ' Created new development accessor!');
 		console.log('To view more information about the accessor, please view');
 		console.log('')
 		console.log('  ' + accessors.get_host_server() + '/dev/view/accessor/' + dev_uuid);
