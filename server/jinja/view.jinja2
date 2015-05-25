@@ -17,6 +17,9 @@ Accessor: {{ record.name }}
 {% endif %}
 
 <h1>Accessor: {{ record.name }}</h1>
+{% if flags.is_test %}
+<span class="label label-info">Test</span>
+{% endif %}
 <em>Last Updated: {{ record.compilation_timestamp.humanize() }}</em>
 
 <h2>About</h2>

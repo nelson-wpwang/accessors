@@ -788,6 +788,13 @@ def find_accessors (accessor_path):
 			if root == '':  # imho python does this wrong; should be ./ already
 				root = '/'
 
+			# Check if this is a test, and if so, store it in a different
+			# database
+			if len(root.split('/')) > 1 and root.split('/')[1] == 'tests':
+				db = accessors_test_db
+			else:
+				db = accessors_db
+
 			for item_path in files:
 				if item_path[:6] == 'README':
 					log.debug("Ignoring %s", item_path)
@@ -808,28 +815,23 @@ def find_accessors (accessor_path):
 				with open("." + path) as f:
 					contents = f.read()
 
-					existing_accessor = first((accessors_db('path') == view_path) &
-											  (accessors_db('jscontents') == contents))
+					existing_accessor = first((db('path') == view_path) &
+											  (db('jscontents') == contents))
 					if existing_accessor:
 						log.info('Already parsed {}, skipping'.format(path))
 						continue
 
-					old_accessor = first(accessors_db('path') == view_path)
+					old_accessor = first(db('path') == view_path)
 					if old_accessor:
 						log.info('Got new version of {}'.format(path))
 						for iface in old_accessor['accessor']['implements']:
 							interface = interface_tree[iface['implements']]
 							interface.unregister_accessor(old_accessor['path'])
-						accessors_db.delete(old_accessor)
+						db.delete(old_accessor)
 					else:
 						log.debug("NEW ACCESSOR: %s", path)
 
-				# Check if this is a test, and if so, store it in a different
-				# database
-				if len(root.split('/')) > 1 and root.split('/')[1] == 'tests':
-					db = accessors_test_db
-				else:
-					db = accessors_db
+
 
 				process_accessor(db, root, filename, path, contents, '.'+path)
 
