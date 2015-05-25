@@ -116,6 +116,7 @@ $('#accessor-new').on('click', '#button-accessor-new', function () {
 // From the list of created devices, load one to interact with
 $("#device-select").change(function () {
 	if ($(this).val() == "default") {
+		$("#accessor-interface").html('');
 		return;
 	}
 
