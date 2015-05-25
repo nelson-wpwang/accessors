@@ -550,6 +550,7 @@ def process_accessor(
 					'email': email,
 					},
 				'_path': path,
+				'view_path': view_path,
 				}
 		# http://stackoverflow.com/q/3303312
 		meta['safe_name'] = re.sub('\W|^(?=\d)', '_', meta['name'])
