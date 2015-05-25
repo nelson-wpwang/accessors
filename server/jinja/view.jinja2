@@ -8,6 +8,14 @@ Accessor: {{ record.name }}
 
 {% block content %}
 
+{% if dev %}
+<div class="alert alert-warning" role="alert">
+  <strong>Notice!</strong> This accessor is in development! This page should
+  help with debugging the accessor, but it has not been committed to the
+  repository.
+</div>
+{% endif %}
+
 <h1>Accessor: {{ record.name }}</h1>
 <em>Last Updated: {{ record.compilation_timestamp.humanize() }}</em>
 

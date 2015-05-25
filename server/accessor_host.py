@@ -1118,15 +1118,25 @@ class handler_accessor_page (JinjaBaseHandler):
 				'python': python_ex,
 				}
 
-	def get(self, path, **kwargs):
+	def get_accessors_db (self):
+		return accessors_db
+
+	def get (self, path, **kwargs):
 		path = '/'+path
 
-		records = accessors_db('path') == path
+		db = self.get_accessors_db()
+		records = db('path') == path
 		record = first(records)
 
 		# !! Must be checked first
-		if not record['accessor']:
-			data = { 'record': record }
+		if not record:
+			self.send_error(404)
+			return
+		elif not record['accessor']:
+			data = {
+				'record': record,
+				'dev': path.startswith('/dev')
+			}
 			# Basic parsing didn't even work, show a dedicated error page
 			# instead of the detail view page
 			return self.renderj('view-parse-error.jinja2', **data)
@@ -1136,12 +1146,13 @@ class handler_accessor_page (JinjaBaseHandler):
 		data = {
 			'record': record,
 			'usage_examples': examples,
+			'dev': path.startswith('/dev')
 		}
 
 		return self.renderj('view.jinja2', **data)
 
 
-# Page for each accessor
+# Download link for examples
 #
 # This "subclass" is a bit of a hack to grab the example-gen'ing function.
 # Should probably refactor at some point to generate examples only once and put
@@ -1152,7 +1163,8 @@ class handler_accessor_example (handler_accessor_page):
 
 		path,ext = path.split('.')
 
-		records = accessors_db('path') == path
+		db = self.get_accessors_db()
+		records = db('path') == path
 		record = first(records)
 
 		examples = self.generate_examples(record)
@@ -1191,10 +1203,14 @@ dev_dir = tempfile.TemporaryDirectory()
 
 class handler_dev (tornado.web.RequestHandler):
 	def write_error(self, status_code, **kwargs):
-		try:
-			self.write(self.error)
-		except AttributeError:
-			return super().write_error(status_code, **kwargs)
+
+		headers = kwargs.get('headers', {})
+		for header_name,header_val in headers.items():
+			print('adding {}:{}'.format(header_name, header_val))
+			self.add_header(header_name, header_val)
+
+		error = kwargs.get('error', '')
+		self.write(error)
 
 	def compile (self, name, contents):
 		path = os.path.join(dev_dir.name, name) + '.js'
@@ -1213,20 +1229,20 @@ class handler_dev (tornado.web.RequestHandler):
 				path,
 				)
 
-		self.add_header('X-ACC-Name', name)
-
 		new_accessor = first(accessors_dev_db('path') == '/dev/'+name)
+		error = ''
 		if not new_accessor['accessor']:
-			self.error = "Failed to build.\n\n"
+			error += "Failed to build.\n\n"
 
 		if new_accessor['errors']:
-			for error in new_accessor['errors']:
-				self.error += error[0] + '\n'
-				for e in error[1:]:
-					self.error += '\t' + e + '\n'
-			self.send_error(500)
+			for err in new_accessor['errors']:
+				error += err[0] + '\n'
+				for e in err[1:]:
+					error += '\t' + e + '\n'
+			self.send_error(500, headers={'X-ACC-Name': name}, error=error)
 			return
 
+		self.add_header('X-ACC-Name', name)
 		self.add_header('X-ACC-json', '/dev/accessor/' + name + '.json')
 		self.add_header('X-ACC-xml', '/dev/accessor/' + name + '.xml')
 
@@ -1242,6 +1258,13 @@ class handler_dev_put (handler_dev):
 			self.send_error(500, reason="PUT requires a name in path")
 			return
 		return self.compile(path, self.request.body.decode('utf-8'))
+
+class handler_dev_accessor_page (handler_accessor_page):
+	def get_accessors_db (self):
+		return accessors_dev_db
+
+	def get(self, path):
+		return super().get('dev/' + path)
 
 
 class ServeDevAccessorJSON (ServeAccessorJSON):
@@ -1329,6 +1352,7 @@ accessor_server = tornado.web.Application(
 		# Accessor lists
 		(r'/list/all', ServeAccessorList),
 		# Support to help develop accessors
+		(r'/dev/view/accessor/(.*)', handler_dev_accessor_page),
 		(r'/dev/accessor/(.*).json', ServeDevAccessorJSON),
 		(r'/dev/accessor/(.*).xml', ServeDevAccessorXML),
 		(r'/dev/upload', handler_dev_post),
