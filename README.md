@@ -84,7 +84,7 @@ To start using accessors quickly, install the accessor command line tool.
 
 You can use it with a public data stream like so:
 
-    accessors-cli
+    $ accessors-cli
       -> Select /webquery/Bitcoin
       -> Select "Price"
       =  It will print the current BTC conversion rate in BTC.
