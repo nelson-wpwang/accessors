@@ -70,7 +70,28 @@ Dependencies
 ------------
 
 We highly recommend you use [io.js](https://iojs.org) with this project
-as it has better support for newer Node.js features that we use.
+as it has better support for newer Node.js features that we use. Newer
+versions of Node.js (>=0.11) should work, but will need the `--harmony`
+command line flag.
+
+
+Quick Start
+-----------
+
+To start using accessors quickly, install the accessor command line tool.
+
+    sudo npm install -g accessors.io-cli
+
+You can use it with a public data stream like so:
+
+    accessors-cli
+      -> Select /webquery/Bitcoin
+      -> Select "Price"
+      =  It will print the current BTC conversion rate in BTC.
+      -> Select "Transactions"
+      =  It will stream all recent Bitcoin transactions.
+
+
 
 
 Example

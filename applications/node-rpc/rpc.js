@@ -18,7 +18,7 @@ try {
 	var uuid       = require('node-uuid');
 	var sqlite     = require('sqlite3');
 
-	var argv = require('optimist')
+	var argv = require('yargs')
 		.usage('Run an accessor with a command line interface.\nUsage: $0')
 		.alias   ('s', 'host_server')
 		.describe('s', 'URL of the accessor host server to use.')
@@ -29,6 +29,7 @@ try {
 		.alias   ('p', 'port')
 		.describe('p', 'Port to run server on.')
 		.default ('p', 5000)
+		.help('help')
 		.argv;
 } catch (e) {
 	console.log("** Missing import in the node-rpc library");

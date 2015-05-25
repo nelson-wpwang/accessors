@@ -1,5 +1,9 @@
 #body {
-	padding-top: 60px;
+	padding-top: 10px;
+}
+
+.header-box {
+	border-color: #43ac6a;
 }
 
 .output-port {

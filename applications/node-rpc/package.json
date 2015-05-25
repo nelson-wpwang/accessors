@@ -27,11 +27,11 @@
     "node-uuid": "^1.4.3",
     "nunjucks": "^1.3.4",
     "nunjucks-markdown": "^1.0.0",
-    "optimist": "^0.6.1",
     "request": "^2.51.0",
     "semver": "^4.2.0",
     "sqlite3": "^3.0.8",
-    "underscore.string": "^3.0.0"
+    "underscore.string": "^3.0.0",
+    "yargs": "^3.9.1"
   },
   "bin": {
     "accessors-rpc": "./rpc.js"
