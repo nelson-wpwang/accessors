@@ -8,10 +8,12 @@
 var accessors = require('accessors.io');
 
 var fs        = require('fs');
+var colors    = require('colors');
 var _         = require('lodash');
 var async     = require('async');
 var debug     = require('debug');
 var readline  = require('readline-sync');
+var sf        = require('stringformat');
 var argv      = require('yargs')
                        .usage('Usage: $0 [accessor]')
                        .example('$0', 'Choose an accessor from a list to execute.')
@@ -40,7 +42,25 @@ if (argv.debug) {
 var info = debug('accessors-cli:info');
 var error = debug('accessors-cli:error');
 
+// Get some python like .format action
+sf.extendString();
+
 var saved_parameters = {}
+
+// Get the longest string in an array's length
+// http://stackoverflow.com/questions/6521245/finding-longest-string-in-array/12548884#12548884
+function longest (a, key) {
+	var c = 0, d = 0, l = 0, i = a.length;
+	if (i) while (i--) {
+		if (key !== 'undefined') {
+			d = a[i][key].length;
+		} else {
+			d = a[i].length;
+		}
+		if (d > c) l = i; c = d;
+	}
+	return c;
+}
 
 
 function console_from_ir (accessor_id, accessor_ir) {
@@ -51,26 +71,32 @@ function console_from_ir (accessor_id, accessor_ir) {
 
 		// Check to see if we have any saved parameters for this accessor
 		if (accessor_id in saved_parameters) {
-			while (true) {
-				console.log('Found the following saved instances:');
-				for (var i=0; i<saved_parameters[accessor_id].length; i++) {
-					var saved_entry = saved_parameters[accessor_id][i];
-					process.stdout.write(i+':  ');
 
-					var j = 0;
-					for (var parameter_name in saved_entry.parameters) {
-						if (saved_entry.parameters.hasOwnProperty(parameter_name)) {
-							if (j != 0) process.stdout.write('    ');
-							console.log(parameter_name + ': ' + saved_entry.parameters[parameter_name]);
-							j += 1;
-						}
+			// Get the longest parameter name
+			var longest_parameter = longest(accessor_ir.parameters, 'name') + 3;
+
+			console.log('');
+			console.log('Found the following saved instances of '+accessor_id+':');
+			for (var i=0; i<saved_parameters[accessor_id].length; i++) {
+				var saved_entry = saved_parameters[accessor_id][i];
+				process.stdout.write(i+':  ');
+
+				var j = 0;
+				for (var parameter_name in saved_entry.parameters) {
+					if (saved_entry.parameters.hasOwnProperty(parameter_name)) {
+						if (j != 0) process.stdout.write('    ');
+						// console.log(parameter_name + ': ' + saved_entry.parameters[parameter_name]);
+						console.log(('{0:-'+longest_parameter+'}{1}').format((parameter_name+':'), saved_entry.parameters[parameter_name]));
+						j += 1;
 					}
 				}
-				console.log(i+':  Create New');
+			}
+			console.log(i+':  ' + 'Create New'.green);
 
-				var answer = parseInt(readline.question('Which device: '));
-				if (isNaN(answer) || answer < 0 || answer > saved_parameters[accessor_id].length + 1) {
-					console.log('Invalid entry, try again.');
+			while (true) {
+				var answer = parseInt(readline.question('Which device: '.bold.blue));
+				if (isNaN(answer) || answer < 0 || answer > saved_parameters[accessor_id].length) {
+					console.log('Invalid entry, try again.'.yellow);
 				} else {
 					break;
 				}
@@ -84,6 +110,7 @@ function console_from_ir (accessor_id, accessor_ir) {
 		}
 		if (!(accessor_id in saved_parameters) || answer >= saved_parameters[accessor_id].length) {
 			// Use new parameters
+			console.log('');
 			console.log('Please enter parameters: ');
 			for (var i=0; i<accessor_ir.parameters.length; i++) {
 				var param = accessor_ir.parameters[i];
@@ -94,7 +121,9 @@ function console_from_ir (accessor_id, accessor_ir) {
 	}
 
 	// Now actually ask questions about the accessor for interacting with
-	console.log('Getting real accessor.');
+	console.log('');
+	console.log('Creating a device based on '+accessor_id+'.');
+	console.log('');
 
 	accessors.load_accessor(accessor_ir, parameters, function (accessor) {
 
@@ -110,10 +139,13 @@ function console_from_ir (accessor_id, accessor_ir) {
 			fs.writeFileSync(argv.parameters, JSON.stringify(saved_parameters));
 		}
 
-		console.log('Ports:');
-		for (var i=0; i<accessor_ir.ports.length; i++) {
-			console.log('  ' + i + ': ' + accessor_ir.ports[i].function);
+		function print_ports () {
+			console.log('Ports:');
+			for (var i=0; i<accessor_ir.ports.length; i++) {
+				console.log('  ' + i + ': ' + accessor_ir.ports[i].function);
+			}
 		}
+		print_ports();
 
 		function subscribe_callback (data) {
 			console.log(data);
@@ -123,19 +155,20 @@ function console_from_ir (accessor_id, accessor_ir) {
 			// We call interact as the success callback. We may
 			// have succeeded in getting something from the device
 			if (val !== undefined) {
-				console.log('GOT: ' + val);
+				console.log('Returned from accessor: '.magenta + val);
 			}
 
-			var port_index = parseInt(readline.question('port index: '));
+			var port_index = parseInt(readline.question('Port: '.bold.blue));
 			if (isNaN(port_index) || port_index < 0 || port_index >= accessor_ir.ports.length) {
-				console.log('Invalid port index');
+				console.log('Invalid port index'.yellow);
+				print_ports();
 				interact();
 			} else {
 				var port = accessor_ir.ports[port_index];
 				var cmd;
 
 				// Ask the user how to interact with the port
-				var question = 'choose a direction: [';
+				var question = 'Direction: [';
 				if (port.directions.indexOf('output') > -1) {
 					question += 'get, ';
 					cmd = 'get';
@@ -152,7 +185,7 @@ function console_from_ir (accessor_id, accessor_ir) {
 
 				// If it's ambiguous ask, otherwise choose the only option.
 				if (port.directions.length > 1) {
-					cmd = readline.question(question);
+					cmd = readline.question(question.bold.blue);
 				}
 
 				// Feels like there should be some idiomatic JS way to index
@@ -176,7 +209,7 @@ function console_from_ir (accessor_id, accessor_ir) {
 				} else if (cmd == 'listen') {
 					port_obj.observe(subscribe_callback);
 				} else {
-					console.log('"'+cmd+'" is not a valid choice');
+					console.log(('"'+cmd+'" is not a valid direction').yellow);
 					interact();
 				}
 			}
@@ -184,9 +217,13 @@ function console_from_ir (accessor_id, accessor_ir) {
 		interact();
 
 	},
-	function (error) {
-		console.log('could not create accessor');
-		console.log(error);
+	function (err) {
+		console.log('ERROR'.red);
+		error(err);
+
+		console.log('Failed when creating an accessor.');
+		console.log('Likely this is an error inside of the init() function.');
+		console.log(err);
 	});
 }
 
@@ -214,13 +251,32 @@ if (argv._.length == 0) {
 	accessors.get_accessor_list(function (accessor_list) {
 		accessor_list_sorted = accessor_list.sort()
 
+		// Need longest path
+		var longest_path = 0;
 		for (var i=0; i<accessor_list_sorted.length; i++) {
-			console.log(i+':  '+accessor_list_sorted[i]);
+			if (accessor_list_sorted[i].length > longest_path) {
+				longest_path = accessor_list_sorted[i].length;
+			}
+		}
+
+		longest_path += 3;
+		for (var i=0; i<accessor_list_sorted.length; i++) {
+			// console.log(i+':  '+accessor_list_sorted[i]);
+			var url = accessors.get_host_server() + '/view/accessor' + accessor_list_sorted[i];
+			console.log(('{0:-5}{1:-'+longest_path+'}{2}').format(i+':', accessor_list_sorted[i], url.gray));
 		}
 
 		// Ask for which accessor we want to interact with
-		var index = parseInt(readline.question('Which accessor: '));
+		while (true) {
+			var index = parseInt(readline.question('Which accessor: '.bold.blue));
+			if (isNaN(index) || index < 0 || index >= accessor_list_sorted.length) {
+				console.log('Invalid choice'.yellow);
+			} else {
+				break;
+			}
+		}
 		var path = accessor_list_sorted[index];
+		info('Using accessor ' + path);
 
 		// Request info about that accessor (basically so we can determine
 		// which parameters to ask for)
@@ -229,11 +285,13 @@ if (argv._.length == 0) {
 			console_from_ir(path, accessor_ir);
 		},
 		function (err) {
+			console.log('ERROR'.red);
 			console.log('Error getting accessor IR');
 			console.log(err);
 		});
 	},
 	function (err) {
+		console.log('ERROR'.red);
 		console.log(err);
 	});
 } else {
@@ -252,12 +310,14 @@ if (argv._.length == 0) {
 			console_from_ir(accessor_local_path, accessor_ir);
 		},
 		function (err) {
+			console.log('ERROR'.red);
 			console.log('Error getting dev accessor IR');
 			console.log(err);
 		});
 	},
 	function (err, dev_uuid) {
 		if (dev_uuid) {
+			console.log('ERROR'.red);
 			error('Accessor parsing failed.');
 			error(err);
 			console.log('Failed to parse and create an accessor object from that accessor.');
@@ -266,9 +326,10 @@ if (argv._.length == 0) {
 			console.log('  ' + accessors.get_host_server() + '/dev/view/accessor/' + dev_uuid);
 			console.log('')
 		} else {
+			console.log('ERROR'.red);
 			error('Could not connect to the host server.');
 			console.log('An error occurred when trying to contact the host server.')
-			console.log('Perhaps it\'s down?.')
+			console.log('Perhaps it\'s down?')
 		}
 	});
 }
