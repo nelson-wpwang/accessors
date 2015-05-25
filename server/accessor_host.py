@@ -1035,8 +1035,8 @@ python_runtime_example_ports_observe = string.Template(
 class handler_index (JinjaBaseHandler):
 	def get(self, **kwargs):
 		data = {
-			'accessors_db': sorted(accessors_db, key=lambda v: v['group']),
-			'accessors_test_db': sorted(accessors_test_db, key=lambda v: v['group']),
+			'accessors_db': sorted(accessors_db, key=lambda v: (v['group'], v['name'])),
+			'accessors_test_db': sorted(accessors_test_db, key=lambda v: (v['group'], v['name'])),
 			'interface_tree': interface_tree,
 		}
 		return self.renderj('index.jinja2', **data)
