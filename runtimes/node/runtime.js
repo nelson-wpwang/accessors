@@ -14,7 +14,8 @@ var error = debug('accessors:error');
 
 var AcessorRuntimeException = Error;
 
-// Keep track of callbacks on observe ports.
+// Keep track of callbacks on observe ports. Also keep track of error callbacks,
+// so if the listener gets booted we can alert the error callback.
 var _observe_listeners = {};
 
 // Function that wraps calling a port. This sets up all of the promises/futures
@@ -47,12 +48,15 @@ var _do_port_call = function  (port, port_name, direction, value, done_fn, error
 	if (direction == 'observe' && typeof value === 'function') {
 		info('Adding observe callback for ' + port_name);
 		if (!(port_name in _observe_listeners)) {
-			_observe_listeners[port_name] = [];
+			_observe_listeners[port_name] = {
+				data_callbacks: [],
+				error_callbacks: []
+			};
 		}
 		// Check that this callback hasn't already been registered
 		var already_added = false;
-		for (var i=0; i<_observe_listeners[port_name].length; i++) {
-			if (_observe_listeners[port_name][i] == value) {
+		for (var i=0; i<_observe_listeners[port_name].data_callbacks.length; i++) {
+			if (_observe_listeners[port_name].data_callbacks[i] == value) {
 				info('Function for port ' + port_name + ' already added.');
 				already_added = true;
 				break;
@@ -60,12 +64,13 @@ var _do_port_call = function  (port, port_name, direction, value, done_fn, error
 		}
 		if (!already_added) {
 			// Add the callback to the listener list
-			_observe_listeners[port_name].push(value);
+			_observe_listeners[port_name].data_callbacks.push(value);
+			_observe_listeners[port_name].error_callbacks.push(error_fn);
 		}
 
 		// Now we only need to call the actual accessor if we haven't set
 		// up an observe callback before.
-		if (_observe_listeners[port_name].length > 1) {
+		if (_observe_listeners[port_name].data_callbacks.length > 1) {
 			done_fn();
 			return;
 		} else {
@@ -130,9 +135,27 @@ var send = function (port_name, val) {
 	info("SEND: " + port_name + " <= " + val);
 
 	if (port_name in _observe_listeners) {
-		for (var i=0; i<_observe_listeners[port_name].length; i++) {
-			_observe_listeners[port_name][i](val);
+
+		// In case a callback fails, we want to remove it
+		var listeners_to_remove = [];
+
+		for (var i=0; i<_observe_listeners[port_name].data_callbacks.length; i++) {
+			try {
+				_observe_listeners[port_name].data_callbacks[i](val);
+			} catch (err) {
+				warn('Removing observe listener ' + i + ' due to exception.');
+				listeners_to_remove.push(i);
+			}
 		}
+
+		// Remove broken listeners
+		while (listeners_to_remove.length) {
+			var to_remove = listeners_to_remove.pop();
+			_observe_listeners[port_name].data_callbacks.splice(to_remove, 1);
+			_observe_listeners[port_name].error_callbacks[to_remove]('Removed');
+			_observe_listeners[port_name].error_callbacks.splice(to_remove, 1);
+		}
+
 	}
 }
 
