@@ -218,6 +218,13 @@ $("#device-select").change(function () {
 			}
 		});
 
+		// Generic showhide helpers. Give the showhidable id="foo" and a clickable
+		// object that controls it id="foo-control", class="control-showhide"
+		$('#accessor-'+accessor.uuid).on('click', '.control-showhide', function () {
+			var controlee = $(this).attr("id").slice(0,-8);
+			$("#"+controlee).toggle();
+		});
+
 		// init all with GET
 		var number_to_init = 0;
 		for (var i=0; i<accessor.ports.length; i++) {

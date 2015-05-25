@@ -142,4 +142,33 @@
 
   </div>
 
+  <div>
+    {# This awful hack works around the fact that there is no way in nunjuks to
+       test whether an object is empty. They've closed no less that 3 PR's adding
+       filters to test this and/or change the behavior of `if {}`, but still
+       haven't fixed the `length` function to do the right thing for {}|length.#}
+    {% set hack = false %}
+    {% for key,value in parameters %}
+    {% set hack = true %}
+    {% endfor %}
+    {% if hack %}
+    <a href="#" class="control-showhide" id="{{ accessor.safe_name }}-parameters-control">
+      <span class="pull-left">Show device parameters</span>
+    </a>
+    {% endif %}
+    <a href="http://accessors.io/view/accessor{{ accessor.view_path }}" target="_blank">
+      <span class="pull-right">View accessor details and code
+        <span style="display: inline-block; transform:rotate(90deg); -moz-transform:rotate(90deg); -webkit-transform:rotate(90deg);">&#x21f1;</span>
+      </span>
+    </a>
+  </div>
+  <div class="clearfix"></div>
+  <div style="display: none; margin-top: 20px;" id="{{ accessor.safe_name }}-parameters">
+    <dl class="dl-horizontal">
+      {% for key,value in parameters %}
+      <dt>{{ key }}</dt><dd>{{ value }}</dd>
+      {% endfor %}
+    </dl>
+  </div>
+
 </div>

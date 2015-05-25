@@ -153,7 +153,8 @@ function activate_accessor (name, path, parameters, callback) {
 			accessor._meta.uuid = uuid.v4();
 			accessor._meta.device_name = escape(name);
 			accessor._meta.html = nunjucks.render('ports.html', {
-				accessor: accessor._meta
+				accessor: accessor._meta,
+				parameters: parameters
 			});
 
 			// Keep track of the accessors we are running
