@@ -71,6 +71,12 @@ function set_host_server (server) {
 	host_server = server;
 }
 
+/* Return the current server being used to pull accessors from.
+ */
+function get_host_server () {
+	return host_server;
+}
+
 /* Return a list of all accessors
  */
 function get_accessor_list (success_cb, error_cb) {
@@ -108,6 +114,11 @@ function compile_dev_accessor (path, success_cb, error_cb) {
 			error(err)
 			if (response) error('Response code: ' + response.statusCode)
 			error(body);
+			if (response) {
+				error_cb(err, response.headers['x-acc-name']);
+			} else {
+				error_cb(err);
+			}
 		}
 	});
 }
@@ -326,6 +337,7 @@ function get_exports (accessor) {
 
 module.exports = {
 	set_host_server:      set_host_server,
+	get_host_server:      get_host_server,
 	get_accessor_list:    get_accessor_list,
 	compile_dev_accessor: compile_dev_accessor,
 	get_dev_accessor_ir:  get_dev_accessor_ir,
