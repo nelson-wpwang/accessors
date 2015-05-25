@@ -51,6 +51,12 @@ function format_currency_usd (price) {
 	}
 }
 
+// Create a WebSockets URL
+function ws_url (s) {
+    var l = window.location;
+    return ((l.protocol === "https:") ? "wss://" : "ws://") + l.hostname + (((l.port != 80) && (l.port != 443)) ? ":" + l.port : "") + s;
+}
+
 function accessor_function_start (accessor_uuid) {
 	accessor_alert_clear(accessor_uuid);
 	$('#accessor-'+accessor_uuid+' .spinner').show();

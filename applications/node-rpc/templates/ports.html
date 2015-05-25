@@ -32,13 +32,13 @@
           {% if port.directions|length == 1 and port.directions[0] == "output" %}
           {# OUTPUT #}
           {# Only an output, just display the data #}
-          <div class="col-sm-8">
+          <div class="col-sm-6">
             <p id="port-{{ port.uuid }}" class="form-control-static">not set</p>
           </div>
 
           {% elif port.type == "bool" %}
           {# CHECKBOX #}
-          <div class="col-sm-8">
+          <div class="col-sm-6">
             <div class="checkbox">
               <label>
                 <input type="checkbox" id="port-{{ port.uuid }}" class="accessor-checkbox">
@@ -49,13 +49,13 @@
 
           {% elif port.type in ["numeric", "integer"] and port.min != 'undefined' and port.max != 'undefined' %}
           {# SLIDER #}
-          <div class="col-sm-8">
+          <div class="col-sm-6">
             <input type="text" id="port-{{ port.uuid }}" class="slider" data-slider-id='{{ fieldname }}-slider' data-slider-min="{{ port.min }}" data-slider-max="{{ port.max }}" data-slider-step="1" data-slider-value="{{ port.min }}" data-port="{{ port.name }}"/>
           </div>
 
           {% elif port.type in ["numeric", "integer", "string"] and "input" in port.directions %}
           {# TEXT BOX #}
-          <div class="col-sm-6">
+          <div class="col-sm-4">
             <input type="text" id="port-{{ port.uuid }}" class="form-control port" {% if port.default != 'undefined' %} value="{{ port.default }}"{% endif %}></input>
           </div>
           <div class="col-sm-2">
@@ -64,7 +64,7 @@
 
           {% elif port.type == "select" %}
           {# DROPDOWN #}
-          <div class="col-sm-10">
+          <div class="col-sm-8">
             <select id="port-{{ port.uuid }}" class="form-control port-select">
               {% for opt in port.options %}
               <option value="{{ loop.index }}"{% if port.default == 'opt' %} selected="selected"{% endif %}>{{ opt }}</option>
@@ -74,18 +74,24 @@
 
           {% elif port.type == "button" %}
           {# BUTTON #}
-          <div class="col-sm-10">
+          <div class="col-sm-8">
             <button type="button" id="port-{{ port.uuid }}" class="form-control accessor-button">Execute</button>
           </div>
 
           {% elif port.type == "color" %}
           {# COLOR PICKER #}
-          <div class="col-sm-8">
+          <div class="col-sm-6">
             <div class="colorpicker" id="port-{{ port.uuid }}"></div>
           </div>
 
+          {% elif port.type == "object" %}
+          {# JUST A BIG OBJECT #}
+          <div class="col-sm-6">
+            <textarea id="port-{{ port.uuid }}"></textarea>
+          </div>
+
           {% else %}
-          <div class="col-sm-8">
+          <div class="col-sm-6">
             <p class="from-control-static" id="port-{{ port.uuid }}">Port has an unknown type ({{ port.type }}).</p>
           </div>
 
@@ -94,7 +100,14 @@
           {# Button for re-requesting the value of the port from the server #}
           <div class="col-sm-2">
             {% if 'output' in port.directions %}
-            <button type="button" class="form-control accessor-refresh">&#8635;</button>
+            <button type="button" class="form-control accessor-refresh" title="Reload">&#8635;</button>
+            {% endif %}
+          </div>
+
+          {# Button for observe #}
+          <div class="col-sm-2">
+            {% if 'observe' in port.directions %}
+            <button type="button" class="form-control accessor-observe" title="Observe">&#187;</button>
             {% endif %}
           </div>
 

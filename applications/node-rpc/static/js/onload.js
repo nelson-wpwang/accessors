@@ -198,6 +198,24 @@ $("#device-select").change(function () {
 			});
 		});
 
+		// For watching an observe port
+		$('#accessor-'+accessor.uuid).on('click', '.accessor-observe', function () {
+			var button = $(this);
+			var port_meta = get_port_meta($(this));
+			var port = $('#port-' + port_meta.uuid);
+
+			if (button.html() == '»') {
+				// Need to start the observe
+				rpc_ws(accessor.uuid, port, port_meta.name, port_meta, function (sock) {
+					button.html('&#9632;');
+					button.data('sock', sock);
+				});
+			} else {
+				button.data('sock').close();
+				button.html('&#187;');
+			}
+		});
+
 		// init all with GET
 		var number_to_init = 0;
 		for (var i=0; i<accessor.ports.length; i++) {
@@ -281,6 +299,37 @@ function rpc_post (accessor_uuid, port_name, arg, callback) {
 	});
 }
 
+function format_units (val, units) {
+	if (units == 'undefined') {
+		return val;
+	}
+	if (units == 'currency_usd') {
+		return format_currency_usd(parseFloat(val));
+	} else if (units == 'watts') {
+		return parseFloat(val).toFixed(1) + ' Watts';
+	}
+	return val;
+}
+
+function port_got_data (port, directions, type, units, data) {
+	if (type == 'object') {
+		var to_show = JSON.stringify(data, null, '\t');
+		port.val(to_show);
+	} else if (type == 'bool') {
+		port.prop('checked', data==true);
+	} else if (type == 'select') {
+		port.val(data);
+	} else if (type == 'color') {
+		port.colpickSetColor('#'+data, true);
+	} else if (port.hasClass('slider')) {
+		port.slider('setValue', parseFloat(data));
+	} else if (directions.length == 1 && directions[0] == 'output') {
+		port.html(format_units(data, units));
+	} else {
+		port.val(format_units(data, units));
+	}
+}
+
 function rpc_get (accessor_uuid, port, port_name, port_meta, callback) {
 	console.log("rpc_get (" + accessor_uuid + ", " + port_name + ", " + port_meta.type + ")");
 	var accessor = $('#accessor-'+accessor_uuid);
@@ -298,34 +347,10 @@ function rpc_get (accessor_uuid, port, port_name, port_meta, callback) {
 		type: 'GET',
 		success: function (data) {
 
-			function format_units (val, units) {
-				if (units == 'undefined') {
-					return val;
-				}
-				if (units == 'currency_usd') {
-					return format_currency_usd(parseFloat(val));
-				} else if (units == 'watts') {
-					return parseFloat(val).toFixed(1) + ' Watts';
-				}
-				return val;
-			}
-
 			if (!data.success) {
 				accessor_alert_error(accessor_uuid, data.message);
 			} else {
-				if (port_meta.directions.length == 1 && port_meta.directions[0] == 'output') {
-					port.html(format_units(data.data, port_meta.units));
-				} else if (port_meta.type == 'bool') {
-					port.prop('checked', data.data==true);
-				} else if (port_meta.type == 'select') {
-					port.val(data.data);
-				} else if (port_meta.type == 'color') {
-					port.colpickSetColor('#'+data.data, true);
-				} else if (port.hasClass('slider')) {
-					port.slider('setValue', parseFloat(data.data));
-				} else {
-					port.val(format_units(data.data, port_meta.units));
-				}
+				port_got_data(port, port_meta.directions, port_meta.type, port_meta.units, data.data);
 			}
 
 			if (typeof callback === 'function') {
@@ -339,4 +364,38 @@ function rpc_get (accessor_uuid, port, port_name, port_meta, callback) {
 			}
 		}
 	});
+}
+
+function rpc_ws (accessor_uuid, port, port_name, port_meta, callback) {
+	console.log("rpc_ws (" + accessor_uuid + ", " + port_name + ", " + port_meta.type + ")");
+	var accessor = $('#accessor-'+accessor_uuid);
+	var device_name = accessor.attr('data-device-name');
+
+	var slash = '';
+	if (port_name.substring(0,1) != '/') {
+		slash = '/';
+	}
+
+	url = '/active/' + device_name + slash + port_name;
+
+	var sock = new WebSocket(ws_url(url));
+
+	sock.onopen = function (evt) {
+		if (typeof callback === 'function') {
+			callback(sock);
+		}
+	}
+
+	sock.onmessage = function (evt) {
+		var data = JSON.parse(evt.data);
+		if (!data.success) {
+			accessor_alert_error(accessor_uuid, 'Error setting up Observe.');
+		} else {
+			port_got_data(port, port_meta.directions, port_meta.type, port_meta.units, data.data);
+		}
+	}
+
+	sock.onerror = function (evt) {
+		accessor_alert_error(accessor_uuid, 'Error with Observe.');
+	}
 }

@@ -9,6 +9,7 @@ try {
 	var request    = require('request');
 	var express    = require('express');
 	var w          = express();
+	var express_ws = require('express-ws')(w);
 	var bodyParser = require('body-parser');
 	var s          = require('underscore.string');
 	var nunjucks   = require('nunjucks');
@@ -280,6 +281,47 @@ function activate_accessor (name, path, parameters, callback) {
 							message: err.message
 						}));
 					});
+				});
+
+				w.ws(device_port_path, function (ws, req) {
+					console.log("WS " + device_port_path);
+					if (port.directions.indexOf('observe') == -1) {
+						ws.send(JSON.stringify({
+							success: false,
+							message: 'Request for observe when that is not a valid direction'
+						}));
+						return;
+					}
+
+					ws.on('close', function () {
+						console.log('CLOSEDDDDD')
+						ws.close();
+					});
+
+					// This is ugly. Maybe we will fix it someday.
+					var temp = port.function.split('.');
+					var port_func = accessor[temp.shift()];
+					while (temp.length) port_func = port_func[temp.shift()];
+
+					port_func.observe(function (data) {
+						ws.send(JSON.stringify({
+							success: true,
+							data: data
+						}));
+					}, function () {
+						console.log('WS OBSERVE setup');
+					}, function (err) {
+						console.log('WS OBSERVE ERR');
+						try {
+							ws.send(JSON.stringify({
+								success: false,
+								message: err.message
+							}));
+						} catch (err) {
+							console.log('Error with ws - not connected');
+						}
+					});
+
 				});
 			});
 
