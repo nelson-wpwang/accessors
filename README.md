@@ -148,7 +148,7 @@ the existing accessors and show the details of each one. For more information
 and for running your own hosting server, see the [Host Server Readme](/server).
 
 
-
+<!--
 Command Line Tool
 -----------------
 
@@ -291,3 +291,4 @@ disincentivized to use our API. To remedy this, we allow accessors to explicitly
 a roadmap towards new interfaces. If a critical mass of devices create the same
 port, it motivates the standardization of a new interface, while permitting for
 the immediate uptake of new features.
+-->
