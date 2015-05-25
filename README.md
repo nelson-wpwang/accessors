@@ -37,23 +37,8 @@ respectively. Input (and inout) ports define port functions that are called
 whenever their input value changes. -->
 
 
-__Repository__
 
-1. [Applications](/applications): Various applications or tools that are
-part of the accessor ecosystem.
-  - [Blocks](/applications/central): Application for creating applications
-  with accessors by connecting blocks.
-  - [Command Line Interface](/applications/node-cli): Download and interact
-  with accessors using a command line interface.
-  - [Accessor RPC Host](/applications/node-rpc): Execute accessors on a server
-  and provide a REST API and GUI for interacting with the accessors.
-1. [Runtimes](/runtimes): Execution environments that can run accessors.
-  - [Node Runtime](/runtimes/node): Node.js based runtime for accessors.
-  - [Python Runtime](/runtimes/python): Python based runtime for accessors.
-1. [Host Server](/server): Server that describes and hosts accessors.
-
-
-__Table of Contents__
+<!-- __Table of Contents__
 
 1. [Example](#example)
 1. [Accessors.io](#accessorsio)
@@ -64,7 +49,7 @@ __Table of Contents__
   - [Accessor Example](#accessor-example)
   - [Ports and Interfaces](#ports-and-interfaces)
 
-
+ -->
 
 Dependencies
 ------------
@@ -146,6 +131,27 @@ Accessors must be hosted somewhere, and we currently run a hosting server
 at [accessors.io](http://accessors.io). In a browser, this service will list
 the existing accessors and show the details of each one. For more information
 and for running your own hosting server, see the [Host Server Readme](/server).
+
+
+Repository
+----------
+
+There is much here to explore. Follow the links below to learn more about
+what accessors can do.
+
+1. [Applications](/applications): Various applications or tools that are
+part of the accessor ecosystem.
+  - [Blocks](/applications/central): Application for creating applications
+  with accessors by connecting blocks.
+  - [Command Line Interface](/applications/node-cli): Download and interact
+  with accessors using a command line interface.
+  - [Accessor RPC Host](/applications/node-rpc): Execute accessors on a server
+  and provide a REST API and GUI for interacting with the accessors.
+1. [Runtimes](/runtimes): Execution environments that can run accessors.
+  - [Node Runtime](/runtimes/node): Node.js based runtime for accessors.
+  - [Python Runtime](/runtimes/python): Python based runtime for accessors.
+1. [Host Server](/server): Server that describes and hosts accessors.
+
 
 
 <!--
