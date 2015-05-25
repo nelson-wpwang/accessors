@@ -1,0 +1,20 @@
+{
+	"blocks": [
+		{
+			"type": "accessor",
+			"path": "/webquery/Bitcoin",
+			"uuid": "BTC"
+		},
+		{
+			"type": "accessor",
+			"path": "/ui/Print",
+			"uuid": "PRINT"
+		}
+	],
+	"connections": [
+		{
+			"src": "BTC.Transactions",
+			"dst": "PRINT.Print"
+		}
+	]
+}

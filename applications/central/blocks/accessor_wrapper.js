@@ -27,7 +27,7 @@ function AccessorWrapper (path, parameters, finished) {
 				port.directions.indexOf('observe') == -1 &&
 				port.name in outputs) {
 
-				accessor[port.function].output(function (ret) {
+				_.result(accessor, port.function).output(function (ret) {
 					outputs[port.name](ret);
 				});
 			}
@@ -44,8 +44,8 @@ function AccessorWrapper (path, parameters, finished) {
 			if (port.directions.indexOf('input') > -1) {
 				// Map each input port to the correct function inside of the
 				// accessor.
-				inputs[port.function] = function (input) {
-					acc[port.function].input(input, function () {
+				inputs[port.name] = function (input) {
+					_.result(acc, port.function).input(input, function () {
 						execute_all_connected_outputs();
 					});
 				};
@@ -65,10 +65,10 @@ function AccessorWrapper (path, parameters, finished) {
 	var run = function () {
 		_.forEach(accessor._meta.ports, function (port, index) {
 			if (port.directions.indexOf('observe') > -1) {
-				accessor[port.function].observe(function (data) {
+				_.result(accessor, port.function).observe(function (data) {
 					info('OBSERVED: ');
 					info(data);
-					outputs[port.function](data);
+					outputs[port.name](data);
 				});
 			}
 		});
