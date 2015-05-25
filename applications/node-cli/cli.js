@@ -4,11 +4,13 @@
  * Can use accessors in a host server or locally defined accessors.
  */
 
+
 var accessors = require('accessors.io');
 
 var fs        = require('fs');
 var _         = require('lodash');
 var async     = require('async');
+var debug     = require('debug');
 var readline  = require('readline-sync');
 var argv      = require('yargs')
                        .usage('Usage: $0 [accessor]')
@@ -31,12 +33,17 @@ var argv      = require('yargs')
                        .alias('h', 'help')
                        .argv;
 
+// Configure debugging
+if (argv.debug) {
+	debug.enable('accessors-cli.*');
+}
+var info = debug('accessors-cli:info');
+var error = debug('accessors-cli:error');
+
 var saved_parameters = {}
 
 
 function console_from_ir (accessor_id, accessor_ir) {
-
-
 	// Ask the user for all parameters
 	var saved_device = false; // keep track of if we know about this device
 	var parameters = {};
@@ -221,13 +228,13 @@ if (argv._.length == 0) {
 		accessors.get_accessor_ir(path, function (accessor_ir) {
 			console_from_ir(path, accessor_ir);
 		},
-		function (error) {
+		function (err) {
 			console.log('Error getting accessor IR');
-			console.log(error);
+			console.log(err);
 		});
 	},
-	function (error) {
-		console.log(error);
+	function (err) {
+		console.log(err);
 	});
 } else {
 	// Use a local file as an accessor
@@ -244,19 +251,22 @@ if (argv._.length == 0) {
 		accessors.get_dev_accessor_ir(dev_uuid, function (accessor_ir) {
 			console_from_ir(accessor_local_path, accessor_ir);
 		},
-		function (error) {
+		function (err) {
 			console.log('Error getting dev accessor IR');
-			console.log(error);
+			console.log(err);
 		});
 	},
-	function (error, dev_uuid) {
+	function (err, dev_uuid) {
 		if (dev_uuid) {
+			error('Accessor parsing failed.');
+			error(err);
 			console.log('Failed to parse and create an accessor object from that accessor.');
 			console.log('To view the errors, please view');
 			console.log('');
 			console.log('  ' + accessors.get_host_server() + '/dev/view/accessor/' + dev_uuid);
 			console.log('')
 		} else {
+			error('Could not connect to the host server.');
 			console.log('An error occurred when trying to contact the host server.')
 			console.log('Perhaps it\'s down?.')
 		}

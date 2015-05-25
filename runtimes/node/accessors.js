@@ -18,6 +18,10 @@ var options = {
 		alias: 'host_server',
 		describe: 'URL of the accessor host server to use.',
 		type: 'string'
+	},
+	'debug': {
+		describe: 'Turn on debug output.',
+		type: 'boolean'
 	}
 };
 
@@ -53,8 +57,14 @@ Consider using io.js instead of Node.js';
 //
 //   DEBUG=accessors:* node application.js
 //
+// or pass --debug as a command line option
+//
+if (argv.debug) {
+	debug.enable('accessors.*');
+}
 var info = debug('accessors:info');
 var error = debug('accessors:error');
+
 
 var host_server = 'http://accessors.io';
 if ('host_server' in argv) {
