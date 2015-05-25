@@ -18,8 +18,8 @@ $("#accessor-select").change(function () {
 	$.ajax({url: '/accessor' + path + '.json',
 		success: function (data) {
 			if (data.success) {
-				data = data.data
-				var parameters = data['parameters'];
+				data = data.data;
+				var parameters = data.parameters;
 
 				var html = '';
 
@@ -271,7 +271,7 @@ function rpc_post (accessor_uuid, port_name, arg, callback) {
 		slash = '/';
 	}
 
-	url = '/active/' + device_name + slash + port_name;
+	var url = '/active/' + device_name + slash + port_name;
 
 	// Force arg to be a string
 	arg = '' + arg;
@@ -342,7 +342,7 @@ function rpc_get (accessor_uuid, port, port_name, port_meta, callback) {
 		slash = '/';
 	}
 
-	url = '/active/' + device_name + slash + port_name;
+	var url = '/active/' + device_name + slash + port_name;
 
 	console.log('Get: ' + url);
 	$.ajax({url: url,
