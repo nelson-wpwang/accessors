@@ -7,6 +7,7 @@ $("#accessor-select").change(function () {
 	new_device_alert_clear();
 
 	if ($(this).val() == 'default') {
+		$("#accessor-new form").html('');
 		return;
 	}
 
@@ -64,7 +65,7 @@ $("#accessor-select").change(function () {
 			new_device_alert_error('Error contacting the RPC server.');
 		}
 	});
-});
+}).trigger('change');
 
 // After entering the parameters, add the device on the RPC server.
 $('#accessor-new').on('click', '#button-accessor-new', function () {
