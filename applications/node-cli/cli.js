@@ -199,7 +199,7 @@ function console_from_ir (accessor_id, accessor_ir) {
 						console.log('CLI: error ' + err);
 					});
 				} else if (cmd == 'set') {
-					var val = readline.question('value: ');
+					var val = readline.question('value: '.bold.blue);
 					if (val == 'true') {
 						val = true;
 					} else if (val == 'false') {
