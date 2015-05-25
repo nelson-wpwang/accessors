@@ -230,11 +230,13 @@ $("#device-select").change(function () {
 				accessor_function_stop(accessor.uuid);
 			}
 		}
-		accessor_function_start(accessor.uuid);
-		for (var i=0; i<accessor.ports.length; i++) {
-			if (accessor.ports[i].directions.indexOf('output') > -1) {
-				var port = $('#port-' + accessor.ports[i].uuid);
-				rpc_get(accessor.uuid, port, accessor.ports[i].name, accessor.ports[i], after_port_init);
+		if (number_to_init > 0) {
+			accessor_function_start(accessor.uuid);
+			for (var i=0; i<accessor.ports.length; i++) {
+				if (accessor.ports[i].directions.indexOf('output') > -1) {
+					var port = $('#port-' + accessor.ports[i].uuid);
+					rpc_get(accessor.uuid, port, accessor.ports[i].name, accessor.ports[i], after_port_init);
+				}
 			}
 		}
 

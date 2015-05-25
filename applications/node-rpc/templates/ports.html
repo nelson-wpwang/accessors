@@ -62,6 +62,12 @@
             <button type="button" class="form-control accessor-input">&#9654;</button>
           </div>
 
+          {% elif port.type in ["numeric", "integer", "string"] and "input" in port.directions %}
+          {# TEXT BOX NO BUTTON #}
+          <div class="col-sm-6">
+            <input type="text" id="port-{{ port.uuid }}" class="form-control port" {% if port.default != 'undefined' %} value="{{ port.default }}"{% endif %}></input>
+          </div>
+
           {% elif port.type == "select" %}
           {# DROPDOWN #}
           <div class="col-sm-8">
