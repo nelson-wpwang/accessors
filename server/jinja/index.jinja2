@@ -29,31 +29,89 @@ To add a new accessor or modify an existing accessor, commit a change to the
 
   {% for record in accessors_db %}
   <tr>
-    {% if record.errors %}
-    <td><a href="/view/accessor{{ record.path }}" style="color: red;"><span class="glyphicon glyphicon-alert" aria-hidden="true"></span> {{ record.name }}</a></td>
-    {% else %}
-    <td><a href="/view/accessor{{ record.path }}">{{ record.name }}</a></td>
-    {% endif %}
-    <td><a href="/view/group{{ record.group }}">{{ record.group }}</a></td>
+    <td>
+      {% if record.errors %}
+      <a href="/view/accessor{{ record.path }}" style="color: red;"><span class="glyphicon glyphicon-alert" aria-hidden="true"></span> {{ record.name }}</a>
+      {% else %}
+      <a href="/view/accessor{{ record.path }}">{{ record.name }}</a>
+      {% endif %}
+    </td>
+    <td>
+      <a href="/view/group{{ record.group }}">{{ record.group }}</a>
+    </td>
     <td>
       {% for iface in record.accessor.implements %}
-      <p>{{ iface.interface|interface }}</p>
+      {{ iface.interface|interface }}<br />
       {% endfor %}
     </td>
     <td>
       {% for port in record.accessor.created_ports %}
-      <p>
       {% if 'observe' in port.directions %}
       <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
       {% endif %}
       {% if 'input' in port.directions %}
       <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+      <!-- &#10142; -->
       {% endif %}
       {{ port.name }}
       {% if 'output' in port.directions %}
       <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+      <!-- &#10142; -->
       {% endif %}
-      </p>
+      <br />
+      {% endfor %}
+    </td>
+    <td>{{ record.compilation_timestamp.humanize() }}</td>
+  </tr>
+  {% endfor %}
+
+</table>
+
+<h2>Tests</h2>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Group</th>
+      <th>Provides</th>
+      <th>Creates</th>
+      <th>Last Updated</th>
+    </tr>
+  </thead>
+
+  {% for record in accessors_test_db %}
+  <tr>
+    <td>
+      {% if record.errors %}
+      <a href="/view/accessor{{ record.path }}" style="color: red;"><span class="glyphicon glyphicon-alert" aria-hidden="true"></span> {{ record.name }}</a>
+      {% else %}
+      <a href="/view/accessor{{ record.path }}">{{ record.name }}</a>
+      {% endif %}
+    </td>
+    <td>
+      <a href="/view/group{{ record.group }}">{{ record.group }}</a>
+    </td>
+    <td>
+      {% for iface in record.accessor.implements %}
+      {{ iface.interface|interface }}<br />
+      {% endfor %}
+    </td>
+    <td>
+      {% for port in record.accessor.created_ports %}
+      {% if 'observe' in port.directions %}
+      <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+      {% endif %}
+      {% if 'input' in port.directions %}
+      <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+      <!-- &#10142; -->
+      {% endif %}
+      {{ port.name }}
+      {% if 'output' in port.directions %}
+      <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+      <!-- &#10142; -->
+      {% endif %}
+      <br />
       {% endfor %}
     </td>
     <td>{{ record.compilation_timestamp.humanize() }}</td>

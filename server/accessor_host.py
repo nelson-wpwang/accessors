@@ -96,27 +96,24 @@ except sh.CommandNotFound:
 ACCESSOR_SERVER_PORT = 6565
 ACCESSOR_REPO_URL = 'https://github.com/lab11/accessor-files.git'
 
+accessor_db_cols = ('name',
+                    'compilation_timestamp',
+                    'group',
+                    'path',
+                    'jscontents',
+                    'accessor',
+                    'errors')
+
 accessors_db = pydblite.Base('accessors', save_to_file=False)
-accessors_db.create(
-		'name',
-		'compilation_timestamp',
-		'group',
-		'path',
-		'jscontents',
-		'accessor',
-		'errors',
-		)
+accessors_db.create(*accessor_db_cols)
 
 accessors_dev_db = pydblite.Base('accessors-dev', save_to_file=False)
-accessors_dev_db.create(
-		'name',
-		'compilation_timestamp',
-		'group',
-		'path',
-		'jscontents',
-		'accessor',
-		'errors',
-		)
+accessors_dev_db.create(*accessor_db_cols)
+
+accessors_test_db = pydblite.Base('accessors-test', save_to_file=False)
+accessors_test_db.create(*accessor_db_cols)
+
+
 
 # Helper function to get the first result from a pydblite query
 def first (iterable):
@@ -827,7 +824,14 @@ def find_accessors (accessor_path):
 					else:
 						log.debug("NEW ACCESSOR: %s", path)
 
-				process_accessor(accessors_db, root, filename, path, contents, '.'+path)
+				# Check if this is a test, and if so, store it in a different
+				# database
+				if len(root.split('/')) > 1 and root.split('/')[1] == 'tests':
+					db = accessors_test_db
+				else:
+					db = accessors_db
+
+				process_accessor(db, root, filename, path, contents, '.'+path)
 
 
 
@@ -1029,7 +1033,8 @@ python_runtime_example_ports_observe = string.Template(
 class handler_index (JinjaBaseHandler):
 	def get(self, **kwargs):
 		data = {
-			'accessors_db': accessors_db,
+			'accessors_db': sorted(accessors_db, key=lambda v: v['group']),
+			'accessors_test_db': sorted(accessors_test_db, key=lambda v: v['group']),
 			'interface_tree': interface_tree,
 		}
 		return self.renderj('index.jinja2', **data)
@@ -1051,6 +1056,8 @@ class handler_group_page (JinjaBaseHandler):
 
 # Page for each accessor
 class handler_accessor_page (JinjaBaseHandler):
+	flags = {}
+
 	def generate_examples(self, record):
 		node_ex_parameters = ''
 		node_ex_parameters_arg = '{}'
@@ -1135,7 +1142,7 @@ class handler_accessor_page (JinjaBaseHandler):
 		elif not record['accessor']:
 			data = {
 				'record': record,
-				'dev': path.startswith('/dev')
+				'flags': self.flags
 			}
 			# Basic parsing didn't even work, show a dedicated error page
 			# instead of the detail view page
@@ -1146,7 +1153,7 @@ class handler_accessor_page (JinjaBaseHandler):
 		data = {
 			'record': record,
 			'usage_examples': examples,
-			'dev': path.startswith('/dev')
+			'flags': self.flags
 		}
 
 		return self.renderj('view.jinja2', **data)
@@ -1196,6 +1203,16 @@ class handler_interface_page (JinjaBaseHandler):
 		return self.renderj('interface.jinja2', **data)
 
 ################################################################################
+### Tests
+################################################################################
+
+class handler_test_accessor_page (handler_accessor_page):
+	flags = {'is_test': True}
+
+	def get_accessors_db (self):
+		return accessors_test_db
+
+################################################################################
 ### Development support
 ################################################################################
 
@@ -1216,20 +1233,20 @@ class handler_dev (tornado.web.RequestHandler):
 		path = os.path.join(dev_dir.name, name) + '.js'
 		open(path, 'w').write(contents)
 
-		old_accessor = first(accessors_dev_db('path') == '/dev/'+name)
+		old_accessor = first(accessors_dev_db('path') == '/'+name)
 		if old_accessor:
 			accessors_dev_db.delete(old_accessor)
 
 		process_accessor(
-				accessors_dev_db,
-				'/dev/'+name,
-				name,
-				'/dev/'+name+'.js',
-				contents,
-				path,
-				)
+			accessors_dev_db,
+			'/'+name,
+			name,
+			'/'+name+'.js',
+			contents,
+			path,
+			)
 
-		new_accessor = first(accessors_dev_db('path') == '/dev/'+name)
+		new_accessor = first(accessors_dev_db('path') == '/'+name)
 		error = ''
 		if not new_accessor['accessor']:
 			error += "Failed to build.\n\n"
@@ -1260,12 +1277,10 @@ class handler_dev_put (handler_dev):
 		return self.compile(path, self.request.body.decode('utf-8'))
 
 class handler_dev_accessor_page (handler_accessor_page):
+	flags = {'is_dev': True}
+
 	def get_accessors_db (self):
 		return accessors_dev_db
-
-	def get(self, path):
-		return super().get('dev/' + path)
-
 
 class ServeDevAccessorJSON (ServeAccessorJSON):
 	def get_accessors_db(self):
@@ -1274,14 +1289,14 @@ class ServeDevAccessorJSON (ServeAccessorJSON):
 		return accessors_dev_db
 
 	def get(self, path):
-		return super().get('/dev/' + path)
+		return super().get('/' + path)
 
 class ServeDevAccessorXML (ServeAccessorXML):
 	def get_accessors_db(self):
 		return accessors_dev_db
 
 	def get(self, path):
-		return super().get('/dev/' + path)
+		return super().get('/' + path)
 
 ################################################################################
 ### main()
@@ -1346,6 +1361,8 @@ accessor_server = tornado.web.Application(
 		(r'/view/example/(.*)', handler_accessor_example),
 		(r'/view/group/(.*)', handler_group_page),
 		(r'/view/interface/(.*)', handler_interface_page),
+		# Tests
+		(r'/test/view/accessor/(.*)', handler_test_accessor_page),
 		# Accessor IR
 		(r'/accessor/(.*).json', ServeAccessorJSON),
 		(r'/accessor/(.*).xml', ServeAccessorXML),

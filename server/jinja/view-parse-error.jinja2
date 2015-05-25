@@ -6,7 +6,7 @@ Accessor: {{ record.name }}
 
 {% block content %}
 
-{% if dev %}
+{% if flags.is_dev %}
 <div class="alert alert-warning" role="alert">
   <strong>Notice!</strong> This accessor is in development! This page should
   help with debugging the accessor, but it has not been committed to the
