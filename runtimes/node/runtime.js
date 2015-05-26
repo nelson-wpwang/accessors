@@ -4,13 +4,14 @@
 // (Those not in the rt namespace)
 
 
-var domain = require('domain');
-var Q      = require('q');
-var debug  = require('debug');
+var domain     = require('domain');
+var Q          = require('q');
+var debug_lib  = require('debug');
 
-var info = debug('accessors:info');
-var warn = debug('accessors:warn');
-var error = debug('accessors:error');
+var debug = debug_lib('accessors:debug');
+var info = debug_lib('accessors:info');
+var warn = debug_lib('accessors:warn');
+var error = debug_lib('accessors:error');
 
 var AcessorRuntimeException = Error;
 
@@ -36,8 +37,9 @@ var _do_port_call = function  (port, port_name, direction, value, done_fn, error
 		}
 	}
 	if (typeof error_fn === 'undefined') {
-		error_fn = function () {
+		error_fn = function (err) {
 			warn("Port call of " + port_name + " had error with no error callback");
+			debug(err);
 		}
 	}
 
