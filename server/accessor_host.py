@@ -1045,15 +1045,22 @@ class handler_index (JinjaBaseHandler):
 
 # Page for a summary of all the accessors in a group
 class handler_group_page (JinjaBaseHandler):
+	PREFIX = ''
+
+	def get_accessors_db (self):
+		return accessors_db
+
 	def get(self, path, **kwargs):
 		path = '/'+path
 
-		records = accessors_db('group') == path
+		db = self.get_accessors_db()
+		records = db('group') == path
 		record = first(records)
 
 		data = {
 				'records': records,
 				'group': path,
+				'prefix': self.PREFIX,
 				}
 		return self.renderj('group.jinja2', **data)
 
@@ -1215,6 +1222,16 @@ class handler_test_accessor_page (handler_accessor_page):
 	def get_accessors_db (self):
 		return accessors_test_db
 
+class handler_test_group_page (handler_group_page):
+	PREFIX = '/test'
+	flags = {'is_test': True}
+
+	def get_accessors_db (self):
+		return accessors_test_db
+
+# I think we can avoid the duplication here by changing test and dev to be
+# mixins, should look into that at some point
+
 ################################################################################
 ### Development support
 ################################################################################
@@ -1366,6 +1383,7 @@ accessor_server = tornado.web.Application(
 		(r'/view/interface/(.*)', handler_interface_page),
 		# Tests
 		(r'/test/view/accessor/(.*)', handler_test_accessor_page),
+		(r'/test/view/group/(.*)', handler_test_group_page),
 		# Accessor IR
 		(r'/accessor/(.*).json', ServeAccessorJSON),
 		(r'/accessor/(.*).xml', ServeAccessorXML),
