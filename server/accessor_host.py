@@ -1252,8 +1252,8 @@ class handler_interface_page (JinjaBaseHandler):
 		def example_port (name, props):
 			out = ''
 			for direction,arg,ret in [('input','val',''),
-			                             ('output','','return val;'),
-			                             ('observe','','send(\'/$port_name_sl\', val)')]:
+			                          ('output','','return val;'),
+			                          ('observe','','send(\'/$port_name_sl\', val)')]:
 				if direction in props['directions']:
 					template_str = tmpl_accessor_interface_port
 					for i in range(0,2):
@@ -1266,14 +1266,15 @@ class handler_interface_page (JinjaBaseHandler):
 					out += template_str.substitute()
 			return out
 
-		def recurse_interfaces (interface, port_string):
+		def recurse_interfaces (interface):
+			out = ''
 			for port_name,port_props in interface.ports.items():
-				port_string += example_port(port_name, port_props)
+				out += example_port(port_name, port_props)
 			for extent in interface.extends:
-				port_string += recurse_interfaces(extent, port_string)
-			return port_string
+				out += recurse_interfaces(extent)
+			return out
 
-		port_strings = recurse_interfaces(interface, '')
+		port_strings = recurse_interfaces(interface)
 
 		stub_code = tmpl_accessor_interface.substitute(
 			interface_name=interface.path,
