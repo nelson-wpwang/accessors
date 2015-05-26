@@ -26,7 +26,7 @@ Accessor: {{ record.name }} | Accessor Library
 <dl class="dl-horizontal">
   <dt>Author Name</dt><dd>{{ accessor.author.name }}</dd>
   <dt>Author Email</dt><dd>{{ accessor.author.email }}</dd>
-  <dt>Links</dt><dd><a href="/accessor{{ record.path }}.json">JSON</a> | <a href="/accessor{{ record.path }}.xml">XML</a></dd>
+  <dt>Links</dt><dd><a href="{{ prefix }}/accessor{{ record.path }}.json">JSON</a> | <a href="{{ prefix }}/accessor{{ record.path }}.xml">XML</a></dd>
 </dl>
 
 
@@ -101,7 +101,7 @@ Accessor: {{ record.name }} | Accessor Library
     <pre class="line-numbers"><code class="language-javascript">
 {{ usage_examples.node|escape }}
     </code></pre>
-    <em><a href="/view/example{{ record.path }}.js">Download this example</a></em>
+    <em><a href="{{ prefix }}/view/example{{ record.path }}.js">Download this example</a></em>
   </div>
 </div>
 
@@ -111,7 +111,7 @@ Accessor: {{ record.name }} | Accessor Library
     <pre class="line-numbers"><code class="language-python">
 {{ usage_examples.python|escape }}
     </code></pre>
-    <em><a href="/view/example{{ record.path }}.py">Download this example</a></em>
+    <em><a href="{{ prefix }}/view/example{{ record.path }}.py">Download this example</a></em>
   </div>
 </div>
 

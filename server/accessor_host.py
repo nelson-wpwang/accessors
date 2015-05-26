@@ -1066,6 +1066,7 @@ class handler_group_page (JinjaBaseHandler):
 
 # Page for each accessor
 class handler_accessor_page (JinjaBaseHandler):
+	PREFIX=''
 	flags = {}
 
 	def generate_examples(self, record):
@@ -1152,7 +1153,8 @@ class handler_accessor_page (JinjaBaseHandler):
 		elif not record['accessor']:
 			data = {
 				'record': record,
-				'flags': self.flags
+				'flags': self.flags,
+				'prefix': self.PREFIX,
 			}
 			# Basic parsing didn't even work, show a dedicated error page
 			# instead of the detail view page
@@ -1163,7 +1165,8 @@ class handler_accessor_page (JinjaBaseHandler):
 		data = {
 			'record': record,
 			'usage_examples': examples,
-			'flags': self.flags
+			'flags': self.flags,
+			'prefix': self.PREFIX,
 		}
 
 		return self.renderj('view.jinja2', **data)
@@ -1217,6 +1220,7 @@ class handler_interface_page (JinjaBaseHandler):
 ################################################################################
 
 class handler_test_accessor_page (handler_accessor_page):
+	PREFIX = '/test'
 	flags = {'is_test': True}
 
 	def get_accessors_db (self):
@@ -1228,6 +1232,20 @@ class handler_test_group_page (handler_group_page):
 
 	def get_accessors_db (self):
 		return accessors_test_db
+
+class ServeTestAccessorJSON (ServeAccessorJSON):
+	def get_accessors_db(self):
+		return accessors_test_db
+
+	def get(self, path):
+		return super().get('/' + path)
+
+class ServeTestAccessorXML (ServeAccessorXML):
+	def get_accessors_db(self):
+		return accessors_test_db
+
+	def get(self, path):
+		return super().get('/' + path)
 
 # I think we can avoid the duplication here by changing test and dev to be
 # mixins, should look into that at some point
@@ -1377,18 +1395,20 @@ accessor_server = tornado.web.Application(
 	[
 		# User viewable web gui
 		(r'/', handler_index),
+		# Accessor lists
+		(r'/list/all', ServeAccessorList),
+		# Standard Accessors
 		(r'/view/accessor/(.*)', handler_accessor_page),
 		(r'/view/example/(.*)', handler_accessor_example),
 		(r'/view/group/(.*)', handler_group_page),
 		(r'/view/interface/(.*)', handler_interface_page),
+		(r'/accessor/(.*).json', ServeAccessorJSON),
+		(r'/accessor/(.*).xml', ServeAccessorXML),
 		# Tests
 		(r'/test/view/accessor/(.*)', handler_test_accessor_page),
 		(r'/test/view/group/(.*)', handler_test_group_page),
-		# Accessor IR
-		(r'/accessor/(.*).json', ServeAccessorJSON),
-		(r'/accessor/(.*).xml', ServeAccessorXML),
-		# Accessor lists
-		(r'/list/all', ServeAccessorList),
+		(r'/test/accessor/(.*).json', ServeTestAccessorJSON),
+		(r'/test/accessor/(.*).xml', ServeTestAccessorXML),
 		# Support to help develop accessors
 		(r'/dev/view/accessor/(.*)', handler_dev_accessor_page),
 		(r'/dev/accessor/(.*).json', ServeDevAccessorJSON),
