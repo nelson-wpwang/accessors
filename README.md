@@ -1,7 +1,7 @@
 Accessors
 =========
 
-[![Code Climate](https://codeclimate.com/github/lab11/accessors/badges/gpa.svg)](https://codeclimate.com/github/lab11/accessors)
+![System Overview](https://raw.githubusercontent.com/lab11/accessors/master/media/system.png)
 
 Accessors are a method for abstracting the complicated and diverse input/output
 interfaces present in real-world devices and systems. Accessors allow for
@@ -151,6 +151,10 @@ part of the accessor ecosystem.
   - [Node Runtime](/runtimes/node): Node.js based runtime for accessors.
   - [Python Runtime](/runtimes/python): Python based runtime for accessors.
 1. [Host Server](/server): Server that describes and hosts accessors.
+
+
+
+[![Code Climate](https://codeclimate.com/github/lab11/accessors/badges/gpa.svg)](https://codeclimate.com/github/lab11/accessors)
 
 
 
