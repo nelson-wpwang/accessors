@@ -80,6 +80,7 @@ path and initialize it with the parameters.
 - `<accessor> load_accessor (<dict> accessor_ir, <dict> parameters)`: Generate an accessor from an intermediate representation. This can
 be used after `get_accessor_ir()` to create an accessor.
 
+- `<None> observer_forever ()`: Convenience function that prevents termination
 
 Accessor Port API
 -----------------

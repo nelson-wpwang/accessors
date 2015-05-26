@@ -35,10 +35,31 @@ import requests
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("--accessor-server",
+parser.add_argument("--accessors-library-server",
 		help="Server to load accessors from",
-		default="accessors.io")
+		default="SENTINEL")
 args = parser.parse_args()
+
+conf = {}
+
+def format_accessor_server(url):
+	if url[0:4] != 'http':
+		url = "http://" + url
+	if url[-1] == '/':
+		url = url[:-1]
+	return url
+
+def get_accessor_server():
+	if args.accessors_library_server != 'SENTINEL':
+		accessors_library_server = args.accessors_library_server
+	elif 'ACCESSORS_LIBRARY_SERVER' in os.env:
+		accessors_library_server = os.env['ACCESSORS_LIBRARY_SERVER']
+	elif 'library-server' in conf:
+		accessors_library_server = conf['library-server']
+	else:
+		accessors_library_server = 'accesors.io'
+
+	return format_accessor_server(accessors_library_server)
 
 try:
 	node_version = str(sh.node('--version')).strip()
@@ -58,12 +79,6 @@ if not semver.match(node_version, ">=0.11.0"):
 	sys.exit(1)
 
 
-def format_accessor_server(url):
-	if url[0:4] != 'http':
-		url = "http://" + url
-	if url[-1] == '/':
-		url = url[:-1]
-	return url
 
 
 def get_known_locations():
@@ -79,8 +94,6 @@ def get_known_locations():
 
 
 def get_all_accessors_from_location (server, path):
-	server = format_accessor_server(server)
-
 	url = server + '/accessors'
 	if path[0] != '/':
 		url += '/'
@@ -103,7 +116,7 @@ def get_all_accessors_from_location (server, path):
 		if r2.status_code == 200:
 			if 'parameters' not in accessor:
 				accessor['parameters'] = {}
-			accessor = Accessor(accessor_path, r2.json(), accessor['parameters'])
+			accessor = Accessor(r2.json(), accessor['parameters'])
 			accessors[accessor._name] = accessor
 		else:
 			log.error("Failed to get accessor: {}".format(get_url))
@@ -257,8 +270,7 @@ class InoutPort(InputPort,OutputPort):
 
 
 class Accessor():
-	def __init__(self, url, json, parameters=None, parent=None):
-		self._url = url
+	def __init__(self, json, parameters=None, parent=None):
 		self._json = json
 		self._root_params = parameters
 		self._parent = parent
@@ -515,7 +527,7 @@ provide_interface = function () {
 					break
 			dependency = copy.deepcopy(dependency)
 			dependency['safe_name'] = '{}_{}'.format(dependency['safe_name'], i)
-			sub_accessor = Accessor(path, dependency, parameters=parameters, parent=self)
+			sub_accessor = Accessor(dependency, parameters=parameters, parent=self)
 			self._sub_accessors[sub_accessor._safe_name] = sub_accessor
 
 			self._js.export(
@@ -907,19 +919,29 @@ def get_accessor_by_location(server, location, name):
 		pprint.pprint(accessors)
 		raise
 
-def get_accessor(url, parameters={}, server=args.accessor_server):
-	server = format_accessor_server(server)
+def get_accessor_list():
+	raise NotImplementedError
 
+def get_accessor_ir(url, server=None):
+	if not server:
+		server = get_accessor_server()
 	accessor_path = url + '.json'
 	get_url = '{}/accessor{}'.format(server, accessor_path)
 	logging.debug("GET {}".format(get_url))
 	r2 = requests.get(get_url)
 	if r2.status_code == 200:
-		accessor = Accessor(accessor_path, r2.json(), parameters)
+		return r2.json()
 	else:
 		log.error("Failed to get accessor: {}".format(get_url))
 		raise NotImplementedError("get_accessor error case")
 
+def load_accessor(ir, parameters={}):
+	accessor = Accessor(ir, parameters)
+	return accessor
+
+def get_accessor(url, parameters={}, server=None):
+	json = get_accessor_ir(url, server)
+	accessor = load_accessor(json, parameters)
 	return accessor
 
 def observe_forever():
