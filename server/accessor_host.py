@@ -1179,13 +1179,19 @@ class handler_accessor_page (JinjaBaseHandler):
 # the rendered example in the db or something
 class handler_accessor_example (handler_accessor_page):
 	def get(self, path, **kwargs):
-		path = '/'+path
+		if path[0] != '/':
+			path = '/'+path
 
 		path,ext = path.split('.')
 
 		db = self.get_accessors_db()
 		records = db('path') == path
 		record = first(records)
+
+		if record is None:
+			for a in db:
+				log.debug('>>%s<<', a['path'])
+			log.debug('>>%s<<', path)
 
 		examples = self.generate_examples(record)
 
@@ -1225,6 +1231,13 @@ class handler_test_accessor_page (handler_accessor_page):
 
 	def get_accessors_db (self):
 		return accessors_test_db
+
+class handler_test_accessor_example (handler_accessor_example):
+	def get_accessors_db (self):
+		return accessors_test_db
+
+	def get(self, path):
+		return super().get('/' + path)
 
 class handler_test_group_page (handler_group_page):
 	PREFIX = '/test'
@@ -1406,6 +1419,7 @@ accessor_server = tornado.web.Application(
 		(r'/accessor/(.*).xml', ServeAccessorXML),
 		# Tests
 		(r'/test/view/accessor/(.*)', handler_test_accessor_page),
+		(r'/test/view/example/(.*)', handler_test_accessor_example),
 		(r'/test/view/group/(.*)', handler_test_group_page),
 		(r'/test/accessor/(.*).json', ServeTestAccessorJSON),
 		(r'/test/accessor/(.*).xml', ServeTestAccessorXML),
