@@ -1,7 +1,8 @@
 Accessors
 =========
-
-![System Overview](https://raw.githubusercontent.com/lab11/accessors/master/media/system.png)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lab11/accessors/master/media/system.png" alt="System Overview" width="50%;">
+</p>
 
 Accessors are a method for abstracting the complicated and diverse input/output
 interfaces present in real-world devices and systems. Accessors allow for
