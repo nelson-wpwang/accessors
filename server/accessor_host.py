@@ -588,8 +588,9 @@ def process_accessor(
 		# populating the ports key from a combination of created_ports
 		# and interface_ports from the validator
 
-		# TODO: Doesn't currently validate that all create_port()'s are
-		#       implemented. Fixing requires validate.js updates
+		# This flag defers throwing exceptions if possible to minimize churn and
+		# maximize the number of errors we report per compilation
+		complete_interface = True
 
 		accessor['ports'] = copy.deepcopy(accessor['created_ports'])
 		for port in accessor['ports']:
@@ -597,6 +598,13 @@ def process_accessor(
 				port['type'] = 'string'
 			if 'display_name' not in port:
 				port['display_name'] = port['name'].split('.')[-1]
+			if len(port['directions']) == 0:
+				errors.appendleft([
+					"Created port {} implements no directions".format(port['name']),
+					"All ports must define at least one of [input, output, observe]",
+					"e.g., {}.output = function() {{ return 'current_value'; }}".format(port['name']),
+					])
+				complete_interface = False
 
 		inferred_iface_ports = {}
 		inferred_iface_ports_to_delete = []
@@ -650,7 +658,6 @@ def process_accessor(
 			accessor['normalized_interface_ports'].append(norm)
 			name_map[norm] = port
 
-		complete_interface = True
 		for claim in accessor['implements']:
 			iface = interface_tree[claim['interface']]
 			for req in iface:
