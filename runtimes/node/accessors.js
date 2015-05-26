@@ -330,11 +330,19 @@ function get_exports (accessor) {
 		};
 		export_name = tname;
 
-		// Each port can support multiple directions based on what makes
-		// sense for the particular device
-		for (var j=0; j<port.directions.length; j++) {
-			var direction = port.directions[j];
-			export_str += 'module.exports.'+export_name + '.' + direction + ' = function () {_do_port_call.apply(this, ['+func+'.'+direction+',"'+name+'","'+direction+'",arguments[0],arguments[1],arguments[2]])};\n'
+		// Generate either a wrapper to call a port or stub function that will
+		// indicate that the port is invalid for all possible port functions
+		var possible_directions = ['input', 'output', 'observe'];
+
+		for (var j=0; j<possible_directions.length; j++) {
+			var direction = possible_directions[j];
+			if (port.directions.indexOf(direction) != -1) {
+				export_str += 'module.exports.'+export_name + '.' + direction + ' = function () {_do_port_call.apply(this, ['+func+'.'+direction+',"'+name+'","'+direction+'",arguments[0],arguments[1],arguments[2]])};\n';
+			} else {
+				var areis = (port.directions.length == 1) ? 'is':'are';
+				var msg = "Cannot call "+direction+" on "+port.name+". Only "+port.directions+" "+areis+" valid for " + port.name;
+				export_str += 'module.exports.'+export_name + '.' + direction + ' = function () {rt.log.critical("'+msg+'");};';
+			}
 		}
 	}
 
