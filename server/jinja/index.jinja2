@@ -24,6 +24,7 @@ To add a new accessor or modify an existing accessor, commit a change to the
       <th>Group</th>
       <th>Provides</th>
       <th>Creates</th>
+      <th>Requires</th>
       <th>Last Updated</th>
     </tr>
   </thead>
@@ -62,6 +63,13 @@ To add a new accessor or modify an existing accessor, commit a change to the
       <br />
       {% endfor %}
     </td>
+    <td>
+      {% for param in record.accessor.parameters %}
+      {% if param.required %}
+      {{ param.name }}<br />
+      {% endif %}
+      {% endfor %}
+    </td>
     <td>{{ record.compilation_timestamp.humanize() }}</td>
   </tr>
   {% endfor %}
@@ -77,6 +85,7 @@ To add a new accessor or modify an existing accessor, commit a change to the
       <th>Group</th>
       <th>Provides</th>
       <th>Creates</th>
+      <th>Requires</th>
       <th>Last Updated</th>
     </tr>
   </thead>
@@ -113,6 +122,13 @@ To add a new accessor or modify an existing accessor, commit a change to the
       <!-- &#10142; -->
       {% endif %}
       <br />
+      {% endfor %}
+    </td>
+    <td>
+      {% for param in record.accessor.parameters %}
+      {% if param.required %}
+      {{ param.name }}<br />
+      {% endif %}
       {% endfor %}
     </td>
     <td>{{ record.compilation_timestamp.humanize() }}</td>
