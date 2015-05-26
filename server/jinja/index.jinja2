@@ -168,7 +168,6 @@ To add a new interface or modify an existing interface, commit a change to the
     <td>
       {% for name in iface.ports %}
       {% set port = iface.ports[name] %}
-      <p>
       {% if 'observe' in port.directions %}
       <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
       {% endif %}
@@ -179,17 +178,17 @@ To add a new interface or modify an existing interface, commit a change to the
       {% if 'output' in port.directions %}
       <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
       {% endif %}
-      </p>
+      <br />
       {% endfor %}
     </td>
     <td>
       {% for acc in iface.accessors %}
-      <p><a href="/view/accessor{{ acc }}">{{ acc }}</a></p>
+      <a href="/view/accessor{{ acc }}">{{ acc }}</a><br />
       {% endfor %}
     </td>
     <td>
       {% for acc in iface.accessors_by_extends %}
-      <p><a href="/view/accessor{{ acc }}">{{ acc }}</a></p>
+      <a href="/view/accessor{{ acc }}">{{ acc }}</a><br />
       {% endfor %}
     </td>
   </tr>
