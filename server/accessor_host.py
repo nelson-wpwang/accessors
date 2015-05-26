@@ -1013,7 +1013,8 @@ $parameters}''')
 python_runtime_example_parameters_entries = string.Template('''\t$name: '',
 ''')
 
-python_runtime_example_parameters_entries_with_default = string.Template('''\t# $name: '$default'  Parameter is optional, the default value will be used if one is not specified.
+python_runtime_example_parameters_entries_with_default = string.Template(
+'''\t# $name: '$default'  Parameter is optional, the default value will be used if one is not specified.
 ''')
 
 python_runtime_example_ports_input = string.Template(
@@ -1211,13 +1212,69 @@ class handler_accessor_example (handler_accessor_page):
 		self.finish()
 
 
+### Templates for example code for implementing a given interface
+tmpl_accessor_interface = string.Template(
+'''// name: 
+// author: 
+// email: 
+//
+// <accessor title>
+// ================
+//
+// <accessor description>
+//
+
+function* init () {
+    provide_interface('$interface_name');
+}
+$port_functions''')
+
+tmpl_accessor_interface_port = string.Template(
+'''
+$port_name.$port_direction = function* ($port_argument) {
+    $return_stmt
+}
+''')
+
 # Page that describes an interface
 class handler_interface_page (JinjaBaseHandler):
 	def get(self, path, **kwargs):
 		path = '/'+path
+		interface = interface_tree[path]
+
+		def example_port (name, props):
+			out = ''
+			for direction,arg,ret in [('input','val',''),
+			                             ('output','','return val;'),
+			                             ('observe','','send(\'/$port_name_sl\', val)')]:
+				if direction in props['directions']:
+					template_str = tmpl_accessor_interface_port
+					for i in range(0,2):
+						template_str = string.Template(template_str.substitute(
+							port_name=name,
+							port_direction=direction,
+							port_argument=arg,
+							return_stmt=ret,
+							port_name_sl=name.replace('.', '/')))
+					out += template_str.substitute()
+			return out
+
+		def recurse_interfaces (interface, port_string):
+			for port_name,port_props in interface.ports.items():
+				port_string += example_port(port_name, port_props)
+			for extent in interface.extends:
+				port_string += recurse_interfaces(extent, port_string)
+			return port_string
+
+		port_strings = recurse_interfaces(interface, '')
+
+		stub_code = tmpl_accessor_interface.substitute(
+			interface_name=interface.path,
+			port_functions=port_strings)
 
 		data = {
-				'interface': interface_tree[path],
+				'interface': interface,
+				'stub_code': stub_code
 				}
 		return self.renderj('interface.jinja2', **data)
 
