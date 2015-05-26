@@ -22,6 +22,8 @@ Accessors in {{ group }} | Accessor Library
   <tr>
     {% if record.errors %}
     <td><a href="{{ prefix }}/view/accessor{{ record.path }}" style="color: red;">&#9888; {{ record.name }}</a></td>
+    {% elif record.warnings %}
+    <td><a href="{{ prefix }}/view/accessor{{ record.path }}" style="color: #DAA520;">&#9888; {{ record.name }}</a></td>
     {% else %}
     <td><a href="{{ prefix }}/view/accessor{{ record.path }}">{{ record.name }}</a></td>
     {% endif %}

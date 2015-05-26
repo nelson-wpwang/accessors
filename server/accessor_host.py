@@ -102,6 +102,7 @@ accessor_db_cols = ('name',
                     'path',
                     'jscontents',
                     'accessor',
+                    'warnings',
                     'errors')
 
 accessors_db = pydblite.Base('accessors', save_to_file=False)
@@ -479,6 +480,9 @@ def process_accessor(
 		website = None
 		description = None
 
+		warnings = collections.deque()
+		errors = collections.deque()
+
 		# Parse the accessor source to pull out information in the
 		# comments (name, author, email, website, description)
 		line_no = 0
@@ -571,8 +575,11 @@ def process_accessor(
 		raw_analyzed = analyzed.stdout.decode('utf-8')
 		analyzed = json.loads(raw_analyzed)
 
+		for warning in analyzed['warnings']:
+			warnings.append(warning)
+		del analyzed['warnings']
+
 		meta.update(analyzed)
-		errors = collections.deque()
 
 		# Embed the actual code into the accessor
 		meta['code'] = {
@@ -734,7 +741,9 @@ def process_accessor(
 							group=root,
 							path=view_path,
 							jscontents=contents,
-							accessor=accessor)
+							accessor=accessor,
+							warnings=warnings,
+							)
 
 		# Save a copy of the reverse mapping as well
 		for iface in accessor['implements']:
@@ -753,6 +762,7 @@ def process_accessor(
 							path=view_path,
 							jscontents=contents,
 							accessor=None,
+							warnings=warnings,
 							errors=[e.args,])
 		log.info('Parse error adding {}'.format(view_path))
 	except sh.ErrorReturnCode as e:
@@ -771,6 +781,7 @@ def process_accessor(
 							path=view_path,
 							jscontents=contents,
 							accessor=None,
+							warnings=warnings,
 							errors=[e.args,])
 		log.info('Parse JS error adding {}'.format(view_path))
 	except NotImplementedError as e:
@@ -782,6 +793,7 @@ def process_accessor(
 							path=view_path,
 							jscontents=contents,
 							accessor=None,
+							warnings=warnings,
 							errors=errors)
 		log.info('Accessor implemetnation error found when adding {}'.format(view_path))
 	except Exception as e:

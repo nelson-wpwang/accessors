@@ -7,6 +7,8 @@ var _ = require('underscore');
 var fs = require('fs');
 var esprima;
 
+var warnings = [];
+
 try {
   esprima = require('esprima');
 } catch (e) {
@@ -119,30 +121,6 @@ function checkGetDependency(node) {
 
 var interface_list = [];
 
-function checkProvidedInterfaceFunctions(iface, node) {
-  var prop, idx;
-
-  for (idx in node) {
-    if (node.hasOwnProperty(idx)) {
-      prop = node[idx];
-
-      if (prop.type !== 'Property') {
-        throw "Unxpected non-property in provided interfaces: " + prop;
-      }
-      if (prop.key.type !== 'Literal') {
-        throw "Implemented interfaces must be string literals " + prop.key;
-      }
-      if (prop.value.type !== 'Identifier') {
-        throw "Interface must be implemented by an Identifier";
-        // TODO: collect idents that impl interfaces and verify they exist
-        // TODO: allow anonymous functions to implement interfaces
-      }
-
-      iface.provides.push([prop.key.value, prop.value.name]);
-    }
-  }
-}
-
 function checkProvideInterface(node) {
   var iface = null;
 
@@ -164,11 +142,17 @@ function checkProvideInterface(node) {
     };
 
     if (node.arguments[1] !== undefined) {
-      if (node.arguments[1].type !== 'ObjectExpression') {
-        throw "Second argument to 'provide_interface' must be a dictionary of named parameters";
+      if (node.loc.start.line != node.loc.end.line) {
+        warnings.push(
+            ["In `provide_interface` on lines " + node.loc.start.line + "-" + node.loc.end.line,
+             "The provide_interface function takes only 1 argument, the rest are ignored",
+             ]);
+      } else {
+        warnings.push(
+            ["In `provide_interface` on line " + node.loc.start.line,
+             "The provide_interface function takes only 1 argument, the rest are ignored",
+             ]);
       }
-
-      checkProvidedInterfaceFunctions(iface, node.arguments[1].properties);
     }
 
     interface_list.push(iface);
@@ -486,7 +470,7 @@ function on_read(err, data) {
   // Clear ports
   //port_list = [];
 
-  syntax = esprima.parse(data);
+  syntax = esprima.parse(data, {loc: true});
   //console.log(JSON.stringify(syntax, null, 1));
 
   traverse(syntax.body, function (node) {
@@ -515,6 +499,7 @@ function on_read(err, data) {
   */
 
   data = {
+    warnings: warnings,
     runtime_imports: runtime_list,
     implements: interface_list,
     dependencies: dependency_list,
