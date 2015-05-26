@@ -18,7 +18,7 @@
             <b>Directions</b>: &nbsp;{{ port.directions|join(', ') }}<br />
             <b>Type</b>: &nbsp;{{ port.type }}<br />
             {% if 'units' in port %}<b>Units</b>: &nbsp;{{ port.units }}<br />{% endif %}
-            {% if 'options' in port %}<b>Options: &nbsp;{{ port.options }}<br />{% endif %}
+            {% if 'options' in port %}<b>Options</b>: &nbsp;{{ port.options }}<br />{% endif %}
             {% if 'min' in port %}<b>Min</b>: &nbsp;{{ port.min }}<br />{% endif %}
             {% if 'max' in port %}<b>Max</b>: &nbsp;{{ port.max }}<br />{% endif %}
           </div>
