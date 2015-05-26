@@ -133,9 +133,17 @@ function compile_dev_accessor (path, success_cb, error_cb) {
 	});
 }
 
+function get_test_accessor_ir (path, success_cb, error_cb) {
+	if (path[0] != '/') path = '/'+path;
+	info('art::get_test_accessor_ir from path: ' + path);
+	var url = host_server + '/test/accessor' + path + '.json';
+	get_accessor_ir_from_url(url, success_cb, error_cb);
+}
+
 function get_dev_accessor_ir (path, success_cb, error_cb) {
+	if (path[0] != '/') path = '/'+path;
 	info('art::get_dev_accessor_ir from path: ' + path);
-	var url = host_server + '/dev/accessor/' + path + '.json';
+	var url = host_server + '/dev/accessor' + path + '.json';
 	get_accessor_ir_from_url(url, success_cb, error_cb);
 }
 
@@ -179,9 +187,18 @@ function get_accessor_ir_from_url (url, success_cb, error_cb) {
 function create_accessor (path, parameters, success_cb, error_cb) {
 	info('art::create_accessor from path: ' + path);
 
-	get_accessor_ir(path, function (accessor) {
+	var ir_callback = function (accessor) {
 		load_accessor(accessor, parameters, success_cb, error_cb);
-	}, error_cb);
+	};
+
+	if ('/dev' == path.slice(0, 4)) {
+		get_dev_accessor_ir(path, ir_callback, error_cb);
+	} else if ('/tests' == path.slice(0, 6)) {
+		get_test_accessor_ir(path, ir_callback, error_cb);
+	} else {
+		console.log(">>" + path.slice(0, 6) + "<<");
+		get_accessor_ir(path, ir_callback, error_cb);
+	}
 }
 
 /*

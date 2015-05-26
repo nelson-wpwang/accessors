@@ -1,0 +1,19 @@
+{
+  "name": "accessors-tests",
+  "version": "0.1.0",
+  "description": "Test suite for accessors (npm accessors.io)",
+  "main": "tests.js",
+  "dependencies": {
+    "sleep": "^2.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "accessors",
+    "tests"
+  ],
+  "author": "Pat Pannuto",
+  "license": "ISC"
+}
