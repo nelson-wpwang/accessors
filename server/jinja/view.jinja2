@@ -40,13 +40,6 @@ Accessor: {{ record.name }} | Accessor Library
 </ul>
 {% endif %}
 
-<h2>About</h2>
-<dl class="dl-horizontal">
-  <dt>Author Name</dt><dd>{{ accessor.author.name }}</dd>
-  <dt>Author Email</dt><dd>{{ accessor.author.email }}</dd>
-  <dt>Links</dt><dd><a href="{{ prefix }}/accessor{{ record.path }}.json">JSON</a> | <a href="{{ prefix }}/accessor{{ record.path }}.xml">XML</a></dd>
-</dl>
-
 
 <div class="row" style="margin-top: 30px">
 
@@ -80,7 +73,7 @@ Accessor: {{ record.name }} | Accessor Library
 
 <div class="row">
 
-  <div class="col-md-6">
+  <div class="col-md-7">
     <h2>Ports</h2>
     <ul class="list-group accessor-ports-list">
       {% for port in accessor.ports %}
@@ -97,18 +90,10 @@ Accessor: {{ record.name }} | Accessor Library
           <div class="col-sm-4 accessor-ports-list-config">
             <b>Directions</b>: &nbsp;{{ port.directions|join(', ') }}<br />
             <b>Type</b>: &nbsp;{{ port.type }}<br />
-            {% if port.units %}<b>Units</b>: &nbsp;{{ port.units }}{% endif %}
-            {% if port.options %}<b>Options: &nbsp;{{ port.options }}{% endif %}
-            {% if port.min %}<b>Min</b>: &nbsp;{{ port.min }}{% endif %}
-            {% if port.max %}<b>Max</b>: &nbsp;{{ port.max }}{% endif %}
-            <!-- <dl class="dl-horizontal">
-              <dt>Directions</dt><dd>{{ port.directions|join(', ') }}</dd>
-              <dt>Type</dt><dd>{{ port.type }}</dd>
-              {% if port.units %}<dt>Units</dt><dd>{{ port.units }}</dd>{% endif %}
-              {% if port.options %}<dt>Options</dt><dd>{{ port.options }}</dd>{% endif %}
-              {% if port.min %}<dt>Min</dt><dd>{{ port.min }}</dd>{% endif %}
-              {% if port.max %}<dt>Max</dt><dd>{{ port.max }}</dd>{% endif %}
-            </dl> -->
+            {% if 'units' in port %}<b>Units</b>: &nbsp;{{ port.units }}<br />{% endif %}
+            {% if 'options' in port %}<b>Options: &nbsp;{{ port.options }}<br />{% endif %}
+            {% if 'min' in port %}<b>Min</b>: &nbsp;{{ port.min }}<br />{% endif %}
+            {% if 'max' in port %}<b>Max</b>: &nbsp;{{ port.max }}<br />{% endif %}
           </div>
         </div>
       </li>
@@ -116,7 +101,7 @@ Accessor: {{ record.name }} | Accessor Library
     </ul>
   </div>
 
-  <div class="col-md-6">
+  <div class="col-md-5">
     <h2>Parameters</h2>
     {% if accessor.parameters %}
     <ul class="list-group">
