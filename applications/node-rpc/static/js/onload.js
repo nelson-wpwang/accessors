@@ -23,6 +23,8 @@ $("#accessor-select").change(function () {
 				var parameters = data.parameters;
 
 				var html = '';
+				var req_param_html = '';
+				var dfl_param_html = '';
 
 				// Keep the path
 				html += '<input type="hidden" id="path" value="' + path + '">';
@@ -39,13 +41,29 @@ $("#accessor-select").change(function () {
 				html += '<div id="accessor-new-parameters-title">Parameters</div>';
 				for (var i=0; i<parameters.length; i++) {
 					var parameter = parameters[i];
+					var param_html = ''
 
-					html += '<div class="form-group">';
-					html +=   '<label class="col-sm-3 control-label">' + parameter.name + '</label>';
-					html +=   '<div class="col-sm-7">';
-					html +=     '<input type="text" class="form-control" name="' + parameter.name + '">';
-					html +=   '</div>';
-					html += '</div>';
+					param_html += '<div class="form-group">';
+					param_html +=   '<label class="col-sm-3 control-label">' + parameter.name + '</label>';
+					param_html +=   '<div class="col-sm-7">';
+					if (parameter.required) {
+						param_html +=     '<input type="text" class="form-control" name="' + parameter.name + '">';
+					} else {
+						param_html +=     '<input type="text" class="form-control" name="' + parameter.name + '" value="' + parameter.default + '">';
+					}
+					param_html +=   '</div>';
+					param_html += '</div>';
+
+					if (parameter.required) {
+						req_param_html += param_html;
+					} else {
+						dfl_param_html += param_html;
+					}
+				}
+				html += req_param_html;
+				if (dfl_param_html.length) {
+					html += '<hr />';
+					html += dfl_param_html;
 				}
 				html += '</div>';
 				html += '<div id="accessor-new-detail">';
