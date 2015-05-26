@@ -32,7 +32,7 @@ To add a new accessor or modify an existing accessor, commit a change to the
   <tr>
     <td>
       {% if record.errors %}
-      <a href="/view/accessor{{ record.path }}" style="color: red;"><span class="glyphicon glyphicon-alert" aria-hidden="true"></span> {{ record.name }}</a>
+      <a href="/view/accessor{{ record.path }}" style="color: red;">&#9888; {{ record.name }}</a>
       {% else %}
       <a href="/view/accessor{{ record.path }}">{{ record.name }}</a>
       {% endif %}
@@ -85,7 +85,7 @@ To add a new accessor or modify an existing accessor, commit a change to the
   <tr>
     <td>
       {% if record.errors %}
-      <a href="/test/view/accessor{{ record.path }}" style="color: red;"><span class="glyphicon glyphicon-alert" aria-hidden="true"></span> {{ record.name }}</a>
+      <a href="/test/view/accessor{{ record.path }}" style="color: red;">&#9888; {{ record.name }}</a>
       {% else %}
       <a href="/test/view/accessor{{ record.path }}">{{ record.name }}</a>
       {% endif %}
