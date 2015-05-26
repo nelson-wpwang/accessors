@@ -157,7 +157,7 @@ To add a new interface or modify an existing interface, commit a change to the
     </tr>
   </thead>
 
-  {% for path,iface in interface_tree.items() %}
+  {% for path,iface in interface_tree|dictsort %}
   <tr>
     <td>{{ path|interface }}</td>
     <td>

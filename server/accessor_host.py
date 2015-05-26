@@ -1255,7 +1255,7 @@ class handler_interface_page (JinjaBaseHandler):
 							port_direction=direction,
 							port_argument=arg,
 							return_stmt=ret,
-							port_name_sl=name.replace('.', '/')))
+							port_name_sl=name.split('.')[1]))
 					out += template_str.substitute()
 			return out
 
