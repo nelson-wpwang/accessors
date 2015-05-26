@@ -2,7 +2,7 @@
 /* vim: set noet ts=2 sts=2 sw=2: */
 
 try {
-	var debug        = require('debug');
+	var debug_lib    = require('debug');
 	var urllib       = require('url');
 
 	var domain       = require('domain');
@@ -25,9 +25,10 @@ try {
 }
 
 
-var info  = debug('accessors:info');
-var warn  = debug('accessors:warn');
-var error = debug('accessors:error');
+var debug = debug_lib('accessors:debug');
+var info  = debug_lib('accessors:info');
+var warn  = debug_lib('accessors:warn');
+var error = debug_lib('accessors:error');
 
 
 var AcessorRuntimeException = Error;
@@ -100,10 +101,10 @@ rt.time.run_later = function (time_in_ms, fn_to_run, args) {
 					r = yield* fn_to_run();
 				});
 				var finished = function () {
-					rt.log.debug("rt.time.run_later callback finished asynchronous run");
+					debug("rt.time.run_later callback finished asynchronous run");
 				}
 				def().done(finished, error_fn);
-				rt.log.debug("rt.time.run_later callback running asynchronously");
+				debug("rt.time.run_later callback running asynchronously");
 			}
 		});
 	}, time_in_ms);
@@ -131,7 +132,7 @@ rt.socket.socket = function* (family, sock_type) {
 			var defer = Q.defer();
 			socket.send(message, 0, message.length, destination[1], destination[0],
 					function(err) {
-						rt.log.debug("rt.<socket::udp>.send done");
+						debug("rt.<socket::udp>.send done");
 						if (err == 0) {
 							defer.resolve();
 						} else {
@@ -145,7 +146,7 @@ rt.socket.socket = function* (family, sock_type) {
 			socket.bind();
 
 			socket.on('message', function(msg, rinfo) {
-				console.log("rt.<socket::udp>.on('message'): msg %s from %s:%d",
+				debug("rt.<socket::udp>.on('message'): msg %s from %s:%d",
 						msg, rinfo.address, rinfo.port);
 				cb(msg);
 			});
