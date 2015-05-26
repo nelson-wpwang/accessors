@@ -83,15 +83,15 @@ You can use it with a public data stream like so:
 Example
 -------
 
-Accessors can be used to not only communicate with devices, but also with
-web services. To see the Node.js accessor runtime query a stock price, run:
+Accessors can also be used as a library inside of new or existing applications.
+For example, to run a Node app that queries a stock price using accessors:
 
     cd runtimes/node
     npm install
     cd examples
     ./stock.js
 
-This should print out the Microsoft stock price.
+This will print out the Microsoft stock price.
 
 The code looks like this:
 
