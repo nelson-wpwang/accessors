@@ -154,13 +154,8 @@ Create a one-off port for this accessor. Valid options:
     Options are optional, and the `options` argument can be omitted entirely
     if not used.
 
-- `<void> provide_interface(<string> path, <object> mapping)`: Specify that this
-accessor implements a particular interface. The mapping assigns ports, specified
-as:
-
-        mapping: {
-            '/interface/path.Port': <function name>
-        }
+- `<void> provide_interface(<string> path)`: Specify that this
+accessor implements a particular interface.
 
 - `<accessor> load_dependency(<string> path, <object> parameters)`: Loads a
   new accessor as a dependency. Dependencies are guaranteed to exist at
