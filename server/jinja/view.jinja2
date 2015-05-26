@@ -28,7 +28,6 @@ Accessor: {{ record.name }} | Accessor Library
 </div>
 
 <h2>Warnings</h2>
-
 <ul>
   {% for err in record.warnings %}
   <li>{{ err[0] }}</li>
@@ -39,7 +38,6 @@ Accessor: {{ record.name }} | Accessor Library
   </ul>
   {% endfor %}
 </ul>
-
 {% endif %}
 
 <h2>About</h2>
@@ -50,52 +48,94 @@ Accessor: {{ record.name }} | Accessor Library
 </dl>
 
 
+<div class="row" style="margin-top: 30px">
 
-<div class="panel panel-default">
-  <div class="panel-body">
-    {{ accessor.description|markdown }}
+  <div class="col-md-8">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Accessor Description</h3>
+      </div>
+      <div class="panel-body accessor-markdown">
+        {{ accessor.description|markdown }}
+      </div>
+    </div>
   </div>
+
+  <div class="col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">About</h3>
+      </div>
+      <div class="panel-body">
+        <dl class="dl-horizontal">
+          <dt>Author Name</dt><dd>{{ accessor.author.name }}</dd>
+          <dt>Author Email</dt><dd>{{ accessor.author.email }}</dd>
+          <dt>Links</dt><dd><a href="{{ prefix }}/accessor{{ record.path }}.json">JSON</a> | <a href="{{ prefix }}/accessor{{ record.path }}.xml">XML</a></dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
 </div>
 
+<div class="row">
 
-<h2>Ports</h2>
-<ul class="list-group">
-  {% for port in accessor.ports %}
-  <li class="list-group-item">
-    <h4>{{ port.name }}</h4>
-    <p>{{ port.description }}</p>
-    <dl class="dl-horizontal">
-      <dt>Directions</dt><dd>{{ port.directions }}</dd>
-      <dt>Type</dt><dd>{{ port.type }}</dd>
-      {% if port.units %}<dt>Units</dt><dd>{{ port.units }}</dd>{% endif %}
-      {% if port.options %}<dt>Options</dt><dd>{{ port.options }}</dd>{% endif %}
-      {% if port.min %}<dt>Min</dt><dd>{{ port.min }}</dd>{% endif %}
-      {% if port.max %}<dt>Max</dt><dd>{{ port.max }}</dd>{% endif %}
-    </dl>
-    {% if port.interface_path %}
-    <span style="font-size: small;"><em>From {{ port.interface_path|interface }}</em></span>
+  <div class="col-md-6">
+    <h2>Ports</h2>
+    <ul class="list-group accessor-ports-list">
+      {% for port in accessor.ports %}
+      <li class="list-group-item">
+        <div class="row">
+          <div class="col-sm-8">
+            <h4>{{ port.name }}
+              {% if port.interface_path %}
+              <small><span style="font-size: small;">&nbsp;<em>(From {{ port.interface_path|interface }})</em></span></small>
+              {% endif %}
+            </h4>
+            <p>{{ port.description }}</p>
+          </div>
+          <div class="col-sm-4 accessor-ports-list-config">
+            <b>Directions</b>: &nbsp;{{ port.directions|join(', ') }}<br />
+            <b>Type</b>: &nbsp;{{ port.type }}<br />
+            {% if port.units %}<b>Units</b>: &nbsp;{{ port.units }}{% endif %}
+            {% if port.options %}<b>Options: &nbsp;{{ port.options }}{% endif %}
+            {% if port.min %}<b>Min</b>: &nbsp;{{ port.min }}{% endif %}
+            {% if port.max %}<b>Max</b>: &nbsp;{{ port.max }}{% endif %}
+            <!-- <dl class="dl-horizontal">
+              <dt>Directions</dt><dd>{{ port.directions|join(', ') }}</dd>
+              <dt>Type</dt><dd>{{ port.type }}</dd>
+              {% if port.units %}<dt>Units</dt><dd>{{ port.units }}</dd>{% endif %}
+              {% if port.options %}<dt>Options</dt><dd>{{ port.options }}</dd>{% endif %}
+              {% if port.min %}<dt>Min</dt><dd>{{ port.min }}</dd>{% endif %}
+              {% if port.max %}<dt>Max</dt><dd>{{ port.max }}</dd>{% endif %}
+            </dl> -->
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="col-md-6">
+    <h2>Parameters</h2>
+    {% if accessor.parameters %}
+    <ul class="list-group">
+      {% for parameter in accessor.parameters %}
+      <li class="list-group-item">
+        <h4>{{ parameter.name }}</h4>
+        {% if parameter.default %}
+        <p><em><strong>Default: </strong>{{ parameter.default }}</em></p>
+        {% endif %}
+        <p>{{ parameter.description }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <em>This accessor does not have any parameters</em>
     {% endif %}
-  </li>
-  {% endfor %}
-</ul>
+  </div>
 
-
-<h2>Parameters</h2>
-{% if accessor.parameters %}
-<ul class="list-group">
-  {% for parameter in accessor.parameters %}
-  <li class="list-group-item">
-    <h4>{{ parameter.name }}</h4>
-    {% if parameter.default %}
-    <p><em><strong>Default: </strong>{{ parameter.default }}</em></p>
-    {% endif %}
-    <p>{{ parameter.description }}</p>
-  </li>
-  {% endfor %}
-</ul>
-{% else %}
-<em>This accessor does not have any parameters</em>
-{% endif %}
+</div>
 
 
 <h2>Dependencies</h2>

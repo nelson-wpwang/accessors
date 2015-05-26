@@ -1,3 +1,29 @@
 .interface {
 	color: green;
 }
+
+.accessor-markdown {
+	font-size: 90%;
+}
+
+.accessor-markdown h1 {
+	font-size: 32px;
+}
+
+.accessor-markdown h2 {
+	font-size: 25px;
+}
+
+.accessor-markdown h3 {
+	font-size: 18px;
+}
+
+.accessor-ports-list li {
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+
+.accessor-ports-list-config {
+	padding-top: 15px;
+	padding-bottom: 10px;
+}
