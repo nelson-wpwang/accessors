@@ -320,6 +320,11 @@ Query the GATD streamer with the given query and call `callback` will all
 returned data packets.
 
 
+### Text to Speech
+
+- _Blocking_ `<void> rt.text_to_speech.say(<string> text)`: Will read the given text aloud
+
+
 ### Encoding Functions
 
 Various devices may need data in a variety of encodings. These functions help

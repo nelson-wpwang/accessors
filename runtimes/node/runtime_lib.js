@@ -15,6 +15,7 @@ try {
 	var amqp         = require('amqp');
 	var dgram        = require('dgram');
 	var net          = require('net');
+	var say          = require('say');
 	var socketio_old = require('socket.io-client');
 	var through2     = require('through2');
 	var WebSocket    = require('ws');
@@ -389,6 +390,20 @@ rt.gatd_old.connect = function* gatdOldConnect (url) {
 }
 
 
+/*** Text to Speech ***/
+
+rt.text_to_speech = Object();
+
+rt.text_to_speech.say = function* text_to_speech_say (text) {
+	debug('text_to_speech::say(%s)', text);
+	var defer = Q.defer();
+	say.speak(null, text, function () {
+		defer.resolve();
+	});
+	return yield defer.promise;
+}
+
+
 /*** COLOR FUNCTIONS ***/
 
 // need to npm install tinycolor2 for this. Not tinycolor. Because _javascript_
@@ -444,5 +459,6 @@ exports.coap      = rt.coap;
 exports.websocket = rt.websocket;
 exports.amqp      = rt.amqp;
 exports.gatd_old  = rt.gatd_old;
+exports.text_to_speech = rt.text_to_speech;
 exports.color     = rt.color;
 exports.encode    = rt.encode;
