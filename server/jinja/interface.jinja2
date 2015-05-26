@@ -6,7 +6,7 @@ The {{ interface }} Interface | Accessor Library
 
 {% block content %}
 
-<h1>The {{ interface }} interface.</h1>
+<h1>The <span class="interface">{{ interface }}</span> interface.</h1>
 
 <p>
   {% if interface.ports %}
@@ -65,6 +65,7 @@ The {{ interface }} Interface | Accessor Library
 
 <hr />
 
+{% set extends_depth = 1 %}
 {% include "interface-detail.jinja2" %}
 
 <h4>Example Stub Code To Implement this Interface</h4>
