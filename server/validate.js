@@ -602,7 +602,11 @@ function checkPortFunction(node) {
 
           // Check that the direction is valid
           if (['input', 'output', 'observe'].indexOf(direction) == -1) {
-            throw '"' + direction + '" is an invalid direction for port "' + portName + '"';
+            warnings.push({
+              loc: node.loc,
+              title: '"' + direction + '" is an invalid direction for port "' + portName + '"',
+            })
+            continue;
           }
 
           created_port_list[i].directions.push(direction);
