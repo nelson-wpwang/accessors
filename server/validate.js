@@ -219,6 +219,37 @@ function checkGetParameter(node) {
   }
 }
 
+var sends_to_list = [];
+
+function checkSend(node) {
+  if (node.callee.name === 'send') {
+    if ((node.arguments[0] === undefined) || (node.arguments[1] === undefined)) {
+      errors.push({
+        loc: node.loc,
+        title: "get_parameter requires 2 arguments",
+      });
+      return;
+    }
+
+    if (node.arguments[0].type != 'Literal') {
+      errors.push({
+        loc: node.arguments[0].loc,
+        title: "First argument to send must be a string literal",
+        extra: ["It is currently of type "+node.arguments[0].type],
+      });
+      return;
+    }
+
+    if (sends_to_list.indexOf(node.arguments[0].value) == -1) {
+      sends_to_list.push(node.arguments[0].value);
+    }
+
+    // TODO: Would be nice to validate the type of arguments[1], but it will
+    // likely be a variable in many/most implementations and we don't yet have
+    // type-tracking support
+  }
+}
+
 /*jslint unparam: true */
 function checkNewPortUnits(port) {
   if (port.units !== 'currency.usd') {
@@ -625,6 +656,7 @@ function on_read(err, data) {
       checkGetDependency(node);
       checkProvideInterface(node);
       checkGetParameter(node);
+      checkSend(node);
       checkNewPorts(node);
 
     } else if (node.type == 'AssignmentExpression') {
@@ -651,6 +683,7 @@ function on_read(err, data) {
     implements: interface_list,
     dependencies: dependency_list,
     parameters: parameter_list,
+    sends_to: sends_to_list,
     created_ports: created_port_list,
     interface_ports: interface_port_list
   };

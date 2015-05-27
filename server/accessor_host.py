@@ -586,6 +586,9 @@ def process_accessor(
 			errors.append(error)
 		del analyzed['errors']
 
+		sends_to = analyzed['sends_to']
+		del analyzed['sends_to']
+
 		if len(errors):
 			raise CompileError
 
@@ -720,9 +723,6 @@ def process_accessor(
 						})
 					complete_interface = False
 				accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
-		if not complete_interface:
-			# defer raising this so that all of the missing bits are reported
-			raise NotImplementedError
 
 		# Run the other accessor checker concept
 		#err = validate_accessor.check(accessor)
@@ -743,6 +743,26 @@ def process_accessor(
 		if 'dependencies' not in accessor:
 			accessor['dependencies'] = []
 
+		# Validate that things that are sent to with `send` are observe ports
+		for port in sends_to:
+			impl = None
+			for p in accessor['ports']:
+				if p['name'] == port:
+					impl = p
+					break
+			else:
+				errors.appendleft({
+					'title': "Attempt to send to '{}', but that is not a created port or a port in a provided interface".format(port),
+					})
+				complete_interface = False
+				continue
+			if 'observe' not in p['directions']:
+				# Perhaps this should instead implicitly make this an observable
+				# port, perhaps that's too much magic.
+				warnings.appendleft({
+					'title': "Send to '{}' sends to a port that is not declared as an observable port".format(port)
+					})
+
 		if 'code' in accessor:
 			accessor['code_alternates'] = {}
 			for language,v in accessor['code'].items():
@@ -757,6 +777,10 @@ def process_accessor(
 						})
 					raise NotImplementedError
 			del accessor['code']
+
+		if not complete_interface:
+			# defer raising this so that all of the missing bits are reported
+			raise NotImplementedError
 
 		assert len(errors) == 0
 
