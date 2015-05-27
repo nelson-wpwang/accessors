@@ -23,6 +23,7 @@ Accessor: {{ record.name }} | Accessor Library
 
 <h2>Errors</h2>
 
+{% set contents = record.jscontents %}
 <ul>
   {% for err in record.errors %}
   {% set error = err %}

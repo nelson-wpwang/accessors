@@ -28,6 +28,7 @@ Accessor: {{ record.name }} | Accessor Library
   This accessor has compilation warnings. It may not work correctly until these are fixed.
 </div>
 
+{% set contents = record.jscontents %}
 <h2>Warnings</h2>
 <ul>
   {% for err in record.warnings %}

@@ -5,6 +5,7 @@
   {% else %}
   Line {{ error.loc.start.line }}:
   {% endif %}
+  {{ contents|print_error_loc(error.loc)|safe }}
   {% endif %}
   {{ error.title }}
 </li>

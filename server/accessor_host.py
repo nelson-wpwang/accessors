@@ -1004,6 +1004,21 @@ class JinjaTemplateRendering:
 		env.filters['markdown'] = jinja_filter_markdown
 		env.filters['interface'] = lambda iface:\
 			'<a class="interface" href="/view/interface{iface}">{iface}</a>'.format(iface=iface)
+		def print_error_loc(contents, loc):
+			html = ''
+			html += '<pre><code class="language-javascript">'
+			lines = contents.split('\n')
+			i = loc['start']['line']
+			while i <= loc['end']['line']:
+				# index at 'i-1' b/c line numbers are indexed starting at 1
+				html += lines[i-1] + '\n'
+				i += 1
+			if 'column' in loc:
+				# index at '-1' b/c column numbers are indexed starting at 1
+				html += ' '*(loc['column']-1) + '^ Error here\n'
+			html += '</code></pre>'
+			return html
+		env.filters['print_error_loc'] = print_error_loc
 		env.install_null_translations()
 
 		try:
