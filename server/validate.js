@@ -8,6 +8,7 @@ var fs = require('fs');
 var esprima;
 
 var warnings = [];
+var errors = [];
 
 try {
   esprima = require('esprima');
@@ -258,7 +259,10 @@ function checkNewPortParameters(port, pnode) {
         port.type = prop.value.value;
 
         if (!_.contains(legal_port_types, port.type)) {
-          throw port.name + ".type == " + port.type + " not in legal types: " + legal_port_types;
+          errors.push(
+            ["Line "+prop.loc.start.line+": Port '"+port.name+"' has illegal port type '"+port.type+"'",
+             "The legal port types are "+legal_port_types
+             ]);
         }
       } else if (prop.key.name === 'units') {
         if (prop.value.type !== 'Literal') {
@@ -500,6 +504,7 @@ function on_read(err, data) {
 
   data = {
     warnings: warnings,
+    errors: errors,
     runtime_imports: runtime_list,
     implements: interface_list,
     dependencies: dependency_list,

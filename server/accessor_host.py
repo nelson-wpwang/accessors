@@ -2,7 +2,8 @@
 
 import logging
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 import argparse
 import pprint
@@ -460,6 +461,8 @@ def process_accessor(
 		):
 	class ParseError(Exception):
 		pass
+	class CompileError(Exception):
+		pass
 
 	def parse_error(msg, path, line_no=None, line=None):
 		if line_no and line:
@@ -579,6 +582,13 @@ def process_accessor(
 			warnings.append(warning)
 		del analyzed['warnings']
 
+		for error in analyzed['errors']:
+			errors.append(error)
+		del analyzed['errors']
+
+		if len(errors):
+			raise CompileError
+
 		meta.update(analyzed)
 
 		# Embed the actual code into the accessor
@@ -642,8 +652,8 @@ def process_accessor(
 							"It must be fully qualified"])
 						raise NotImplementedError
 					else:
-						errors.appendleft([
-							"The port named " + port['name'] + " does not belong to any implemented interface",
+						warnings.appendleft([
+							"The port named " + port['name'] + " does not belong to any implemented interface or created port",
 							"It is ignored."])
 						norm = ''
 			else:
@@ -735,6 +745,8 @@ def process_accessor(
 					raise NotImplementedError
 			del accessor['code']
 
+		assert len(errors) == 0
+
 		# Save accessor in in-memory DB
 		db.insert(name=meta['name'],
 							compilation_timestamp=arrow.utcnow(),
@@ -784,6 +796,20 @@ def process_accessor(
 							warnings=warnings,
 							errors=[e.args,])
 		log.info('Parse JS error adding {}'.format(view_path))
+	except CompileError as e:
+		for err in e.args:
+			log.error(err)
+		# meta object doesn't exist if this exception thrown
+		# accessor object doesn't exist if this exception thrown
+		db.insert(name=name if name else filename,
+							compilation_timestamp=arrow.utcnow(),
+							group=root,
+							path=view_path,
+							jscontents=contents,
+							accessor=None,
+							warnings=warnings,
+							errors=errors)
+		log.info('Compile error adding {}'.format(view_path))
 	except NotImplementedError as e:
 		# accessor object exists in incomplete state if this
 		# exception is thrown
@@ -796,6 +822,22 @@ def process_accessor(
 							warnings=warnings,
 							errors=errors)
 		log.info('Accessor implemetnation error found when adding {}'.format(view_path))
+	except AssertionError as e:
+		errors = [
+				['Internal error.',
+					'Please report this issue and include all information below',
+					],
+				]
+		# accessor object doesn't exist if this exception thrown
+		db.insert(name=meta['name'],
+							compilation_timestamp=arrow.utcnow(),
+							group=root,
+							path=view_path,
+							jscontents=contents,
+							accessor=None,
+							warnings=warnings,
+							errors=errors)
+		log.info('Assertion error adding {}'.format(view_path))
 	except Exception as e:
 		log.error("Unhandled expection in accessor parsing")
 		log.error(e)
