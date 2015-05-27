@@ -390,37 +390,63 @@ function checkNewPortParameters(port, pnode) {
   //   throw port.name + ": Port with type button must be an input port";
   // }
   if ((port.type === 'select') && (!port.options)) {
-    throw port.name + ": Port with type select must include options";
+    errors.push({
+      loc: pnode.loc,
+      title: port.name + ": Port with type select must include options",
+    });
   }
 
   if (port.min !== undefined) {
     if (typeof port.min !== 'number') {
-      throw port.name + ": min must be a number";
+      errors.push({
+        loc: pnode.loc,
+        title: port.name + ": min must be a number",
+      });
+      return;
     }
     if (port.type === 'integer') {
       if (!isInteger(port.min)) {
-        throw port.name + ": Port is type integer, but min key is not an integer";
+        errors.push({
+          loc: pnode.loc,
+          title: port.name + ": Port is type integer, but min key is not an integer",
+        });
       }
     } else if (port.type !== 'numeric') {
-      throw port.name + ": Port is non-numeric but has a min key";
+      errors.push({
+        loc: pnode.loc,
+        title: port.name + ": Port is non-numeric but has a min key",
+      });
     }
   }
   if (port.max !== undefined) {
     if (typeof port.max !== 'number') {
-      throw port.name + ": max must be a number";
+      errors.push({
+        loc: pnode.loc,
+        title: port.name + ": max must be a number",
+      });
+      return;
     }
     if (port.type === 'integer') {
       if (!isInteger(port.max)) {
-        throw port.name + ": Port is type integer, but max key is not an integer";
+        errors.push({
+          loc: pnode.loc,
+          title: port.name + ": Port is type integer, but max key is not an integer",
+        });
       }
     } else if (port.type !== 'numeric') {
-      throw port.name + ": Port is non-numeric but has a max key";
+      errors.push({
+        loc: pnode.loc,
+        title: port.name + ": Port is non-numeric but has a max key",
+      });
     }
   }
 
   if ((port.min !== undefined) && (port.max !== undefined)) {
     if (!(port.min < port.max)) {
-      throw port.name + ": Port min !< max (" + port.min + " !< " + port.max + ")";
+      errors.push({
+        loc: pnode.loc,
+        title: port.name + ": Port min !< max (" + port.min + " !< " + port.max + ")",
+      });
     }
   }
 
