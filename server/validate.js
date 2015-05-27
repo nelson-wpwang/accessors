@@ -183,15 +183,30 @@ function checkGetParameter(node) {
       parameter.required = true;
     } else {
       if (node.arguments[1].type !== 'Literal') {
-        throw "Default parameter value must be constant for parameter: " + parameter.name;
+        errors.push({
+          loc: node.loc,
+          title: "Default parameter value must be a constant for parameter: " + parameter.name,
+        });
+        return;
       }
       if (parameter.default === undefined) {
         parameter.default = node.arguments[1].value;
       } else {
         if (parameter.default !== node.arguments[1].value) {
-          throw "Inconsistent defaults for parameter: " + parameter.name;
+          errors.push({
+            loc: node.loc,
+            title: "Inconsistent defaults for parameter: " + parameter.name,
+            extra: ["Attempt to set default to "+node.arguments[1].value+", but it was previously set to "+parameter.default],
+          });
         }
       }
+    }
+
+    if (node.arguments[2] !== undefined) {
+      warnings.push({
+        loc: node.loc,
+        title: "The get_parameter function takes up to 2 arguments, the rest are ignored",
+      });
     }
   }
 }
