@@ -167,6 +167,14 @@ function checkGetParameter(node) {
   var parameter = null;
 
   if (node.callee.name === 'get_parameter') {
+    if (node.arguments[0] === undefined) {
+      errors.push({
+        loc: node.loc,
+        title: "get_parameter requires at least 1 argument",
+      });
+      return;
+    }
+
     parameter = _.find(parameter_list, function (cand) {
       return cand.name === node.arguments[0].value;
     });
