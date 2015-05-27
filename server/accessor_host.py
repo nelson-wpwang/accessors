@@ -1489,8 +1489,8 @@ class handler_dev (tornado.web.RequestHandler):
 
 		if new_accessor['errors']:
 			for err in new_accessor['errors']:
-				error += err[0] + '\n'
-				for e in err[1:]:
+				error += err['title'] + '\n'
+				for e in err['extra']:
 					error += '\t' + e + '\n'
 			self.send_error(500, headers={'X-ACC-Name': name}, error=error)
 			return
