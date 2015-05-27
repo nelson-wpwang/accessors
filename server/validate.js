@@ -392,7 +392,7 @@ function checkNewPorts(node) {
       if (parametersNode.type !== 'ObjectExpression') {
         errors.push({
           loc: parametersNode.loc,
-          title: "Third argument to 'create_port' must be a dictionary of named parameters",
+          title: "Second argument to 'create_port' must be a dictionary of named parameters",
           extra: ["The current argument is of type "+parametersNode.type],
         });
       }
@@ -400,6 +400,14 @@ function checkNewPorts(node) {
     } else {
       // We're responsible for setting type to the default
       port.type = 'string';
+    }
+
+    if (node.arguments[2] !== undefined) {
+      var warning = {
+        title: "The create_port function takes only 2 arguments, the rest are ignored",
+        loc: node.loc,
+      };
+      warnings.push(warning);
     }
 
     created_port_list.push(port);
