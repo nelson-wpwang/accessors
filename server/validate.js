@@ -368,10 +368,18 @@ function checkNewPorts(node) {
 
     var legal_port_regex = /^[A-Za-z]\w*$/;
     if (nameNode.type !== 'Literal') {
-      throw "First argument to 'create_port' must be a fixed string";
+      errors.push({
+        loc: node.loc,
+        title: "First argument to 'create_port' must be a fixed string",
+        extra: ["The current argument is of type "+nameNode.type],
+      });
     }
     if (!legal_port_regex.test(nameNode.value)) {
-      throw "Port name " + nameNode.value + " is not a legal port name";
+      errors.push({
+        loc: nameNode.loc,
+        title: "Port name " + nameNode.value + " is not a legal port name",
+        extra: ["Legal ports must match "+legal_port_regex],
+      });
     }
 
     var port = {
@@ -382,7 +390,11 @@ function checkNewPorts(node) {
 
     if (parametersNode !== undefined) {
       if (parametersNode.type !== 'ObjectExpression') {
-        throw "Third argument to 'create_port' must be a dictionary of named parameters";
+        errors.push({
+          loc: parametersNode.loc,
+          title: "Third argument to 'create_port' must be a dictionary of named parameters",
+          extra: ["The current argument is of type "+parametersNode.type],
+        });
       }
       checkNewPortParameters(port, parametersNode.properties);
     } else {
