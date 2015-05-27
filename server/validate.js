@@ -145,15 +145,8 @@ function checkProvideInterface(node) {
     if (node.arguments[1] !== undefined) {
       var warning = {
         title: "The provide_interface function takes only 1 argument, the rest are ignored",
+        loc: node.loc,
       };
-      if (node.loc.start.line != node.loc.end.line) {
-        warning.lines = {
-          start: node.loc.start.line,
-          end: node.loc.end.line,
-        };
-      } else {
-        warning.line = node.loc.start.line;
-      }
       warnings.push(warning);
     }
 
@@ -261,7 +254,7 @@ function checkNewPortParameters(port, pnode) {
 
         if (!_.contains(legal_port_types, port.type)) {
           errors.push({
-            line: prop.loc.start.line,
+            loc: prop.loc,
             title: "Port '"+port.name+"' has illegal port type '"+port.type+"'",
             extra: ["The legal port types are "+legal_port_types],
           });

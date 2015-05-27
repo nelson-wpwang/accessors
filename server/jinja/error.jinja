@@ -1,8 +1,10 @@
 <li>
-  {% if error.lines %}
-  Lines {{ error.lines.start }}&ndash;{{ error.lines.end }}:
-  {% elif error.line %}
-  Line {{ error.line }}:
+  {% if error.loc %}
+  {% if error.loc.start.line != error.loc.end.line %}
+  Lines {{ error.loc.start.line }}&ndash;{{ error.loc.end.line }}:
+  {% else %}
+  Line {{ error.loc.start.line }}:
+  {% endif %}
   {% endif %}
   {{ error.title }}
 </li>
