@@ -1489,6 +1489,13 @@ class handler_dev (tornado.web.RequestHandler):
 
 		if new_accessor['errors']:
 			for err in new_accessor['errors']:
+				if 'loc' in error:
+					start = error['loc']['start']['line']
+					end   = error['loc']['end']['line']
+					if start != end:
+						error += 'Lines {}-{}: '.format(start, end)
+					else:
+						error += 'Line {}'.format(start)
 				error += err['title'] + '\n'
 				for e in err['extra']:
 					error += '\t' + e + '\n'
