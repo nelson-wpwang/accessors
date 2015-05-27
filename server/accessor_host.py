@@ -578,6 +578,22 @@ def process_accessor(
 		raw_analyzed = analyzed.stdout.decode('utf-8')
 		analyzed = json.loads(raw_analyzed)
 
+		if 'parse_error' in analyzed:
+			errors.appendleft({
+				'loc': {
+					'start': {
+						'line': analyzed['parse_error']['lineNumber'],
+						},
+					'end': {
+						'line': analyzed['parse_error']['lineNumber'],
+						},
+					'column': analyzed['parse_error']['column'],
+					},
+				'title': analyzed['parse_error']['description'],
+				'extra': ["Failed to parse the JavaScript code. No further checks could be run"],
+				})
+			raise NotImplementedError
+
 		for warning in analyzed['warnings']:
 			warnings.append(warning)
 		del analyzed['warnings']

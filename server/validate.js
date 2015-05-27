@@ -651,8 +651,15 @@ function on_read(err, data) {
   // Clear ports
   //port_list = [];
 
-  syntax = esprima.parse(data, {loc: true});
-  //console.log(JSON.stringify(syntax, null, 1));
+  try {
+    syntax = esprima.parse(data, {loc: true});
+  } catch (e) {
+    data = {
+      parse_error: e,
+    }
+    console.log(JSON.stringify(data));
+    process.exit();
+  }
 
   traverse(syntax.body, function (node) {
     if (node.type === 'CallExpression') {
