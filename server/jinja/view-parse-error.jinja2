@@ -25,12 +25,8 @@ Accessor: {{ record.name }} | Accessor Library
 
 <ul>
   {% for err in record.errors %}
-  <li>{{ err[0] }}</li>
-  <ul>
-    {% for info in err[1:] %}
-    <li>{{ info }}</li>
-    {% endfor %}
-  </ul>
+  {% set error = err %}
+  {% include "error.jinja" %}
   {% endfor %}
 </ul>
 

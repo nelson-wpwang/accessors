@@ -616,11 +616,12 @@ def process_accessor(
 			if 'display_name' not in port:
 				port['display_name'] = port['name'].split('.')[-1]
 			if len(port['directions']) == 0:
-				errors.appendleft([
-					"Created port {} implements no directions".format(port['name']),
-					"All ports must define at least one of [input, output, observe]",
-					"e.g., {}.output = function() {{ return 'current_value'; }}".format(port['name']),
-					])
+				errors.appendleft({
+					'title': "Created port {} implements no directions".format(port['name']),
+					'extra': [
+						"All ports must define at least one of [input, output, observe]",
+						"e.g., {}.output = function() {{ return 'current_value'; }}".format(port['name']),
+					]})
 				complete_interface = False
 
 		inferred_iface_ports = {}
@@ -646,31 +647,38 @@ def process_accessor(
 					norm = inferred_iface_ports[port['name']]
 				else:
 					if port['name'] in inferred_iface_ports_to_delete:
-						errors.appendleft([
-							"Unqualified ambiguous port",
-							"The port named " + port['name'] + " belongs to multiple implemented interfaces",
-							"It must be fully qualified"])
+						errors.appendleft({
+							'title': "Unqualified ambiguous port",
+							'extra': [
+								"The port named " + port['name'] + " belongs to multiple implemented interfaces",
+								"It must be fully qualified",
+							]})
 						raise NotImplementedError
 					else:
-						warnings.appendleft([
-							"The port named " + port['name'] + " does not belong to any implemented interface or created port",
-							"It is ignored."])
+						warnings.appendleft({
+							'title': 'Undeclared port implementation',
+							'extra': [
+								"The port named " + port['name'] + " does not belong to any implemented interface or created port.",
+								"It is ignored."]
+							})
 						norm = ''
 			else:
 				# Port is a fully qualified name
 				try:
 					norm = Interface.normalize(port['name'])
 				except KeyError:
-					errors.appendleft([
-						"The port named " + port['name'] + " does not match any known interface",
-						])
+					errors.appendleft({
+						'title': "The port named " + port['name'] + " does not match any known interface",
+						})
 					raise NotImplementedError
 
 			if norm in accessor['normalized_interface_ports']:
-				errors.appendleft([
-					'Duplicate port conflict',
-					'Found trying to insert ' + port['name'],
-					'But had previously inserted ' + norm])
+				errors.appendleft({
+					'title': 'Duplicate port conflict',
+					'extra': [
+						'Found trying to insert ' + port['name'],
+						'But had previously inserted ' + norm
+					]})
 				raise NotImplementedError
 			accessor['normalized_interface_ports'].append(norm)
 			name_map[norm] = port
@@ -679,31 +687,37 @@ def process_accessor(
 			iface = interface_tree[claim['interface']]
 			for req in iface:
 				if req not in accessor['normalized_interface_ports']:
-					errors.appendleft([
-						"Interface %s requires %s" % (
-							claim['interface'],
-							req,
-							),
-						"But %s from %s only implements %s" % (
-							accessor['name'],
-							accessor['_path'],
-							accessor['normalized_interface_ports'],
-							)
-						])
+					errors.appendleft({
+						'title': 'Incomplete interface implementation -- missing port',
+						'extra': [
+							"Interface %s requires %s" % (
+								claim['interface'],
+								req,
+								),
+							"But %s from %s only implements %s" % (
+								accessor['name'],
+								accessor['_path'],
+								accessor['normalized_interface_ports'],
+								)
+							]
+						})
 					complete_interface = False
 				if iface[req]['directions'] != name_map[req]['directions']:
-					errors.appendleft([
-						"Interface %s port %s requires %s" % (
-							iface,
-							req,
-							iface[req]['directions'],
-							),
-						"But %s from %s only implements %s" % (
-							accessor['name'],
-							accessor['_path'],
-							name_map[req]['directions'],
-							)
-						])
+					errors.appendleft({
+						'title': 'Incomplete interface implemetnation -- missing port direction',
+						'extra': [
+							"Interface %s port %s requires %s" % (
+								iface,
+								req,
+								iface[req]['directions'],
+								),
+							"But %s from %s only implements %s" % (
+								accessor['name'],
+								accessor['_path'],
+								name_map[req]['directions'],
+								)
+							]
+						})
 					complete_interface = False
 				accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
 		if not complete_interface:
@@ -738,10 +752,9 @@ def process_accessor(
 				accessor['code_alternates'][language] = code
 
 				if language != 'javascript':
-					errors.appendleft([
-						'Language Error',
-						'Accessor code must be javascript.',
-						])
+					errors.appendleft({
+						'title': 'Language Error: Accessor code must be javascript.',
+						})
 					raise NotImplementedError
 			del accessor['code']
 
@@ -766,6 +779,10 @@ def process_accessor(
 	except ParseError as e:
 		for err in e.args:
 			log.error(err)
+		errors.appendleft({
+			'title': e.args[0],
+			'extra': [e.args[1],],
+			})
 		# meta object doesn't exist if this exception thrown
 		# accessor object doesn't exist if this exception thrown
 		db.insert(name=name if name else filename,
@@ -775,17 +792,13 @@ def process_accessor(
 							jscontents=contents,
 							accessor=None,
 							warnings=warnings,
-							errors=[e.args,])
+							errors=errors)
 		log.info('Parse error adding {}'.format(view_path))
 	except sh.ErrorReturnCode as e:
-		errors = [
-				['Internal error.',
-					'Please report this issue and include the full traceback below',
-					],
-				['Full traceback',
-					e.stderr.decode("unicode_escape"),
-					]
-				]
+		errors.appendleft({
+			'title': 'Internal error. Please report this issue and include the full traceback below',
+			'extra': [e.stderr.decode("unicode_escape"), ]
+			})
 		# accessor object doesn't exist if this exception thrown
 		db.insert(name=meta['name'],
 							compilation_timestamp=arrow.utcnow(),
@@ -794,7 +807,7 @@ def process_accessor(
 							jscontents=contents,
 							accessor=None,
 							warnings=warnings,
-							errors=[e.args,])
+							errors=errors)
 		log.info('Parse JS error adding {}'.format(view_path))
 	except CompileError as e:
 		for err in e.args:
@@ -823,11 +836,9 @@ def process_accessor(
 							errors=errors)
 		log.info('Accessor implemetnation error found when adding {}'.format(view_path))
 	except AssertionError as e:
-		errors = [
-				['Internal error.',
-					'Please report this issue and include all information below',
-					],
-				]
+		errors.appendleft({
+			'title': 'Internal error.  Please report this issue and include all information below',
+			})
 		# accessor object doesn't exist if this exception thrown
 		db.insert(name=meta['name'],
 							compilation_timestamp=arrow.utcnow(),

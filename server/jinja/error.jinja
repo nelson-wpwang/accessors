@@ -1,0 +1,16 @@
+<li>
+  {% if error.lines %}
+  Lines {{ error.lines.start }}&ndash;{{ error.lines.end }}:
+  {% elif error.line %}
+  Line {{ error.line }}:
+  {% endif %}
+  {{ error.title }}
+</li>
+<ul>
+  {% for extra in error.extra  %}
+  <li>
+    {{ extra }}
+  </li>
+  {% endfor %}
+</ul>
+

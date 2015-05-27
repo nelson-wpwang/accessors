@@ -143,17 +143,18 @@ function checkProvideInterface(node) {
     };
 
     if (node.arguments[1] !== undefined) {
+      var warning = {
+        title: "The provide_interface function takes only 1 argument, the rest are ignored",
+      };
       if (node.loc.start.line != node.loc.end.line) {
-        warnings.push(
-            ["In `provide_interface` on lines " + node.loc.start.line + "-" + node.loc.end.line,
-             "The provide_interface function takes only 1 argument, the rest are ignored",
-             ]);
+        warning.lines = {
+          start: node.loc.start.line,
+          end: node.loc.end.line,
+        };
       } else {
-        warnings.push(
-            ["In `provide_interface` on line " + node.loc.start.line,
-             "The provide_interface function takes only 1 argument, the rest are ignored",
-             ]);
+        warning.line = node.loc.start.line;
       }
+      warnings.push(warning);
     }
 
     interface_list.push(iface);
@@ -259,10 +260,11 @@ function checkNewPortParameters(port, pnode) {
         port.type = prop.value.value;
 
         if (!_.contains(legal_port_types, port.type)) {
-          errors.push(
-            ["Line "+prop.loc.start.line+": Port '"+port.name+"' has illegal port type '"+port.type+"'",
-             "The legal port types are "+legal_port_types
-             ]);
+          errors.push({
+            line: prop.loc.start.line,
+            title: "Port '"+port.name+"' has illegal port type '"+port.type+"'",
+            extra: ["The legal port types are "+legal_port_types],
+          });
         }
       } else if (prop.key.name === 'units') {
         if (prop.value.type !== 'Literal') {

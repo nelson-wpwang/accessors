@@ -23,6 +23,7 @@ Accessor: {{ record.name }} | Accessor Library
 <em>Last Updated: {{ record.compilation_timestamp.humanize() }}</em>
 
 {% if record.warnings %}
+<hr />
 <div class="alert alert-warning" role="alert">
   This accessor has compilation warnings. It may not work correctly until these are fixed.
 </div>
@@ -30,14 +31,11 @@ Accessor: {{ record.name }} | Accessor Library
 <h2>Warnings</h2>
 <ul>
   {% for err in record.warnings %}
-  <li>{{ err[0] }}</li>
-  <ul>
-    {% for info in err[1:] %}
-    <li>{{ info }}</li>
-    {% endfor %}
-  </ul>
+  {% set error = err %}
+  {% include "error.jinja" %}
   {% endfor %}
 </ul>
+<hr />
 {% endif %}
 
 
