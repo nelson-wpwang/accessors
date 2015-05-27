@@ -86,6 +86,12 @@
     {% endblock %}
     {% block js_bootstrap %}
         <script src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
+        <script>
+                /* Turn on bootstrap tooltips */
+                $(function () {
+                  $('[data-toggle="tooltip"]').tooltip()
+                })
+        </script>
     {% endblock %}
     {% block js_prism %}
         <script src="{{ STATIC_URL }}js/prism.js"></script>
