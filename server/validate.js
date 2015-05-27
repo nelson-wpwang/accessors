@@ -127,14 +127,22 @@ function checkProvideInterface(node) {
 
   if (node.callee.name === 'provide_interface') {
     if (node.arguments[0].type !== 'Literal') {
-      throw "provide_interface() first argument must be a string literal";
+      errors.push({
+        loc: node.loc,
+        title: "provide_interface() first argument must be a string literal",
+      });
+      return;
     }
 
     iface = _.find(interface_list, function (cand) {
       return cand.interface === node.arguments[0].value;
     });
     if (iface !== undefined) {
-      throw "Multiple provides of same interface: " + node.arguments[0].value;
+      errors.push({
+        loc: node.loc,
+        title: "Multiple provides of same interface: " + node.arguments[0].value,
+      });
+      return;
     }
 
     iface = {
@@ -143,11 +151,10 @@ function checkProvideInterface(node) {
     };
 
     if (node.arguments[1] !== undefined) {
-      var warning = {
-        title: "The provide_interface function takes only 1 argument, the rest are ignored",
+      warnings.push({
         loc: node.loc,
-      };
-      warnings.push(warning);
+        title: "The provide_interface function takes only 1 argument, the rest are ignored",
+      });
     }
 
     interface_list.push(iface);
