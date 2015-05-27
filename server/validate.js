@@ -207,48 +207,90 @@ function checkNewPortParameters(port, pnode) {
       prop = pnode[idx];
 
       if (prop.type !== 'Property') {
-        throw "Unxpected non-property in port parameters: " + prop;
+        errors.push({
+          loc: pnode.loc,
+          title: "Unxpected non-property in port parameters: " + prop,
+        });
+        continue;
       }
       if (prop.key.type !== 'Identifier') {
-        throw "Property keys must be known identifiers. Got: " + prop.key;
+        errors.push({
+          loc: pnode.loc,
+          title: "Property keys must be known identifiers. Got: '"+prop.key+"' which is of type "+prop.key.type,
+        });
+        continue;
       }
       // prop.key.name is valid here
       if (prop.kind !== 'init') {
+        // Leave as throw b/c I want to see an example
         throw "Unknown port property kind: " + prop.kind;
       }
       if (prop.method) {
-        throw "Property " + prop.key.name + " cannot be a function";
+        errors.push({
+          loc: pnode.loc,
+          title: "Property '" + prop.key.name + "' cannot be a function",
+        });
+        continue;
       }
       if (prop.shorthand) {
+        // Leave as throw b/c I want to see an example
         throw "Unknown prop.shorthand == true for " + prop.key.name;
       }
       if (prop.computed) {
-        throw "Port properties must be static values (not computed) in " + prop.key.name;
+        errors.push({
+          loc: pnode.loc,
+          title: "Port properties must be static values (not computed) in " + prop.key.name,
+        });
+        continue;
       }
 
       // Now validate the actual properties:
       if (prop.key.name === 'display_name') {
         if (prop.value.type !== 'Literal') {
-          throw port.name + ".display_name property must be a static string";
+          errors.push({
+            loc: prop.loc,
+            title: port.name + " display_name must be a static string",
+          });
+          continue;
         }
         if (port.display_name !== undefined) {
-          throw port.name + ": duplicate key display_name";
+          errors.push({
+            loc: prop.loc,
+            title: port.name + ": duplicate key display_name. This is the second definiton.",
+          });
+          continue;
         }
         port.display_name = prop.value.value;
       } else if (prop.key.name === 'description') {
         if (prop.value.type !== 'Literal') {
-          throw port.name + ".description property must be a static string";
+          errors.push({
+            loc: prop.loc,
+            title: port.name + " description must be a static string",
+          });
+          continue;
         }
         if (port.description !== undefined) {
-          throw port.name + ": duplicate key description";
+          errors.push({
+            loc: prop.loc,
+            title: port.name + ": duplicate key description. This is the second definiton.",
+          });
+          continue;
         }
         port.description = prop.value.value;
       } else if (prop.key.name === 'type') {
         if (prop.value.type !== 'Literal') {
-          throw port.name + ".type property must be a static string";
+          errors.push({
+            loc: prop.loc,
+            title: port.name + " type must be a static string",
+          });
+          continue;
         }
         if (port.type !== undefined) {
-          throw port.name + ": duplicate key type";
+          errors.push({
+            loc: prop.loc,
+            title: port.name + ": duplicate key type. This is the second definiton.",
+          });
+          continue;
         }
         port.type = prop.value.value;
 
@@ -258,53 +300,82 @@ function checkNewPortParameters(port, pnode) {
             title: "Port '"+port.name+"' has illegal port type '"+port.type+"'",
             extra: ["The legal port types are "+legal_port_types],
           });
+          continue;
         }
       } else if (prop.key.name === 'units') {
         if (prop.value.type !== 'Literal') {
-          throw port.name + ".units property must be a static string";
+          errors.push({
+            loc: prop.loc,
+            title: port.name + " units must be a static string",
+          });
+          continue;
         }
         if (port.units !== undefined) {
-          throw port.name + ": duplicate key units";
+          errors.push({
+            loc: prop.loc,
+            title: port.name + ": duplicate key units. This is the second definiton.",
+          });
+          continue;
         }
         port.units = prop.value.value;
       } else if (prop.key.name === 'default') {
-        if (prop.value.type !== 'Literal') {
-          throw port.name + ".default property must be static";
-        }
-        if (port.default !== undefined) {
-          throw port.name + ": duplicate key default";
-        }
-        port.default = prop.value.value;
+        warnings.push({
+          loc: prop.loc,
+          title: port.name + " default option is deprecated and is ignored",
+        });
       } else if (prop.key.name === 'options') {
         if (port.options !== undefined) {
-          throw port.name + ": duplicate key options";
+          errors.push({
+            loc: prop.loc,
+            title: port.name + ": duplicate key options. This is the second definiton.",
+          });
+          continue;
         }
         port.options = [];
         options = prop.value;
         if (options.type !== 'ArrayExpression') {
-          throw port.name + ": options value must be an array";
+          errors.push({
+            loc: options.loc,
+            title: port.name + ": options value must be an array",
+            extra: ["It is currently of type " + options.type],
+          });
+          continue;
         }
         for (opt_idx in options.elements) {
           if (options.elements.hasOwnProperty(opt_idx)) {
             option = options.elements[opt_idx];
             if (option.type !== 'Literal') {
-              throw port.name + ".options: Elements must be static";
+              errors.push({
+                loc: option.loc,
+                title: port.name + ".options: Elements must be static",
+              });
             }
             port.options.push(option.value);
           }
         }
       } else if (prop.key.name === 'min') {
         if (port.min !== undefined) {
-          throw port.name + ": duplicate key min";
+          errors.push({
+            loc: prop.loc,
+            title: port.name + ": duplicate key min. This is the second definiton.",
+          });
+          continue;
         }
         port.min = prop.value.value;
       } else if (prop.key.name === 'max') {
         if (port.max !== undefined) {
-          throw port.name + ": duplicate key max";
+          errors.push({
+            loc: prop.loc,
+            title: port.name + ": duplicate key max. This is the second definiton.",
+          });
+          continue;
         }
         port.max = prop.value.value;
       } else {
-        throw "Illegal port property: " + prop.key.name;
+        warning.push({
+          loc: prop.loc,
+          title: "Unknown port option: "+prop.key.name+". It is ignored.",
+        });
       }
     }
   }
