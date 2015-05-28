@@ -1006,14 +1006,19 @@ class JinjaTemplateRendering:
 			'<a class="interface" href="/view/interface{iface}">{iface}</a>'.format(iface=iface)
 		def print_error_loc(contents, loc):
 			html = ''
-			html += '<pre><code class="language-javascript">'
 			lines = contents.split('\n')
 			start = loc['start']['line']
 			end   = loc['end']['line']
-			# Go one line before and after for some context
-			i = 0 if start == 0 else start-1
+			# Go a few lines before and after for some context
+			i = start - 3
+			if i < 0:
+				i = 0
 			# Harder to go one line after though since could be multi-line and
 			# less clear where the column indicator should go; skip for now
+
+			# data-line=start-i b/c line highlighting and line offset don't know
+			# about each other, then +1 b/c it's 1-indexed not 0-indexed
+			html += '<pre class="line-numbers" data-start="{}" data-line="{}"><code class="language-javascript">'.format(i, start-i+1)
 			while i <= end:
 				# index at 'i-1' b/c line numbers are indexed starting at 1
 				html += lines[i-1] + '\n'
@@ -1021,6 +1026,8 @@ class JinjaTemplateRendering:
 			if 'column' in loc:
 				# index at '-1' b/c column numbers are indexed starting at 1
 				html += ' '*(loc['column']-1) + '^ Error here\n'
+			# Remove last newline
+			html = html[:-1]
 			html += '</code></pre>'
 			return html
 		env.filters['print_error_loc'] = print_error_loc
