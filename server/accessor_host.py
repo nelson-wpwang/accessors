@@ -1008,8 +1008,13 @@ class JinjaTemplateRendering:
 			html = ''
 			html += '<pre><code class="language-javascript">'
 			lines = contents.split('\n')
-			i = loc['start']['line']
-			while i <= loc['end']['line']:
+			start = loc['start']['line']
+			end   = loc['end']['line']
+			# Go one line before and after for some context
+			i = 0 if start == 0 else start-1
+			# Harder to go one line after though since could be multi-line and
+			# less clear where the column indicator should go; skip for now
+			while i <= end:
 				# index at 'i-1' b/c line numbers are indexed starting at 1
 				html += lines[i-1] + '\n'
 				i += 1
