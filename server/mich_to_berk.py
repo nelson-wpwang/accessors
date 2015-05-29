@@ -20,6 +20,8 @@ def convert_type(type_str):
 		return 'string'
 	elif type_str == 'numeric':
 		return 'number'
+	elif type_str == 'integer':
+		return 'number'
 	elif type_str == 'bool':
 		return 'boolean'
 	elif type_str == 'color':
@@ -38,7 +40,17 @@ def convert(accessor):
 	# Create a local copy so we can mess with it
 	accessor = copy.deepcopy(accessor)
 
+	log.debug("Converting %s", accessor['name'])
+
 	code = accessor['code_alternates']['javascript']
+
+	# HACK Because I want to test HueSingle
+	ports = []
+	for port in accessor['ports']:
+		if port['name'] != 'PCB':
+			ports.append(port)
+	accessor['ports'] = ports
+	code = code.replace('PCB.', '_HACK_NO_PCB_')
 
 	# Flip order of send arguments
 	code = '''
@@ -83,11 +95,120 @@ rt.http.put = function (url, body) {
 };
 
 '''
+		elif lib == 'color':
+			rt += '''\
+/* Normally, we use the tinycolor.js library, but it's big so
+ * pulling in a quick hand-rolled 'close-enough' from
+ * http://www.cs.rit.edu/~ncs/color/t_convert.html */
+rt.color = {};
+rt.color.hex_to_hsv = function (RGB) {
+	var r, g, b;
+	var h, s, v;
+
+	// Hex RBG to r,g,b [0..1]
+	r = parseInt(RGB.slice(0,2)) / 255.0;
+	g = parseInt(RGB.slice(2,4)) / 255.0;
+	b = parseInt(RGB.slice(4,6)) / 255.0;
+
+	min = Math.min( r, g, b );
+	max = Math.max( r, g, b );
+	v = max;				// v
+
+	delta = max - min;
+	if( max != 0 )
+		s = delta / max;		// s
+	else {
+		// r = g = b = 0		// s = 0, v is undefined
+		s = 0;
+		h = -1;
+		return {h: h, s: s, v: v}
+	}
+	if( r == max )
+		h = ( g - b ) / delta;		// between yellow & magenta
+	else if( g == max )
+		h = 2 + ( b - r ) / delta;	// between cyan & yellow
+	else
+		h = 4 + ( r - g ) / delta;	// between magenta & cyan
+	h *= 60;				// degrees
+	if( h < 0 )
+		h += 360;
+	return {h: h, s: s, v: v}
+};
+rt.color.hsv_to_hex = function (HSV) {
+	var h, s, v;
+	var r, g, b;
+
+	h = HSV.h;
+	s = HSV.s;
+	v = HSV.v;
+
+	var i;
+	var f, p, q, t;
+	if( s == 0 ) {
+		// achromatic (grey)
+		r = g = b = v;
+	} else {
+		h /= 60;			// sector 0 to 5
+		i = Math.floor( h );
+		f = h - i;			// factorial part of h
+		p = v * ( 1 - s );
+		q = v * ( 1 - s * f );
+		t = v * ( 1 - s * ( 1 - f ) );
+		switch( i ) {
+			case 0:
+				r = v;
+				g = t;
+				b = p;
+				break;
+			case 1:
+				r = q;
+				g = v;
+				b = p;
+				break;
+			case 2:
+				r = p;
+				g = v;
+				b = t;
+				break;
+			case 3:
+				r = p;
+				g = q;
+				b = v;
+				break;
+			case 4:
+				r = t;
+				g = p;
+				b = v;
+				break;
+			default:		// case 5:
+				r = v;
+				g = p;
+				b = q;
+				break;
+		}
+	}
+
+	// Convert r,b,g to "RRGGBB"
+	var R = Number(r).toString(16); 
+	R = R.length == 1 ? "0" + R : R;
+	var G = Number(r).toString(16); 
+	G = G.length == 1 ? "0" + G : G;
+	var B = Number(r).toString(16); 
+	B = B.length == 1 ? "0" + B : B;
+
+	return R+B+G;
+};
+'''
 		else:
 			log.warn("No support for required library: %s", lib)
 			all_libs = False
 	if not all_libs:
 		raise NotImplementedError
+
+	# Debugging
+	rt = 'print("LOAD START");\n\n' + rt
+	rt += '\nprint("LOAD: RT DONE");\n\n'
+
 	code = rt + code
 
 	# Change port functions to be single literals
@@ -124,6 +245,7 @@ rt.http.put = function (url, body) {
 	# Add a get_parameter implementation
 	code = code + '''\
 get_parameter = function (param) {
+	print("GETTING PARAMETER " + param);
 	return get(param);
 }
 
@@ -132,37 +254,44 @@ get_parameter = function (param) {
 	# Add a exports.setup
 	setup_template = string.Template('''\
 exports.setup = function() {
+	print("SETUP");
 	accessor.author('$author');
 	accessor.version('0.1');
 	accessor.description('$description');
-	$parameters
-	$inputs
-	$outputs
-	$observes
+
+$parameters
+$inputs
+$outputs
+$observes
 };
 
 ''')
 	parameter_with_default_template = string.Template('''\
-accessor.input('$input', {
+	accessor.input('$input', {
 		'type': 'string',
 		'default': '$value',
-	});''')
+	});
+''')
 	parameter_without_default_template = string.Template('''\
-accessor.input('$input', {
+	accessor.input('$input', {
 		'type': 'string',
-	});''')
+	});
+''')
 	input_template = string.Template('''\
-accessor.input('$input', {
+	accessor.input('$input', {
 		'type': '$type',
-	});''')
+	});
+''')
 	output_template = string.Template('''\
-accessor.output('$output', {
+	accessor.output('$output', {
 		'type': '$type',
-	});''')
+	});
+''')
 	observe_template = string.Template('''\
-accessor.output('$output', {
+	accessor.output('$output', {
 		'type': '$type',
-	});''')
+	});
+''')
 
 	parameters = ''
 	for param in accessor['parameters']:
@@ -215,6 +344,7 @@ accessor.output('$output', {
 	# Add a exports.fire
 	fire_template = string.Template('''\
 exports.fire = function() {
+	print("FIRE CALLED");
 $fires
 };
 
@@ -222,7 +352,6 @@ $fires
 
 	# TODO: Open problem to map our `observe` construct
 	fire_fn_template = string.Template('''\
-	print("FIRE CALLED");
 	_berkeley_send(_${port_fn}_output(), '$port');
 ''')
 
@@ -412,10 +541,18 @@ $handles
 		# missing in one go
 		code = code[:y] + code[fn_start:]
 		if fn not in SUPPORTED_BLOCKING_FUNCTIONS:
-			log.error("Conversion requires unsupported blocking function: %s", fn)
-			all_converted = False
+			try:
+				# Since calls block now, locally defined generators can be
+				# safely reduced to regular functions, allow local definitions
+				code.index('function ' + fn)
+			except ValueError:
+				log.error("Conversion requires unsupported blocking function: %s", fn)
+				all_converted = False
 
 	if not all_converted:
 		raise NotImplementedError
+
+	code += '\nprint("LOAD DONE");\n\n'
+	log.debug("Successfully converted %s", accessor['name'])
 
 	return code

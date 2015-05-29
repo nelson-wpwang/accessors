@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-import logging
+import coloredlogs, logging
+#coloredlogs.install()
+coloredlogs.install(level=logging.DEBUG)
 log = logging.getLogger(__name__)
-#logging.basicConfig(level=logging.DEBUG)
-logging.basicConfig(level=logging.INFO)
 
 import argparse
 import pprint
@@ -483,6 +483,8 @@ def process_accessor(
 	# Strip .js from path
 	view_path = path[0:-3]
 
+	log.info('Adding accessor {}'.format(view_path))
+
 	try:
 		name = None
 		author = None
@@ -834,7 +836,7 @@ def process_accessor(
 			interface = interface_tree[iface['interface']]
 			interface.register_accessor(view_path)
 
-		log.info('Adding accessor {}'.format(view_path))
+		log.debug('Adding complete accessor {}'.format(view_path))
 	except ParseError as e:
 		for err in e.args:
 			log.error(err)

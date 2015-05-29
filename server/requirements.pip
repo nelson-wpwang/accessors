@@ -1,4 +1,5 @@
 arrow
+coloredlogs
 jinja2
 markdown
 pydblite
