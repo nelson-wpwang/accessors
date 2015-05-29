@@ -70,6 +70,12 @@ class pushd(object):
 		os.chdir(self.cwd)
 
 
+
+import mich_to_berk
+
+
+
+
 try:
 	parse_js = sh.Command(os.path.abspath('./validate.js'))
 except sh.CommandNotFound:
@@ -103,6 +109,7 @@ accessor_db_cols = ('name',
                     'path',
                     'jscontents',
                     'accessor',
+                    'berkeleyJS',
                     'warnings',
                     'errors')
 
@@ -800,6 +807,17 @@ def process_accessor(
 
 		assert len(errors) == 0
 
+		# Only try if no warnings, make too many assumptions o/w
+		berkeley = None
+		if len(warnings) == 0:
+			try:
+				berkeley = mich_to_berk.convert(accessor)
+			except NotImplementedError:
+				pass
+			except Exception:
+				log.error("Uncaught exception from mich_to_berk")
+				raise Exception
+
 		# Save accessor in in-memory DB
 		db.insert(name=meta['name'],
 							compilation_timestamp=arrow.utcnow(),
@@ -807,6 +825,7 @@ def process_accessor(
 							path=view_path,
 							jscontents=contents,
 							accessor=accessor,
+							berkeleyJS=berkeley,
 							warnings=warnings,
 							)
 
@@ -1553,6 +1572,36 @@ class ServeDevAccessorXML (ServeAccessorXML):
 	def get(self, path):
 		return super().get('/' + path)
 
+
+
+################################################################################
+### PtolemyII Support
+################################################################################
+
+class handler_ptolemy_index (tornado.web.RequestHandler):
+	def get(self):
+		index = []
+		for record in accessors_db:
+			if 'berkeleyJS' in record and record['berkeleyJS']:
+				index.append(record['accessor']['_path'])
+
+		self.write(json.dumps(index))
+
+class handler_ptolemy_js (tornado.web.RequestHandler):
+	def get(self, path):
+		log.debug("get accessor >>{}<<".format(path))
+		if path[0] != '/':
+			path = '/' + path
+
+		db  = accessors_db
+		orig = first(db('path') == path)
+		if not orig:
+			log.debug("Accessor not found in db")
+			self.send_error(404)
+			return
+
+		self.write(orig['berkeleyJS'])
+
 ################################################################################
 ### main()
 ################################################################################
@@ -1633,6 +1682,9 @@ accessor_server = tornado.web.Application(
 		(r'/dev/accessor/(.*).xml', ServeDevAccessorXML),
 		(r'/dev/upload', handler_dev_post),
 		(r'/dev/upload/(.*)', handler_dev_put),
+		# PtolemyII support
+		(r'/ptolemy/index.json', handler_ptolemy_index),
+		(r'/ptolemy/(.*).js', handler_ptolemy_js),
 	],
 	static_path="static/",
 	template_path='jinja/',
