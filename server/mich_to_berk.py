@@ -54,6 +54,7 @@ send = function(a, b) {
 		if lib == 'log':
 			rt += '''\
 rt.log = {};
+rt.log.log = print;
 rt.log.debug = print;
 rt.log.info = print;
 rt.log.warn = print;
