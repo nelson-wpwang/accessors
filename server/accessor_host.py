@@ -1530,9 +1530,13 @@ class handler_dev (tornado.web.RequestHandler):
 						error += 'Lines {}-{}: '.format(start, end)
 					else:
 						error += 'Line {}'.format(start)
-				error += err['title'] + '\n'
-				for e in err['extra']:
-					error += '\t' + e + '\n'
+				if 'title' in error:
+					error += err['title'] + '\n'
+				else:
+					error += "Internal error: Previously thrown error has no 'title'?"
+				if 'extra' in err:
+					for e in err['extra']:
+						error += '\t' + e + '\n'
 			self.send_error(500, headers={'X-ACC-Name': name}, error=error)
 			return
 
