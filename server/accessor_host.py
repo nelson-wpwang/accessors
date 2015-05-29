@@ -730,23 +730,24 @@ def process_accessor(
 							]
 						})
 					complete_interface = False
-				if iface[req]['directions'] != name_map[req]['directions']:
-					errors.appendleft({
-						'title': 'Incomplete interface implemetnation -- missing port direction',
-						'extra': [
-							"Interface %s port %s requires %s" % (
-								iface,
-								req,
-								iface[req]['directions'],
-								),
-							"But %s from %s only implements %s" % (
-								accessor['name'],
-								accessor['_path'],
-								name_map[req]['directions'],
-								)
-							]
-						})
-					complete_interface = False
+				for direction in iface[req]['directions']:
+					if direction not in name_map[req]['directions']:
+						errors.appendleft({
+							'title': 'Incomplete interface implemetnation -- missing port direction',
+							'extra': [
+								"Interface %s port %s requires %s" % (
+									iface,
+									req,
+									iface[req]['directions'],
+									),
+								"But %s from %s only implements %s" % (
+									accessor['name'],
+									accessor['_path'],
+									name_map[req]['directions'],
+									)
+								]
+							})
+						complete_interface = False
 				accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
 
 		# Run the other accessor checker concept
