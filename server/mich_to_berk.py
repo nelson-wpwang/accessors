@@ -15,6 +15,13 @@ SUPPORTED_BLOCKING_FUNCTIONS = (
 		)
 
 def convert_type(type_str):
+	if type_str == 'select':
+		log.warning("Converting select to string, losing input enforcement");
+		return 'string'
+	elif type_str == 'numeric':
+		return 'number'
+	elif type_str == 'bool':
+		return 'boolean'
 	return type_str
 
 def get_berk_port_name(port):
