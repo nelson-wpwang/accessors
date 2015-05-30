@@ -47,8 +47,13 @@ try {
 // We use generators which require a newer version of node. We recommend that
 // you use io.js as it runs a newer version of the V8 engine and is generally
 // just easier to use.
-if (!semver.satisfies(process.version, '>=0.11.0')) {
-	throw 'Your node version (' + process.version + ') is too old. Need >=0.11. \
+var version = process.version;
+if (version.indexOf('-') != -1) {
+	// Strip off '-nightly' or other qualifiers for this check
+	version = version.slice(0, version.indexOf('-'));
+}
+if (!semver.satisfies(version, '>=0.11.0')) {
+	throw 'Your node version (' + version + ') is too old. Need >=0.11. \
 Consider using io.js instead of Node.js';
 }
 
