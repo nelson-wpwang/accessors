@@ -86,6 +86,14 @@ var _do_port_call = function  (port, port_name, direction, value, done_fn, error
 
 	d.on('error', function (err) {
 		d.exit();
+
+		// If an error occurred while setting up the observe, remove the
+		// registered callbacks
+		if (direction === 'observe') {
+			_observe_listeners[port_name].data_callbacks = [];
+			_observe_listeners[port_name].error_callbacks = [];
+		}
+
 		error_fn(err);
 	});
 

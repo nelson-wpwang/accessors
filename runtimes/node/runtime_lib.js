@@ -15,6 +15,7 @@ try {
 	var amqp         = require('amqp');
 	var dgram        = require('dgram');
 	var net          = require('net');
+	var noble        = require('noble');
 	var say          = require('say');
 	var socketio_old = require('socket.io-client');
 	var through2     = require('through2');
@@ -33,6 +34,40 @@ var error = debug_lib('accessors:error');
 
 
 var AcessorRuntimeException = Error;
+
+/* Synchronous / Asynchronous callback helper function.
+ *
+ * This function is used to call an unknown function pointer and handle
+ * it correctly if it is a normal function or a generator. All arguments that
+ * should be passed to the fn should be added after the error fn.
+ */
+function callFn (fn) {
+	var sub_arguments = Array.prototype.slice.call(arguments).slice(1);
+	var d = domain.create();
+
+	var error_fn = function (err) {
+		d.exit();
+		rt.log.warn("Uncaught exception from a call");
+		console.log(err);
+	}
+	d.on('error', error_fn);
+
+	d.run(function() {
+		var r = fn.apply(this, sub_arguments);
+		if (r && typeof r.next === 'function') {
+			var def = Q.async(function* () {
+				r = yield* fn.apply(this, sub_arguments);
+			});
+			var finished = function () {
+				debug("call finished asynchronous run");
+			}
+			def().done(finished, function (err) {
+				throw err;
+			});
+			debug("call running asynchronously");
+		}
+	});
+}
 
 /*
  * Create the over-arching runtime object that lets us scope all of this
@@ -111,6 +146,15 @@ rt.time.run_later = function (time_in_ms, fn_to_run, args) {
 	}, time_in_ms);
 }
 
+/*** Miscellaneous Helper Functions that may be useful in accessors. ***/
+
+rt.helper = Object();
+
+rt.helper.forEach = function (arr, callback) {
+	for (var i=0; i<arr.length; i++) {
+		callFn(callback, arr[i]);
+	}
+}
 
 /*** SOCKETS ***/
 
@@ -404,6 +448,148 @@ rt.text_to_speech.say = function* text_to_speech_say (text) {
 }
 
 
+/*** BLE ***/
+
+rt.ble = Object();
+rt.ble.poweredOn = false;
+
+rt.ble.Client = function* () {
+	var b = Object();
+
+	b.scan = function (uuids, callback) {
+		info('BLE starting scan');
+		noble.on('discover', function (peripheral) {
+			callFn(callback, peripheral);
+		});
+
+		// Scan for any UUID and allow duplicates.
+		noble.startScanning(uuids, true, function (err) {
+			if (err) error('BLE: Error when starting scan: ' + err);
+		});
+	};
+
+	b.scan_stop = function () {
+		noble.stopScanning();
+	}
+
+	b.connect = function* (peripheral, on_disconnect) {
+		var connect_defer = Q.defer();
+		peripheral.connect(function (err) {
+			// Call the disconnect callback properly if the user defined one
+			if (typeof on_disconnect === 'function') {
+				peripheral.on('disconnect', on_disconnect);
+			}
+			connect_defer.resolve(err);
+		});
+		return yield connect_defer.promise;
+	}
+
+	b.disconnect = function* (peripheral) {
+		var disconnect_defer = Q.defer();
+		peripheral.disconnect(function (err) {
+			if (err) {
+				error('BLE unable to disconnect peripheral.');
+				error(err);
+				disconnect_defer.resolve(err);
+			} else {
+				disconnect_defer.resolve(null);
+			}
+		});
+		return yield disconnect_defer.promise;
+	}
+
+	b.discover_services = function* (peripheral, uuids) {
+		var ds_defer = Q.defer();
+		peripheral.discoverServices(uuids, function (err, services) {
+			if (err) {
+				error('BLE unable to discover services.');
+				error(err);
+				ds_defer.resolve(null);
+			} else {
+				ds_defer.resolve(services);
+			}
+		});
+		return yield ds_defer.promise;
+	}
+
+	b.discover_characteristics = function* (service, uuids) {
+		var dc_defer = Q.defer();
+		service.discoverCharacteristics(uuids, function (err, characteristics) {
+			if (err) {
+				error('BLE unable to discover characteristics.');
+				error(err);
+				dc_defer.resolve(null);
+			} else {
+				dc_defer.resolve(characteristics);
+			}
+		});
+		return yield dc_defer.promise;
+	}
+
+	b.read_characteristic = function* (characteristic) {
+		var rc_defer = Q.defer();
+		characteristic.read(function (err, data) {
+			if (err) {
+				error('BLE unable to read characteristic.');
+				error(err);
+				rc_defer.resolve(null);
+			} else {
+				rc_defer.resolve(data);
+			}
+		});
+		return yield rc_defer.promise;
+	}
+
+	b.write_characteristic = function* (characteristic, data) {
+		var wc_defer = Q.defer();
+		characteristic.write(data, false, function (err) {
+			if (err) {
+				error('BLE unable to write characteristic.');
+				error(err);
+				wc_defer.resolve(err);
+			} else {
+				wc_defer.resolve(null);
+			}
+		});
+		return yield wc_defer.promise;
+	}
+
+	b.notify_characteristic = function (characteristic, notification) {
+		characteristic.notify(true, function (err) {
+			if (err) {
+				error('BLE unable to setup notify for characteristic.');
+				error(err);
+				return err;
+			} else {
+				info('setup ble notification callback')
+				characteristic.on('data', function (data) {
+					callFn(notification, data);
+				});
+			}
+		});
+	}
+
+	if (!rt.ble.poweredOn) {
+		info('BLE waiting for powered on');
+		var defer = Q.defer();
+		noble.on('stateChange', function (state) {
+			info('BLE state change: ' + state);
+			if (state === 'poweredOn') {
+				rt.ble.poweredOn = true;
+				defer.resolve(b);
+			} else if (state === 'poweredOff') {
+				error('BLE appears to be disabled.');
+				defer.resolve(null);
+			}
+		});
+	} else {
+		return b;
+	}
+
+	return yield defer.promise;
+}
+
+
 /*** COLOR FUNCTIONS ***/
 
 // need to npm install tinycolor2 for this. Not tinycolor. Because _javascript_
@@ -453,6 +639,7 @@ function getElementValueById (html, id) {
 exports.version   = rt.version;
 exports.log       = rt.log;
 exports.time      = rt.time;
+exports.helper    = rt.helper;
 exports.socket    = rt.socket;
 exports.http      = rt.http;
 exports.coap      = rt.coap;
@@ -460,5 +647,6 @@ exports.websocket = rt.websocket;
 exports.amqp      = rt.amqp;
 exports.gatd_old  = rt.gatd_old;
 exports.text_to_speech = rt.text_to_speech;
+exports.ble       = rt.ble;
 exports.color     = rt.color;
 exports.encode    = rt.encode;
