@@ -23,6 +23,8 @@ __Table of Contents__
   - [WebSockets](#websockets)
   - [RabbitMQ / AMQP](#rabbitmq--amqp)
   - [GATD v0.1](#gatd-v01)
+  - [Text To Speech](#text-to-speech)
+  - [BLE](#ble)
   - [Encoding Functions](#encoding-functions)
   - [Color Functions](#color-functions)
 
@@ -200,6 +202,11 @@ information.
 exception, terminating the current execution. Do not use critical for transient
 errors (e.g. a 503).
 
+- `<void> rt.helper.forEach(<array> arr, <function> callback)`: Typical array
+for each function, but it supports both regular functions and generators.
+
+        callback (array_item) { }
+
 
 ### Time
 
@@ -324,6 +331,45 @@ returned data packets.
 
 - _Blocking_ `<void> rt.text_to_speech.say(<string> text)`: Will read the given text aloud
 
+
+### BLE
+
+Bluetooth Low Energy support.
+
+- _Blocking_ `<ble> rt.ble.Client()`: Create a new device that can be a BLE
+master.
+
+- `<void> [ble].scan(<array> uuids, <function> callback)`: Start a BLE scan for the listed
+UUIDs. An empty UUID array will look for all devices. UUIDs should be specified
+as lowercase hex without dashes. When a matching device is found,
+`callback(peripheral)` will be called.
+
+- `<void>` [ble].scanStop()`: Stop a BLE scan.
+
+- _Blocking_ `<err> [ble].connect(<peripheral> p, [<function> on_disconnect])`:
+Connect to a given peripheral. On success, `err == null`. You may pass an
+optional callback which will be called if the device disconnects.
+
+- _Blocking_ `<err> [ble].disconnect(<peripheral> p)`: Disconnect from a peripheral.
+`err == null` if it succeeds.
+
+- _Blocking_ `<services> [ble].discoverServices(<peripheral> p, <array> uuids)`:
+Find all services that a given peripheral provides that match the uuids provided.
+`uuids` may be an empty array to match all services.
+
+- _Blocking_ `<characteristics> [ble].discoverCharacteristics(<service> s, <array> uuids)`:
+Find all characteristics as a part of the service. `uuids` follows the same
+pattern as the other functions.
+
+- _Blocking_ `<bytearray> [ble].readCharacteristic(<characteristic> c)`:
+Read a device's characteristic.
+
+- _Blocking_ `<err> [ble].writeCharacteristic(<characteristic> c, <bytearray> data)`:
+Write the array of bytes to the given characteristic. `err == null` on success.
+
+- _Blocking_ `<err> [ble].notifyCharacteristic(<characteristic> c, <function> callback)`:
+Configure the characteristic to notify on data change. Each updated
+data value will sent to `callback (<bytearray> data)`.
 
 ### Encoding Functions
 

@@ -278,7 +278,6 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 	return yield request_defer.promise;
 }
 
-//This is just GET. Don't know why it's called readURL...
 rt.http.get = function* get(url) {
 	info("runtime_lib::readURL before yield*");
 	return yield* rt.http.request(url, 'GET', null, null, 0);
@@ -468,7 +467,7 @@ rt.ble.Client = function* () {
 		});
 	};
 
-	b.scan_stop = function () {
+	b.scanStop = function () {
 		noble.stopScanning();
 	}
 
@@ -498,7 +497,7 @@ rt.ble.Client = function* () {
 		return yield disconnect_defer.promise;
 	}
 
-	b.discover_services = function* (peripheral, uuids) {
+	b.discoverServices = function* (peripheral, uuids) {
 		var ds_defer = Q.defer();
 		peripheral.discoverServices(uuids, function (err, services) {
 			if (err) {
@@ -512,7 +511,7 @@ rt.ble.Client = function* () {
 		return yield ds_defer.promise;
 	}
 
-	b.discover_characteristics = function* (service, uuids) {
+	b.discoverCharacteristics = function* (service, uuids) {
 		var dc_defer = Q.defer();
 		service.discoverCharacteristics(uuids, function (err, characteristics) {
 			if (err) {
@@ -526,7 +525,7 @@ rt.ble.Client = function* () {
 		return yield dc_defer.promise;
 	}
 
-	b.read_characteristic = function* (characteristic) {
+	b.readCharacteristic = function* (characteristic) {
 		var rc_defer = Q.defer();
 		characteristic.read(function (err, data) {
 			if (err) {
@@ -534,15 +533,15 @@ rt.ble.Client = function* () {
 				error(err);
 				rc_defer.resolve(null);
 			} else {
-				rc_defer.resolve(data);
+				rc_defer.resolve(Array.prototype.slice.call(data));
 			}
 		});
 		return yield rc_defer.promise;
 	}
 
-	b.write_characteristic = function* (characteristic, data) {
+	b.writeCharacteristic = function* (characteristic, data) {
 		var wc_defer = Q.defer();
-		characteristic.write(data, false, function (err) {
+		characteristic.write(new Buffer(data), false, function (err) {
 			if (err) {
 				error('BLE unable to write characteristic.');
 				error(err);
@@ -554,7 +553,7 @@ rt.ble.Client = function* () {
 		return yield wc_defer.promise;
 	}
 
-	b.notify_characteristic = function (characteristic, notification) {
+	b.notifyCharacteristic = function (characteristic, notification) {
 		characteristic.notify(true, function (err) {
 			if (err) {
 				error('BLE unable to setup notify for characteristic.');
@@ -563,7 +562,7 @@ rt.ble.Client = function* () {
 			} else {
 				info('setup ble notification callback')
 				characteristic.on('data', function (data) {
-					callFn(notification, data);
+					callFn(notification, Array.prototype.slice.call(data));
 				});
 			}
 		});
