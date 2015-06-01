@@ -3,7 +3,9 @@
 
 try {
 	var debug_lib    = require('debug');
+	var EventEmitter = require('events').EventEmitter;
 	var urllib       = require('url');
+	var util         = require('util');
 
 	var domain       = require('domain');
 	var Q            = require('q');
@@ -239,9 +241,9 @@ rt.socket.socket = function* (family, sock_type) {
 
 /*** HTTP REQUESTS ***/
 
-rt.http = Object();
+rt.httpClient = Object();
 
-rt.http.request = function* request_fn(url, method, properties, body, timeout) {
+rt.httpClient.requestFinish = function* request_fn(options) {
 	info("httpRequest("
 		+ (function(obj) {
 			result=[];
@@ -254,18 +256,14 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 
 	var request_defer = Q.defer();
 
-	var options = {
-		url: url,
-		method: method,
-		headers: properties,
-		body: body,
-		timeout: timeout
-	}
-
 	var req = request(options, function (error, response, body) {
 		if (!error) {
 			if (response.statusCode == 200) {
-				request_defer.resolve(body);
+				request_defer.resolve({
+					body: body,
+					statusMessage: response.statusMessage,
+					statusCode: response.statusCode
+				});
 			} else {
 				request_defer.reject("httpRequest failed with code " + request.statusCode + " at URL: " + url);
 			}
@@ -278,18 +276,47 @@ rt.http.request = function* request_fn(url, method, properties, body, timeout) {
 	return yield request_defer.promise;
 }
 
-rt.http.get = function* get(url) {
-	info("runtime_lib::readURL before yield*");
-	return yield* rt.http.request(url, 'GET', null, null, 0);
-	info("runtime_lib::readURL after yield*");
+rt.httpClient.get = function* get(url) {
+	var options = {}
+
+	if (typeof url === 'object') {
+		options = url;
+	} else {
+		options.url = url;
+	}
+	options.method = 'GET';
+
+	info("runtime_lib::get before yield*");
+	return yield* rt.httpClient.requestFinish(options);
+	info("runtime_lib::get after yield*");
 }
 
-rt.http.post = function* post(url, body) {
-	return yield* rt.http.request(url, 'POST', null, body, 0);
+rt.httpClient.post = function* post(url, body) {
+	var options = {}
+
+	if (typeof url === 'object') {
+		options = url;
+	} else {
+		options.url = url;
+	}
+	options.method = 'POST';
+	options.body = body;
+
+	return yield* rt.httpClient.requestFinish(options);
 }
 
-rt.http.put = function* put(url, body) {
-	return yield* rt.http.request(url, 'PUT', null, body, 0);
+rt.httpClient.put = function* put(url, body) {
+	var options = {}
+
+	if (typeof url === 'object') {
+		options = url;
+	} else {
+		options.url = url;
+	}
+	options.method = 'PUT';
+	options.body = body;
+
+	return yield* rt.httpClient.requestFinish(options);
 }
 
 /*** COAP REQUESTS ***/
@@ -345,39 +372,9 @@ rt.coap.observe = function coapObserver(url, callback) {
 
 /*** WEBSOCKET CONNECTIONS ***/
 
-rt.websocket = Object();
+rt.webSocket = Object();
 
-rt.websocket.connect = function* websocketConnect (url) {
-	var w = Object();
-
-	info('WebSocket Connect: ' + url);
-	var defer = Q.defer();
-	var ws = new WebSocket(url);
-	ws.on('open', function () {
-		defer.resolve(w);
-	});
-
-	w.subscribe = function (data_callback, error_callback, close_callback) {
-		info('WebSocket subscribe.');
-
-		ws.on('message', function (data, flags) {
-			data_callback(data);
-		});
-		if (typeof error_callback === 'function') {
-			ws.on('error', error_callback);
-		}
-		if (typeof close_callback === 'function') {
-			ws.on('close', close_callback);
-		}
-	};
-
-	w.send = function (data) {
-		info('WebSocket: sending ' + data);
-		ws.send(data);
-	};
-
-	return yield defer.promise;
-}
+rt.webSocket.Client = WebSocket;
 
 
 /*** RABBITMQ / AMQP CONNECTIONS ***/
@@ -452,122 +449,7 @@ rt.text_to_speech.say = function* text_to_speech_say (text) {
 rt.ble = Object();
 rt.ble.poweredOn = false;
 
-rt.ble.Client = function* () {
-	var b = Object();
-
-	b.scan = function (uuids, callback) {
-		info('BLE starting scan');
-		noble.on('discover', function (peripheral) {
-			callFn(callback, peripheral);
-		});
-
-		// Scan for any UUID and allow duplicates.
-		noble.startScanning(uuids, true, function (err) {
-			if (err) error('BLE: Error when starting scan: ' + err);
-		});
-	};
-
-	b.scanStop = function () {
-		noble.stopScanning();
-	}
-
-	b.connect = function* (peripheral, on_disconnect) {
-		var connect_defer = Q.defer();
-		peripheral.connect(function (err) {
-			// Call the disconnect callback properly if the user defined one
-			if (typeof on_disconnect === 'function') {
-				peripheral.on('disconnect', on_disconnect);
-			}
-			connect_defer.resolve(err);
-		});
-		return yield connect_defer.promise;
-	}
-
-	b.disconnect = function* (peripheral) {
-		var disconnect_defer = Q.defer();
-		peripheral.disconnect(function (err) {
-			if (err) {
-				error('BLE unable to disconnect peripheral.');
-				error(err);
-				disconnect_defer.resolve(err);
-			} else {
-				disconnect_defer.resolve(null);
-			}
-		});
-		return yield disconnect_defer.promise;
-	}
-
-	b.discoverServices = function* (peripheral, uuids) {
-		var ds_defer = Q.defer();
-		peripheral.discoverServices(uuids, function (err, services) {
-			if (err) {
-				error('BLE unable to discover services.');
-				error(err);
-				ds_defer.resolve(null);
-			} else {
-				ds_defer.resolve(services);
-			}
-		});
-		return yield ds_defer.promise;
-	}
-
-	b.discoverCharacteristics = function* (service, uuids) {
-		var dc_defer = Q.defer();
-		service.discoverCharacteristics(uuids, function (err, characteristics) {
-			if (err) {
-				error('BLE unable to discover characteristics.');
-				error(err);
-				dc_defer.resolve(null);
-			} else {
-				dc_defer.resolve(characteristics);
-			}
-		});
-		return yield dc_defer.promise;
-	}
-
-	b.readCharacteristic = function* (characteristic) {
-		var rc_defer = Q.defer();
-		characteristic.read(function (err, data) {
-			if (err) {
-				error('BLE unable to read characteristic.');
-				error(err);
-				rc_defer.resolve(null);
-			} else {
-				rc_defer.resolve(Array.prototype.slice.call(data));
-			}
-		});
-		return yield rc_defer.promise;
-	}
-
-	b.writeCharacteristic = function* (characteristic, data) {
-		var wc_defer = Q.defer();
-		characteristic.write(new Buffer(data), false, function (err) {
-			if (err) {
-				error('BLE unable to write characteristic.');
-				error(err);
-				wc_defer.resolve(err);
-			} else {
-				wc_defer.resolve(null);
-			}
-		});
-		return yield wc_defer.promise;
-	}
-
-	b.notifyCharacteristic = function (characteristic, notification) {
-		characteristic.notify(true, function (err) {
-			if (err) {
-				error('BLE unable to setup notify for characteristic.');
-				error(err);
-				return err;
-			} else {
-				info('setup ble notification callback')
-				characteristic.on('data', function (data) {
-					callFn(notification, Array.prototype.slice.call(data));
-				});
-			}
-		});
-	}
-
+rt.ble.Central = function* () {
 	if (!rt.ble.poweredOn) {
 		info('BLE waiting for powered on');
 		var defer = Q.defer();
@@ -587,6 +469,124 @@ rt.ble.Client = function* () {
 
 	return yield defer.promise;
 }
+
+
+
+rt.ble.Central.prototype.scan = function (uuids, callback) {
+	info('BLE starting scan');
+	noble.on('discover', function (peripheral) {
+		callFn(callback, peripheral);
+	});
+
+	// Scan for any UUID and allow duplicates.
+	noble.startScanning(uuids, true, function (err) {
+		if (err) error('BLE: Error when starting scan: ' + err);
+	});
+};
+
+rt.ble.Central.prototype.scanStop = function () {
+	noble.stopScanning();
+}
+
+rt.ble.Central.prototype.connect = function* (peripheral, on_disconnect) {
+	var connect_defer = Q.defer();
+	peripheral.connect(function (err) {
+		// Call the disconnect callback properly if the user defined one
+		if (typeof on_disconnect === 'function') {
+			peripheral.on('disconnect', on_disconnect);
+		}
+		connect_defer.resolve(err);
+	});
+	return yield connect_defer.promise;
+}
+
+rt.ble.Central.prototype.disconnect = function* (peripheral) {
+	var disconnect_defer = Q.defer();
+	peripheral.disconnect(function (err) {
+		if (err) {
+			error('BLE unable to disconnect peripheral.');
+			error(err);
+			disconnect_defer.resolve(err);
+		} else {
+			disconnect_defer.resolve(null);
+		}
+	});
+	return yield disconnect_defer.promise;
+}
+
+rt.ble.Central.prototype.discoverServices = function* (peripheral, uuids) {
+	var ds_defer = Q.defer();
+	peripheral.discoverServices(uuids, function (err, services) {
+		if (err) {
+			error('BLE unable to discover services.');
+			error(err);
+			ds_defer.resolve(null);
+		} else {
+			ds_defer.resolve(services);
+		}
+	});
+	return yield ds_defer.promise;
+}
+
+rt.ble.Central.prototype.discoverCharacteristics = function* (service, uuids) {
+	var dc_defer = Q.defer();
+	service.discoverCharacteristics(uuids, function (err, characteristics) {
+		if (err) {
+			error('BLE unable to discover characteristics.');
+			error(err);
+			dc_defer.resolve(null);
+		} else {
+			dc_defer.resolve(characteristics);
+		}
+	});
+	return yield dc_defer.promise;
+}
+
+rt.ble.Central.prototype.readCharacteristic = function* (characteristic) {
+	var rc_defer = Q.defer();
+	characteristic.read(function (err, data) {
+		if (err) {
+			error('BLE unable to read characteristic.');
+			error(err);
+			rc_defer.resolve(null);
+		} else {
+			rc_defer.resolve(Array.prototype.slice.call(data));
+		}
+	});
+	return yield rc_defer.promise;
+}
+
+rt.ble.Central.prototype.writeCharacteristic = function* (characteristic, data) {
+	var wc_defer = Q.defer();
+	characteristic.write(new Buffer(data), false, function (err) {
+		if (err) {
+			error('BLE unable to write characteristic.');
+			error(err);
+			wc_defer.resolve(err);
+		} else {
+			wc_defer.resolve(null);
+		}
+	});
+	return yield wc_defer.promise;
+}
+
+rt.ble.Central.prototype.notifyCharacteristic = function (characteristic, notification) {
+	characteristic.notify(true, function (err) {
+		if (err) {
+			error('BLE unable to setup notify for characteristic.');
+			error(err);
+			return err;
+		} else {
+			info('setup ble notification callback')
+			characteristic.on('data', function (data) {
+				callFn(notification, Array.prototype.slice.call(data));
+			});
+		}
+	});
+}
+
+
+
 
 
 /*** COLOR FUNCTIONS ***/
@@ -640,9 +640,9 @@ exports.log       = rt.log;
 exports.time      = rt.time;
 exports.helper    = rt.helper;
 exports.socket    = rt.socket;
-exports.http      = rt.http;
+exports.httpClient      = rt.httpClient;
 exports.coap      = rt.coap;
-exports.websocket = rt.websocket;
+exports.webSocket = rt.webSocket;
 exports.amqp      = rt.amqp;
 exports.gatd_old  = rt.gatd_old;
 exports.text_to_speech = rt.text_to_speech;
