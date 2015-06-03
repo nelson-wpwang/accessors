@@ -246,16 +246,21 @@ function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
 	// Need objects for our port function scheme (e.g. Power.input)
 	var port_objs = get_port_objects(accessor_ir);
 
+	// Need an object for the input handlers
+	var input_handlers = get_input_port_handlers(accessor_ir);
+
 	// Export the functions that one can call on this accessor
 	var exports = get_exports(accessor_ir);
 
 	// Turn the code into a module
-	var module_as_string = requires + port_objs + params + runtime_code + accessor_ir.code + exports;
+	var module_as_string = requires + port_objs + params + runtime_code + accessor_ir.code + input_handlers + exports;
 	if (typeof module_as_string !== 'string') {
 		error("something isn't a string in " + accessor_ir.name);
 		throw "This accessor won't work";
 	}
 	info("art::create_accessor before requireFromString " + accessor_ir.name);
+
+	console.log(module_as_string)
 
 	var device = requireFromString(module_as_string);
 
@@ -316,6 +321,26 @@ function get_port_objects (accessor) {
 	}
 
 	return port_obj_str;
+}
+
+// Need to support addInputHandler.
+//
+// Must generate:
+//   _input_handlers = {
+//       <port_name>: [full.name.input],
+//   }
+// for all input ports.
+function get_input_port_handlers (accessor) {
+	var ret = 'var _input_handlers = {_fire:[],';
+
+	for (var i=0; i<accessor.ports.length; i++) {
+		var port = accessor.ports[i];
+		if (port.directions.indexOf('input') > -1) {
+			ret += port.name + ': [' + port.function + '.input],';
+		}
+	}
+	ret += '};';
+	return ret;
 }
 
 function get_exports (accessor) {

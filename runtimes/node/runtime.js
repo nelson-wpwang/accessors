@@ -21,7 +21,7 @@ var _observe_listeners = {};
 
 // Function that wraps calling a port. This sets up all of the promises/futures
 // code so that "await" works.
-var _do_port_call = function  (port, port_name, direction, value, done_fn, error_fn) {
+var _do_port_call = function (port, port_name, direction, value, done_fn, error_fn) {
 	var r;
 
 	// in the OUTPUT case, there is no value.
@@ -82,6 +82,15 @@ var _do_port_call = function  (port, port_name, direction, value, done_fn, error
 		}
 	}
 
+	// Determine which functions to call.
+	// By default, just call the port function.
+	var to_call = [port];
+	if (direction === 'input') {
+		// If this is an input, however, call all functions that have been
+		// configured as handlers (dynamically or upon creation).
+		to_call = _input_handlers[port_name];
+	}
+
 	var d = domain.create();
 
 	d.on('error', function (err) {
@@ -98,23 +107,29 @@ var _do_port_call = function  (port, port_name, direction, value, done_fn, error
 	});
 
 	d.run(function() {
-		r = port(value);
-		if (r && typeof r.next == 'function') {
-			var def = Q.async(function* () {
-				r = yield* port(value);
-			});
+		// Iterate all functions in the port list and call them, checking
+		// if they are generators and whatnot.
+		for (var i=0; i<to_call.length; i++) {
+			(function (port) {
+				r = port(value);
+				if (r && typeof r.next == 'function') {
+					var def = Q.async(function* () {
+						r = yield* port(value);
+					});
 
-			def().done(function () {
-				done_fn(r);
+					def().done(function () {
+						done_fn(r);
 
-			}, function (err) {
-				// Throw this error so that the domain can pick it up.
-				throw err;
-			});
-			info("port call running asynchronously");
+					}, function (err) {
+						// Throw this error so that the domain can pick it up.
+						throw err;
+					});
+					info("port call running asynchronously");
 
-		} else {
-			done_fn(r);
+				} else {
+					done_fn(r);
+				}
+			})(to_call[i]);
 		}
 	});
 }
@@ -122,8 +137,85 @@ var _do_port_call = function  (port, port_name, direction, value, done_fn, error
 // These function are NOOPs and are only used by the Host Server to understand
 // properties of the accessor/device, and do not have any meaning when
 // running an accessor.
-var create_port = function() {};
-var provide_interface = function() {};
+var createPort = function() {};
+var provideInterface = function() {};
+
+// This allows the accessor to specify a function that should get bound
+// to a particular input
+var addInputHandler = function (port_name, func) {
+	if (typeof port_name === 'function') {
+		// Using the function in this way defines a new fire() function
+		// Check for duplicates
+		for (var i=0; i<_input_handlers._fire.length; i++) {
+			if (_input_handlers._fire[i] === port_name) {
+				error('Adding duplicate fire() function.');
+				return null;
+			}
+		}
+		// Add the new fire function before the original fire function
+		_input_handlers._fire.unshift(port_name);
+		return ['_fire', func];
+	}
+
+
+
+	if (func === null || func === 'undefined') {
+		// Ignore this case.
+		return;
+	}
+	if (typeof func === 'function') {
+		if (port_name in _input_handlers) {
+			// Check that this hasn't already been added.
+			for (var i=0; i<_input_handlers[port_name].length; i++) {
+				if (func === _input_handlers[port_name][i]) {
+					error('Already added this handler function.');
+					return null;
+				}
+			}
+
+			_input_handlers[port_name].push(func);
+			// Return the name and the function so it can be removed,
+			// if desired.
+			return [port_name, func];
+		} else {
+			error('Assigning a new input handler to port_name that does not exist.');
+		}
+	} else {
+		error('Input handler must be a function');
+	}
+	return null;
+}
+
+// This allows an accessor to remove an input callback
+var removeInputHandler = function (handle) {
+	if (handle instanceof Array) {
+		if (handle.length == 2) {
+			if (handle[0] in _input_handlers) {
+				var to_remove = -1;
+				// Iterate through the callbacks looking for
+				for (var i=0; i<_input_handlers[handle[0]].length; i++) {
+					var handler = _input_handlers[handle[0]][i];
+					if (handler === handle[1]) {
+						to_remove = i;
+						break;
+					}
+				}
+				if (to_remove > -1) {
+					// Actually remove it from the array
+					_input_handlers[handle[0]].splice(to_remove, 1);
+				}
+			} else {
+				error('Remove handle for non-existent port.');
+			}
+		} else {
+			error('Bad handle, wrong length.');
+		}
+	} else {
+		error('Bad handle, not array.')
+	}
+}
+
+
 
 /* `get()` allows an accessor to read the input on one of its ports that
  * comes from the user of the accessor. Currently, the node.js runtime is

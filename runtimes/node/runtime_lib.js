@@ -17,7 +17,6 @@ try {
 	var amqp         = require('amqp');
 	var dgram        = require('dgram');
 	var net          = require('net');
-	var noble        = require('noble');
 	var say          = require('say');
 	var socketio_old = require('socket.io-client');
 	var through2     = require('through2');
@@ -450,10 +449,13 @@ rt.ble = Object();
 rt.ble.poweredOn = false;
 
 rt.ble.Central = function* () {
+
+	rt.ble.noble = require('noble');
+
 	if (!rt.ble.poweredOn) {
 		info('BLE waiting for powered on');
 		var defer = Q.defer();
-		noble.on('stateChange', function (state) {
+		rt.ble.noble.on('stateChange', function (state) {
 			info('BLE state change: ' + state);
 			if (state === 'poweredOn') {
 				rt.ble.poweredOn = true;
@@ -474,18 +476,18 @@ rt.ble.Central = function* () {
 
 rt.ble.Central.prototype.scan = function (uuids, callback) {
 	info('BLE starting scan');
-	noble.on('discover', function (peripheral) {
+	rt.ble.noble.on('discover', function (peripheral) {
 		callFn(callback, peripheral);
 	});
 
 	// Scan for any UUID and allow duplicates.
-	noble.startScanning(uuids, true, function (err) {
+	rt.ble.noble.startScanning(uuids, true, function (err) {
 		if (err) error('BLE: Error when starting scan: ' + err);
 	});
 };
 
 rt.ble.Central.prototype.scanStop = function () {
-	noble.stopScanning();
+	rt.ble.noble.stopScanning();
 }
 
 rt.ble.Central.prototype.connect = function* (peripheral, on_disconnect) {
@@ -631,7 +633,7 @@ javascript.
  * not nested elements or crazy spaces.
  */
 function getElementValueById (html, id) {
-		throw new AccessorRuntimeException("very funny");
+	throw new AccessorRuntimeException("very funny");
 }
 
 

@@ -19,6 +19,22 @@ try {
   process.exit(1);
 }
 
+/******************************************************************************/
+/*
+ * Extract out some definition so if they change they can be more easily
+ * updated.
+ *
+ */
+
+ var FUNC_NEW_PORT = 'createPort';
+ var FUNC_USE_INTERFACE = 'provideInterface';
+
+ /*****************************************************************************/
+
+
+
+
+
 // http://stackoverflow.com/q/3885817
 function isFloat(n) {
   return n === +n && n !== (n|0);
@@ -520,7 +536,7 @@ var created_port_list = [];
 var interface_port_list = [];
 
 function checkNewPorts(node) {
-  if (node.callee.name === 'create_port') {
+  if (node.callee.name === FUNC_NEW_PORT) {
     var nameNode = node.arguments[0];
     var parametersNode = node.arguments[1];
 
@@ -528,7 +544,7 @@ function checkNewPorts(node) {
     if (nameNode.type !== 'Literal') {
       errors.push({
         loc: node.loc,
-        title: "First argument to 'create_port' must be a fixed string",
+        title: "First argument to '" + FUNC_NEW_PORT + "'' must be a fixed string",
         extra: ["The current argument is of type "+nameNode.type],
       });
     }
@@ -550,7 +566,7 @@ function checkNewPorts(node) {
       if (parametersNode.type !== 'ObjectExpression') {
         errors.push({
           loc: parametersNode.loc,
-          title: "Second argument to 'create_port' must be a dictionary of named parameters",
+          title: "Second argument to '" + FUNC_NEW_PORT + "' must be a dictionary of named parameters",
           extra: ["The current argument is of type "+parametersNode.type],
         });
       }
@@ -562,7 +578,7 @@ function checkNewPorts(node) {
 
     if (node.arguments[2] !== undefined) {
       var warning = {
-        title: "The create_port function takes only 2 arguments, the rest are ignored",
+        title: "The '" + FUNC_NEW_PORT + "' function takes only 2 arguments, the rest are ignored",
         loc: node.loc,
       };
       warnings.push(warning);
