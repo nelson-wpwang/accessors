@@ -1,4 +1,5 @@
 /* vim: set noet ts=2 sts=2 sw=2: */
+'use strict';
 
 /*** Core Functions ***/
 // (Those not in the rt namespace)

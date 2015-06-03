@@ -1,5 +1,6 @@
 /* This runtime conforms to accessor runtime v0.1.0 */
 /* vim: set noet ts=2 sts=2 sw=2: */
+'use strict';
 
 try {
 	var debug_lib    = require('debug');
@@ -75,7 +76,7 @@ function callFn (fn) {
  * accessor runtime code nicely.
  */
 
-rt = Object();
+var rt = Object();
 
 /*** GENERAL UTILITY ***/
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 /* Interact with an accessor via a command line interface.
  * Can use accessors in a host server or locally defined accessors.
@@ -191,7 +192,7 @@ function console_from_ir (accessor_id, accessor_ir) {
 				// Feels like there should be some idiomatic JS way to index
 				// down several object levels, but I don't know it and this works
 				var temp = port.function.split('.');
-				port_obj = accessor[temp.shift()];
+				var port_obj = accessor[temp.shift()];
 				while (temp.length) port_obj = port_obj[temp.shift()];
 
 				if (cmd == 'get') {

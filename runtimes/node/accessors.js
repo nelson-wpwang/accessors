@@ -10,6 +10,7 @@
 /******************************************************************************/
 /******************************************************************************/
 
+'use strict';
 
 // Make explicit our options. We can then export these to be displayed in higher
 // level tools.
