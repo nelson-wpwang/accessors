@@ -45,6 +45,10 @@ try {
 	throw e;
 }
 
+// Expand the include paths to this folder
+process.env.NODE_PATH = __dirname;
+require('module').Module._initPaths();
+
 // We use generators which require a newer version of node. We recommend that
 // you use io.js as it runs a newer version of the V8 engine and is generally
 // just easier to use.
@@ -218,8 +222,9 @@ function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
 	}
 
 	//XXX: Implement something to figure out the runtime imports neccessary
-	var runtime_lib_file = path_module.join(__dirname, 'runtime_lib.js');
-	var requires = "var rt = require('"+runtime_lib_file+"');\n";
+	// var runtime_lib_file = path_module.join(__dirname, 'runtime_lib.js');
+	// var requires = "var rt = require('"+runtime_lib_file+"');\n";
+	var requires = '';
 
 	// Verify that all required parameters were provided, copy in default values
 	for (var i=0; i < accessor_ir.parameters.length; i++) {
@@ -260,8 +265,6 @@ function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
 		throw "This accessor won't work";
 	}
 	info("art::create_accessor before requireFromString " + accessor_ir.name);
-
-	console.log(module_as_string)
 
 	var device = requireFromString(module_as_string);
 
@@ -337,7 +340,7 @@ function get_input_port_handlers (accessor) {
 	for (var i=0; i<accessor.ports.length; i++) {
 		var port = accessor.ports[i];
 		if (port.directions.indexOf('input') > -1) {
-			ret += port.name + ': [' + port.function + '.input],';
+			ret += "'" + port.name + '\': [' + port.function + '.input],';
 		}
 	}
 	ret += '};';

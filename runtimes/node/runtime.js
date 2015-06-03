@@ -4,14 +4,15 @@
 /*** Core Functions ***/
 // (Those not in the rt namespace)
 
+var lib        = require('lib');
 
 var domain     = require('domain');
 var Q          = require('q');
 var debug_lib  = require('debug');
 
 var debug = debug_lib('accessors:debug');
-var info = debug_lib('accessors:info');
-var warn = debug_lib('accessors:warn');
+var info  = debug_lib('accessors:info');
+var warn  = debug_lib('accessors:warn');
 var error = debug_lib('accessors:error');
 
 var AcessorRuntimeException = Error;
@@ -140,6 +141,7 @@ var _do_port_call = function (port, port_name, direction, value, done_fn, error_
 // running an accessor.
 var createPort = function() {};
 var provideInterface = function() {};
+var provide_interface = function() {};
 
 // This allows the accessor to specify a function that should get bound
 // to a particular input
@@ -275,3 +277,29 @@ var load_dependency = function (path, parameters) {
 
 	throw new AccessorRuntimeException("That was optimistic");
 }
+
+/******************************************************************************/
+/* Part of accessor standard library.
+ */
+
+var print = function (val) {
+	console.log(val);
+}
+
+var _js_setInterval = setInterval;
+var setInterval = function (fn, ms) {
+	return _js_setInterval(function () {
+		callFn(fn);
+	}, ms);
+}
+
+var _js_setTimeout = setTimeout;
+var setTimeout = function (fn, ms) {
+	return _js_setTimeout(function () {
+		callFn(fn);
+	}, ms);
+}
+
+
+
+
