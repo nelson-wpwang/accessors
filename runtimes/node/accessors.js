@@ -46,7 +46,7 @@ try {
 }
 
 // Expand the include paths to this folder
-process.env.NODE_PATH = __dirname;
+process.env.NODE_PATH = __dirname + ':' + __dirname+'/runtime_lib';
 require('module').Module._initPaths();
 
 // We use generators which require a newer version of node. We recommend that
