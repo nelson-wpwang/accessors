@@ -507,9 +507,10 @@ def process_accessor(
 			except (AttributeError, KeyError):
 				parse_error("@author must include email", path)
 		else:
-			print(type(jsdoc))
-			print(jsdoc)
 			parse_error("Missing required jsdoc key @author", path)
+
+		if 'display-name' in jsdoc:
+			name = jsdoc['display-name']
 
 		description = jsdoc['doc']
 		# FIXME / HACK: pyjsdoc doesn't have native support for markdown. This
