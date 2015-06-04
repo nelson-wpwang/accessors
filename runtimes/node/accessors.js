@@ -393,7 +393,11 @@ function get_exports (accessor) {
 	}
 
 	export_str += '\nmodule.exports.init = function (succ_cb, err_cb) {\n';
-	export_str += '  _do_port_call(init, "init", null, null, succ_cb, err_cb);\n';
+	export_str += '  if (typeof(init) !== "undefined") {\n';
+	export_str += '    _do_port_call(init, "init", null, null, succ_cb, err_cb);\n';
+	export_str += '  } else {\n';
+	export_str += '    succ_cb();\n';
+	export_str += '  }\n';
 	export_str += '};\n';
 
 	return export_str;
