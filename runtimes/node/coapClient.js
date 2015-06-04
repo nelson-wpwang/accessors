@@ -1,7 +1,8 @@
 var coap      = require('coap');
 var debug_lib = require('debug');
 var Q         = require('q');
-var through2 = require('through2');
+var through2  = require('through2');
+var urllib    = require('url');
 
 var debug = debug_lib('accessors:coap:debug');
 var info  = debug_lib('accessors:coap:info');
@@ -12,9 +13,8 @@ var error = debug_lib('accessors:coap:error');
 function* _coapCommon(ogm) {
 	var defer = Q.defer();
 	ogm.on('response', function (resp) {
-		var content = resp.payload.toString('utf-8')
-		info("CoAP complete, resp payload: " + content);
-		defer.resolve(content);
+		info("CoAP complete, resp payload: " + resp.payload.toString('utf-8'));
+		defer.resolve(resp);
 	});
 	info("CoAP yielding for I/O operation");
 	return yield defer.promise;

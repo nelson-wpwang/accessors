@@ -142,11 +142,11 @@ var interface_list = [];
 function checkProvideInterface(node) {
   var iface = null;
 
-  if (node.callee.name === 'provide_interface') {
+  if (node.callee.name === FUNC_USE_INTERFACE) {
     if (node.arguments[0].type !== 'Literal') {
       errors.push({
         loc: node.loc,
-        title: "provide_interface() first argument must be a string literal",
+        title: FUNC_USE_INTERFACE + "() first argument must be a string literal",
       });
       return;
     }
@@ -170,7 +170,7 @@ function checkProvideInterface(node) {
     if (node.arguments[1] !== undefined) {
       warnings.push({
         loc: node.loc,
-        title: "The provide_interface function takes only 1 argument, the rest are ignored",
+        title: "The " + FUNC_USE_INTERFACE + " function takes only 1 argument, the rest are ignored",
       });
     }
 
