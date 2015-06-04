@@ -28,6 +28,7 @@ try {
 
  var FUNC_NEW_PORT = 'createPort';
  var FUNC_USE_INTERFACE = 'provideInterface';
+ var FUNC_GET_PARAMETER = 'getParameter';
 
  /*****************************************************************************/
 
@@ -182,11 +183,11 @@ var parameter_list = [];
 function checkGetParameter(node) {
   var parameter = null;
 
-  if (node.callee.name === 'get_parameter') {
+  if (node.callee.name === FUNC_GET_PARAMETER) {
     if (node.arguments[0] === undefined) {
       errors.push({
         loc: node.loc,
-        title: "get_parameter requires at least 1 argument",
+        title: FUNC_GET_PARAMETER + " requires at least 1 argument",
       });
       return;
     }
@@ -229,7 +230,7 @@ function checkGetParameter(node) {
     if (node.arguments[2] !== undefined) {
       warnings.push({
         loc: node.loc,
-        title: "The get_parameter function takes up to 2 arguments, the rest are ignored",
+        title: "The "+ FUNC_GET_PARAMETER +" function takes up to 2 arguments, the rest are ignored",
       });
     }
   }
@@ -242,7 +243,7 @@ function checkSend(node) {
     if ((node.arguments[0] === undefined) || (node.arguments[1] === undefined)) {
       errors.push({
         loc: node.loc,
-        title: "get_parameter requires 2 arguments",
+        title: FUNC_GET_PARAMETER + " requires 2 arguments",
       });
       return;
     }

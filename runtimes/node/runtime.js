@@ -267,7 +267,7 @@ var send = function (port_name, val) {
 /* `get_parameter()` allows an accessor to retrieve specific parameters
  * from the runtime.
  */
-var get_parameter = function (parameter_name) {
+var getParameter = function (parameter_name) {
 	return parameters[parameter_name];
 }
 
