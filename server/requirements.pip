@@ -3,6 +3,7 @@ coloredlogs
 jinja2
 markdown
 pydblite
+git+https://github.com/ppannuto/pyjsdoc.git@py3k
 semantic_version
 setproctitle
 sh

@@ -28,6 +28,7 @@ import markdown
 import pydblite
 import arrow
 import semantic_version as semver
+import pyjsdoc
 
 import tornado
 import tornado.ioloop
@@ -489,74 +490,32 @@ def process_accessor(
 		name = None
 		author = None
 		email = None
-		website = None
 		description = None
 
 		warnings = collections.deque()
 		errors = collections.deque()
 
-		# Parse the accessor source to pull out information in the
-		# comments (name, author, email, website, description)
-		line_no = 0
-		in_comment = False
-		for line in contents.split('\n'):
-			line = line.strip()
-			line_no += 1
-			if len(line) is 0:
-				continue
+		try:
+			jsdoc = pyjsdoc.FileDoc(path, contents).to_dict()[0]
+		except IndexError:
+			parse_error("No valid jsdoc markup found", path)
+		if 'author' in jsdoc:
+			try:
+				m = re.search('(?P<author>.+) (?P<email>\<.+@.+\>)', jsdoc['author']).groupdict()
+				author = m['author']
+				email = m['email']
+			except (AttributeError, KeyError):
+				parse_error("@author must include email", path)
+		else:
+			print(type(jsdoc))
+			print(jsdoc)
+			parse_error("Missing required jsdoc key @author", path)
 
-			if not in_comment:
-				if line == '//':
-					if description is not None:
-						description += '\n'
-					continue
-				elif line[0:3] == '// ':
-					line = line[3:]
-				elif line[0:3] == '/* ':
-					line = '* ' + line[3:]
-					in_comment = True
-				else:
-					# log.debug("non-comment line: >>%s<<", line)
-					break
-			else:
-				if line == '*':
-					if description is not None:
-						description += '\n'
-					continue
-			if '*/' in line:
-				if line[-2:] != '*/':
-					parse_error("Comment terminator `*/` must end line",
-							path, line_no, line)
-				in_comment = False
-				continue
-			if in_comment:
-				if line[0:2] != '* ':
-					parse_error("Comment block lines must begin ' * '",
-							path, line_no, line)
-				line = line[2:]
-
-			if line.strip()[:8] == 'author: ':
-				author = line.strip()[8:].strip()
-			elif line.strip()[:7] == 'email: ':
-				email = line.strip()[7:].strip()
-			elif line.strip()[:9] == 'website: ':
-				website = line.strip()[9:].strip()
-			elif line.strip()[:6] == 'name: ':
-				name = line.strip()[6:].strip()
-			elif author and email and description is None:
-				if len(line.strip()) is 0:
-					continue
-				description = line + '\n'
-			elif description is not None:
-				description += line + '\n'
-			else:
-				# Comments above our stuff in the file
-				pass
-
-		if not author:
-			parse_error("Missing required key: author", path)
-		if not email:
-			parse_error("Missing required key: email", path)
+		description = jsdoc['doc']
+		# FIXME / HACK: pyjsdoc doesn't have native support for markdown. This
+		# isn't a big deal, but it will prepend an extra space to each line
+		# of the description blob, which causes problems down the line
+		description = description.replace('\n ', '\n')
 
 		meta = {
 				'name': name if name else filename,
@@ -570,8 +529,6 @@ def process_accessor(
 				}
 		# http://stackoverflow.com/q/3303312
 		meta['safe_name'] = re.sub('\W|^(?=\d)', '_', meta['name'])
-		if website:
-			meta['author']['website'] = website
 		if description:
 			meta['description'] = description
 
