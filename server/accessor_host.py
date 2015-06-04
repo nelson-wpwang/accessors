@@ -512,6 +512,9 @@ def process_accessor(
 		if 'display-name' in jsdoc:
 			name = jsdoc['display-name']
 
+		if 'module' not in jsdoc:
+			parse_error("Must include @module in top jsdoc block", path)
+
 		description = jsdoc['doc']
 		# FIXME / HACK: pyjsdoc doesn't have native support for markdown. This
 		# isn't a big deal, but it will prepend an extra space to each line
