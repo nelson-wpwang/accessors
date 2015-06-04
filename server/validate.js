@@ -30,6 +30,8 @@ try {
  var FUNC_USE_INTERFACE = 'provideInterface';
  var FUNC_GET_PARAMETER = 'getParameter';
 
+ var LEGACY_FUNCTIONS = ['create_port', 'provide_interface', 'get_parameter'];
+
  /*****************************************************************************/
 
 
@@ -660,6 +662,16 @@ function checkPortFunction(node) {
   }
 }
 
+
+function checkLegacyCode(node) {
+  if (LEGACY_FUNCTIONS.indexOf(node.callee.name) != -1) {
+    warnings.push({
+      loc: node.loc,
+      title: "The '" + node.callee.name + "' function is deprecated. It is ignored.",
+    });
+  }
+}
+
 function on_read(err, data) {
   if (err) { throw err; }
 
@@ -686,6 +698,7 @@ function on_read(err, data) {
       checkGetParameter(node);
       checkSend(node);
       checkNewPorts(node);
+      checkLegacyCode(node);
 
     } else if (node.type == 'AssignmentExpression') {
       // Looking for <PortName>.<direction> = function* ()
