@@ -8,10 +8,10 @@ import logging
 log = logging.getLogger(__name__)
 
 SUPPORTED_BLOCKING_FUNCTIONS = (
-		'rt.http.request',
-		'rt.http.get',
-		'rt.http.post',
-		'rt.http.put',
+		'http.request',
+		'http.get',
+		'http.post',
+		'http.put',
 		)
 
 def convert_type(type_str):
@@ -51,165 +51,6 @@ def convert(accessor):
 			ports.append(port)
 	accessor['ports'] = ports
 	code = code.replace('PCB.', '_HACK_NO_PCB_')
-
-	# Flip order of send arguments
-	code = '''
-/* The send implementations differ only in argument order, patch */
-var _berkeley_send = send;
-send = function(a, b) {
-	_berkeley_send(b, a);
-}
-
-''' + code
-
-	# Set up an object to map our rt functions
-	all_libs = True
-	rt = 'var rt = {};\n'
-	for lib in accessor['runtime_imports']:
-		if lib == 'log':
-			rt += '''\
-rt.log = {};
-rt.log.log = print;
-rt.log.debug = print;
-rt.log.info = print;
-rt.log.warn = print;
-rt.log.error = print;
-rt.log.critical = function (err) {
-	print(err);
-	throw "This accessor had a critical error. Needs to exit";
-};
-'''
-		elif lib == 'http':
-			rt += '''\
-/* Leverage the deprecated HTTP API to get blocking calls */
-rt.http = {};
-rt.http.request = httpRequest;
-rt.http.get = function (url) {
-	return httpRequest(url, 'GET');
-};
-rt.http.post = function (url, body) {
-	return httpRequest(url, 'POST', null, body);
-};
-rt.http.put = function (url, body) {
-	return httpRequest(url, 'PUT', null, body);
-};
-
-'''
-		elif lib == 'color':
-			rt += '''\
-/* Normally, we use the tinycolor.js library, but it's big so
- * pulling in a quick hand-rolled 'close-enough' from
- * http://www.cs.rit.edu/~ncs/color/t_convert.html */
-rt.color = {};
-rt.color.hex_to_hsv = function (RGB) {
-	var r, g, b;
-	var h, s, v;
-
-	// Hex RBG to r,g,b [0..1]
-	r = parseInt(RGB.slice(0,2)) / 255.0;
-	g = parseInt(RGB.slice(2,4)) / 255.0;
-	b = parseInt(RGB.slice(4,6)) / 255.0;
-
-	min = Math.min( r, g, b );
-	max = Math.max( r, g, b );
-	v = max;				// v
-
-	delta = max - min;
-	if( max != 0 )
-		s = delta / max;		// s
-	else {
-		// r = g = b = 0		// s = 0, v is undefined
-		s = 0;
-		h = -1;
-		return {h: h, s: s, v: v}
-	}
-	if( r == max )
-		h = ( g - b ) / delta;		// between yellow & magenta
-	else if( g == max )
-		h = 2 + ( b - r ) / delta;	// between cyan & yellow
-	else
-		h = 4 + ( r - g ) / delta;	// between magenta & cyan
-	h *= 60;				// degrees
-	if( h < 0 )
-		h += 360;
-	return {h: h, s: s, v: v}
-};
-rt.color.hsv_to_hex = function (HSV) {
-	var h, s, v;
-	var r, g, b;
-
-	h = HSV.h;
-	s = HSV.s;
-	v = HSV.v;
-
-	var i;
-	var f, p, q, t;
-	if( s == 0 ) {
-		// achromatic (grey)
-		r = g = b = v;
-	} else {
-		h /= 60;			// sector 0 to 5
-		i = Math.floor( h );
-		f = h - i;			// factorial part of h
-		p = v * ( 1 - s );
-		q = v * ( 1 - s * f );
-		t = v * ( 1 - s * ( 1 - f ) );
-		switch( i ) {
-			case 0:
-				r = v;
-				g = t;
-				b = p;
-				break;
-			case 1:
-				r = q;
-				g = v;
-				b = p;
-				break;
-			case 2:
-				r = p;
-				g = v;
-				b = t;
-				break;
-			case 3:
-				r = p;
-				g = q;
-				b = v;
-				break;
-			case 4:
-				r = t;
-				g = p;
-				b = v;
-				break;
-			default:		// case 5:
-				r = v;
-				g = p;
-				b = q;
-				break;
-		}
-	}
-
-	// Convert r,b,g to "RRGGBB"
-	var R = Number(r).toString(16); 
-	R = R.length == 1 ? "0" + R : R;
-	var G = Number(r).toString(16); 
-	G = G.length == 1 ? "0" + G : G;
-	var B = Number(r).toString(16); 
-	B = B.length == 1 ? "0" + B : B;
-
-	return R+B+G;
-};
-'''
-		else:
-			log.warn("No support for required library: %s", lib)
-			all_libs = False
-	if not all_libs:
-		raise NotImplementedError
-
-	# Debugging
-	rt = 'print("LOAD START");\n\n' + rt
-	rt += '\nprint("LOAD: RT DONE");\n\n'
-
-	code = rt + code
 
 	# Change port functions to be single literals
 	#   lighting.Light.input -> _lighting_light_input
@@ -352,7 +193,7 @@ $fires
 
 	# TODO: Open problem to map our `observe` construct
 	fire_fn_template = string.Template('''\
-	_berkeley_send(_${port_fn}_output(), '$port');
+	send(_${port_fn}_output(), '$port');
 ''')
 
 	fires = ''
@@ -439,8 +280,8 @@ $handles
 	code = code + initialize_template.substitute(handles=add_handles)
 	code = code + wrapup_template.substitute(handles=remove_handles)
 
-	# Remove calls to create_port, provide_interface
-	for remove in ('create_port', 'provide_interface'):
+	# Remove calls to createPort, provideInterface
+	for remove in ('createPort', 'provideInterface'):
 		while True:
 			try:
 				start = code.index(remove)
