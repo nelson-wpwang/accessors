@@ -5,8 +5,14 @@
  * should be passed to the fn should be added after the error fn.
  */
 
-var domain = require('domain');
-var Q      = require('q');
+var debug_lib = require('debug');
+var domain    = require('domain');
+var Q         = require('q');
+
+var debug = debug_lib('accessors:lib:debug');
+var info  = debug_lib('accessors:lib:info');
+var warn  = debug_lib('accessors:lib:warn');
+var error = debug_lib('accessors:lib:error');
 
 module.exports.callFn = function (fn) {
 	var sub_arguments = Array.prototype.slice.call(arguments).slice(1);

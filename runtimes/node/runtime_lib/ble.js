@@ -12,7 +12,9 @@ var error = debug_lib('accessors:ble:error');
 
 var poweredOn = false;
 
-module.export.Central = function* () {
+module.exports.Central = function* () {
+
+	var b = Object();
 
 	if (!poweredOn) {
 		info('BLE waiting for powered on');
@@ -31,12 +33,12 @@ module.export.Central = function* () {
 		return b;
 	}
 
-	return yield defer.promise;
-}
 
 
 
-module.export.Central.prototype.scan = function (uuids, callback) {
+
+// module.exports.Central.prototype.scan = function (uuids, callback) {
+b.scan = function (uuids, callback) {
 	info('BLE starting scan');
 	noble.on('discover', function (peripheral) {
 		lib.callFn(callback, peripheral);
@@ -48,11 +50,13 @@ module.export.Central.prototype.scan = function (uuids, callback) {
 	});
 };
 
-modul.export.Central.prototype.scanStop = function () {
+// module.exports.Central.prototype.scanStop = function () {
+b.scanStop = function () {
 	noble.stopScanning();
 }
 
-module.export.Central.prototype.connect = function* (peripheral, on_disconnect) {
+// module.exports.Central.prototype.connect = function* (peripheral, on_disconnect) {
+b.connect = function* (peripheral, on_disconnect) {
 	var connect_defer = Q.defer();
 	peripheral.connect(function (err) {
 		// Call the disconnect callback properly if the user defined one
@@ -64,7 +68,8 @@ module.export.Central.prototype.connect = function* (peripheral, on_disconnect) 
 	return yield connect_defer.promise;
 }
 
-module.export.Central.prototype.disconnect = function* (peripheral) {
+// module.exports.Central.prototype.disconnect = function* (peripheral) {
+b.disconnect = function* (peripheral) {
 	var disconnect_defer = Q.defer();
 	peripheral.disconnect(function (err) {
 		if (err) {
@@ -78,7 +83,8 @@ module.export.Central.prototype.disconnect = function* (peripheral) {
 	return yield disconnect_defer.promise;
 }
 
-module.export.Central.prototype.discoverServices = function* (peripheral, uuids) {
+// module.exports.Central.prototype.discoverServices = function* (peripheral, uuids) {
+b.discoverServices = function* (peripheral, uuids) {
 	var ds_defer = Q.defer();
 	peripheral.discoverServices(uuids, function (err, services) {
 		if (err) {
@@ -92,7 +98,8 @@ module.export.Central.prototype.discoverServices = function* (peripheral, uuids)
 	return yield ds_defer.promise;
 }
 
-module.export.Central.prototype.discoverCharacteristics = function* (service, uuids) {
+// module.exports.Central.prototype.discoverCharacteristics = function* (service, uuids) {
+b.discoverCharacteristics = function* (service, uuids) {
 	var dc_defer = Q.defer();
 	service.discoverCharacteristics(uuids, function (err, characteristics) {
 		if (err) {
@@ -106,7 +113,8 @@ module.export.Central.prototype.discoverCharacteristics = function* (service, uu
 	return yield dc_defer.promise;
 }
 
-module.export.Central.prototype.readCharacteristic = function* (characteristic) {
+// module.exports.Central.prototype.readCharacteristic = function* (characteristic) {
+b.readCharacteristic = function* (characteristic) {
 	var rc_defer = Q.defer();
 	characteristic.read(function (err, data) {
 		if (err) {
@@ -120,7 +128,8 @@ module.export.Central.prototype.readCharacteristic = function* (characteristic) 
 	return yield rc_defer.promise;
 }
 
-module.export.Central.prototype.writeCharacteristic = function* (characteristic, data) {
+// module.exports.Central.prototype.writeCharacteristic = function* (characteristic, data) {
+b.writeCharacteristic = function* (characteristic, data) {
 	var wc_defer = Q.defer();
 	characteristic.write(new Buffer(data), false, function (err) {
 		if (err) {
@@ -134,7 +143,8 @@ module.export.Central.prototype.writeCharacteristic = function* (characteristic,
 	return yield wc_defer.promise;
 }
 
-module.export.Central.prototype.notifyCharacteristic = function (characteristic, notification) {
+// module.exports.Central.prototype.notifyCharacteristic = function (characteristic, notification) {
+b.notifyCharacteristic = function (characteristic, notification) {
 	characteristic.notify(true, function (err) {
 		if (err) {
 			error('BLE unable to setup notify for characteristic.');
@@ -147,4 +157,8 @@ module.export.Central.prototype.notifyCharacteristic = function (characteristic,
 			});
 		}
 	});
+}
+
+
+	return yield defer.promise;
 }
