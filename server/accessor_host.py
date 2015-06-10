@@ -546,6 +546,7 @@ def process_accessor(
 			log.error(e.stderr.decode("unicode_escape"))
 			raise
 		raw_analyzed = analyzed.stdout.decode('utf-8')
+		print(raw_analyzed)
 		analyzed = json.loads(raw_analyzed)
 
 		if 'parse_error' in analyzed:
@@ -773,14 +774,14 @@ def process_accessor(
 
 		# Only try if no warnings, make too many assumptions o/w
 		berkeley = None
-		if len(warnings) == 0:
-			try:
-				berkeley = mich_to_berk.convert(accessor)
-			except NotImplementedError:
-				pass
-			except Exception:
-				log.error("Uncaught exception from mich_to_berk")
-				raise Exception
+		# if len(warnings) == 0:
+		# 	try:
+		# 		berkeley = mich_to_berk.convert(accessor)
+		# 	except NotImplementedError:
+		# 		pass
+		# 	except Exception:
+		# 		log.error("Uncaught exception from mich_to_berk")
+		# 		raise Exception
 
 		# Save accessor in in-memory DB
 		db.insert(name=meta['name'],
@@ -1336,9 +1337,9 @@ class handler_accessor_example (handler_accessor_page):
 
 ### Templates for example code for implementing a given interface
 tmpl_accessor_interface = string.Template(
-'''// name: 
-// author: 
-// email: 
+'''// name:
+// author:
+// email:
 //
 // <accessor title>
 // ================

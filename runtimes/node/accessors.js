@@ -222,11 +222,6 @@ function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
 		parameters = {};
 	}
 
-	//XXX: Implement something to figure out the runtime imports neccessary
-	// var runtime_lib_file = path_module.join(__dirname, 'runtime_lib.js');
-	// var requires = "var rt = require('"+runtime_lib_file+"');\n";
-	var requires = '';
-
 	// Verify that all required parameters were provided, copy in default values
 	for (var i=0; i < accessor_ir.parameters.length; i++) {
 		var name = accessor_ir.parameters[i].name;
@@ -250,17 +245,14 @@ function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
 	var runtime_file = path_module.join(__dirname, 'runtime.js');
 	var runtime_code = fs.readFileSync(runtime_file);
 
-	// Need objects for our port function scheme (e.g. Power.input)
-	var port_objs = get_port_objects(accessor_ir);
-
 	// Need an object for the input handlers
-	var input_handlers = get_input_port_handlers(accessor_ir);
+	var input_handlers = get_port_handler_arrays(accessor_ir);
 
 	// Export the functions that one can call on this accessor
 	var exports = get_exports(accessor_ir);
 
 	// Turn the code into a module
-	var module_as_string = requires + port_objs + params + runtime_code + accessor_ir.code + input_handlers + exports;
+	var module_as_string = params + runtime_code + accessor_ir.code + input_handlers + exports;
 	if (typeof module_as_string !== 'string') {
 		error("something isn't a string in " + accessor_ir.name);
 		throw "This accessor won't work";
@@ -289,117 +281,77 @@ function requireFromString(src) {
 	return m.exports;
 }
 
-// Accessors specify port functions as
-//
-//    PortName.input = function* () {...}
-//
-// We need `PortName` to exist.
-function get_port_objects (accessor) {
-	var port_obj_created = new hashmap.HashMap();
-	var port_obj_str = '';
-
-	for (var i=0; i<accessor.ports.length; i++) {
-		var port = accessor.ports[i];
-		var temp = port.function.split('.');
-		var name = temp.shift();
-
-		if (temp.length == 0) {
-			// This is a created port
-			port_obj_str += 'var ' + name + ' = {};';
-			continue
-		}
-
-		var dovar = !port_obj_created.has(name);
-		var extra = ''
-		while (temp.length) {
-			if (!port_obj_created.has(name)) {
-				extra += name + ' = {};';
-				port_obj_created.set(name, '');
-			}
-			name += '.' + temp.shift();
-		}
-		if (dovar) {
-			port_obj_str += 'var ' + extra + name + ' = {};';
-		} else {
-			port_obj_str += extra + name + ' = {};';
-		}
-	}
-
-	return port_obj_str;
-}
-
-// Need to support addInputHandler.
+// Need to support addInputHandler/addOutputHandler.
 //
 // Must generate:
-//   _input_handlers = {
-//       <port_name>: [full.name.input],
+//   _port_handlers = {
+//       <port_name>: {input: [<func>], output: [<func>]},
 //   }
-// for all input ports.
-function get_input_port_handlers (accessor) {
-	var ret = 'var _input_handlers = {_fire:[],';
+//   _port_subscribers = {
+//       <port_name>: {success: [<func>], error: [<func>]}
+//   }
+// for all ports.
+function get_port_handler_arrays (accessor) {
+	var ret = "var _port_handlers = {_fire: [],";
+	var reu = "var _port_subscribers = {";
 
 	for (var i=0; i<accessor.ports.length; i++) {
 		var port = accessor.ports[i];
+
+		ret += "'" + port.name + "': {";
+
 		if (port.directions.indexOf('input') > -1) {
-			ret += "'" + port.name + '\': [' + port.function + '.input],';
+			ret += "input: [],"
 		}
+		if (port.directions.indexOf('output') > -1) {
+			ret += "output: [],"
+			reu += "'" + port.name + "': {success: [], error: []},";
+		}
+		ret += "},"
+
 	}
 	ret += '};';
-	return ret;
+	reu += '};';
+
+	return ret + reu;
 }
 
 function get_exports (accessor) {
 	// need to keep a list of module exports for toplevel to call
-	var export_str = "module.exports = {};\n";
+	var export_str = `
+module.exports = {};
 
-	// Need to play the same game as port objects here (probably could have
-	// made these one function or something; oh well)
-	var export_obj_created = new hashmap.HashMap();
+module.exports.init = function (succ_cb, err_cb) {
+  if (typeof init !== "undefined") {
+    _do_port_call("init", null, null, succ_cb, err_cb);
+  } else {
+    succ_cb();
+  }
+};
 
-	// Need to add functions for each port of the accessor to the exports listing
-	for (var i=0; i<accessor.ports.length; i++) {
-		var port = accessor.ports[i];
-		var name = port.name;
-		var func = port.function;
+// Write a port to set its value or control the device
+module.exports.write = function (port_name, value, succ_cb, err_cb) {
+  _do_port_call(port_name, "input", value, succ_cb, err_cb);
+};
 
-		//var export_name = func.replace(/\./g, '_');
-		var export_name = '';
-		var temp = func.split('.');
-		var tname = temp.shift();
+// Read a port to get its current value
+module.exports.read = function (port_name, succ_cb, err_cb) {
+  _do_port_call(port_name, "output", null, succ_cb, err_cb);
+};
 
-		while (true) {
-			if (!export_obj_created.has(tname)) {
-				export_str += 'module.exports.'+tname+' = {};\n';
-				export_obj_created.set(tname, '');
-			}
-			if (temp.length == 0) break;
-			tname += '.' + temp.shift();
-		};
-		export_name = tname;
+// Get notified when an output port gets called.
+module.exports.subscribe = function (port_name, cb, err_cb) {
+  _register_subscriber(port_name, false, cb, err_cb);
+};
 
-		// Generate either a wrapper to call a port or stub function that will
-		// indicate that the port is invalid for all possible port functions
-		var possible_directions = ['input', 'output', 'observe'];
-
-		for (var j=0; j<possible_directions.length; j++) {
-			var direction = possible_directions[j];
-			if (port.directions.indexOf(direction) != -1) {
-				export_str += 'module.exports.'+export_name + '.' + direction + ' = function () {_do_port_call.apply(this, ['+func+'.'+direction+',"'+name+'","'+direction+'",arguments[0],arguments[1],arguments[2]])};\n';
-			} else {
-				var areis = (port.directions.length == 1) ? 'is':'are';
-				var msg = "Cannot call "+direction+" on "+port.name+". Only "+port.directions+" "+areis+" valid for " + port.name;
-				export_str += 'module.exports.'+export_name + '.' + direction + ' = function () {rt.log.critical("'+msg+'");};';
-			}
-		}
-	}
-
-	export_str += '\nmodule.exports.init = function (succ_cb, err_cb) {\n';
-	export_str += '  if (typeof(init) !== "undefined") {\n';
-	export_str += '    _do_port_call(init, "init", null, null, succ_cb, err_cb);\n';
-	export_str += '  } else {\n';
-	export_str += '    succ_cb();\n';
-	export_str += '  }\n';
-	export_str += '};\n';
+// Cleanup accessor state.
+module.exports.wrapup = function (succ_cb, err_cb) {
+  if (typeof wrapup !== "undefined") {
+    _do_port_call("wrapup", null, null, succ_cb, err_cb);
+  } else {
+    succ_cb();
+  }
+};`;
 
 	return export_str;
 }

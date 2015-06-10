@@ -171,16 +171,18 @@ function console_from_ir (accessor_id, accessor_ir) {
 				// Ask the user how to interact with the port
 				var question = 'Direction: [';
 				if (port.directions.indexOf('output') > -1) {
-					question += 'get, ';
-					cmd = 'get';
+					if (port.attributes.indexOf('event') > -1) {
+						question += 'listen, ';
+						cmd = 'listen';
+					}
+					if (port.attributes.indexOf('read') > -1) {
+						question += 'get, ';
+						cmd = 'get';
+					}
 				}
 				if (port.directions.indexOf('input') > -1) {
 					question += 'set, ';
 					cmd = 'set';
-				}
-				if (port.directions.indexOf('observe') > -1) {
-					question += 'listen, ';
-					cmd = 'listen';
 				}
 				question = question.substring(0, question.length-2) + ']: ';
 
@@ -189,14 +191,8 @@ function console_from_ir (accessor_id, accessor_ir) {
 					cmd = readline.question(question.bold.blue);
 				}
 
-				// Feels like there should be some idiomatic JS way to index
-				// down several object levels, but I don't know it and this works
-				var temp = port.function.split('.');
-				var port_obj = accessor[temp.shift()];
-				while (temp.length) port_obj = port_obj[temp.shift()];
-
 				if (cmd == 'get') {
-					port_obj.output(interact, function (err) {
+					accessor.read(port.name, interact, function (err) {
 						console.log('CLI: error ' + err);
 					});
 				} else if (cmd == 'set') {
@@ -206,9 +202,11 @@ function console_from_ir (accessor_id, accessor_ir) {
 					} else if (val == 'false') {
 						val = false;
 					}
-					port_obj.input(val, interact);
+					accessor.write(port.name, val, interact);
 				} else if (cmd == 'listen') {
-					port_obj.observe(subscribe_callback);
+					accessor.subscribe(port.name, subscribe_callback);
+					console.log('Added subscription to port'.magenta);
+					interact();
 				} else {
 					console.log(('"'+cmd+'" is not a valid direction').yellow);
 					interact();

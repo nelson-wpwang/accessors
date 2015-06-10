@@ -26,11 +26,17 @@ try {
  *
  */
 
- var FUNC_NEW_PORT = 'createPort';
- var FUNC_USE_INTERFACE = 'provideInterface';
- var FUNC_GET_PARAMETER = 'getParameter';
+var FUNC_NEW_PORT = 'createPort';
+var FUNC_USE_INTERFACE = 'provideInterface';
+var FUNC_GET_PARAMETER = 'getParameter';
 
- var LEGACY_FUNCTIONS = ['create_port', 'provide_interface', 'get_parameter'];
+var LEGACY_FUNCTIONS = ['create_port', 'provide_interface', 'get_parameter'];
+
+var PORT_ATTR_WRITE = 'write';
+var PORT_ATTR_READ = 'read';
+var PORT_ATTR_EVENT = 'event';
+var PORT_ATTR_EVENT_PERIODIC = 'eventPeriodic';
+var PORT_ATTR_EVENT_CHANGE = 'eventChange';
 
  /*****************************************************************************/
 
@@ -289,7 +295,7 @@ function checkNewPortParameters(port, pnode) {
       if (prop.type !== 'Property') {
         errors.push({
           loc: pnode.loc,
-          title: "Unxpected non-property in port parameters: " + prop,
+          title: "Unexpected non-property in port parameters: " + prop,
         });
         continue;
       }
@@ -541,7 +547,8 @@ var interface_port_list = [];
 function checkNewPorts(node) {
   if (node.callee.name === FUNC_NEW_PORT) {
     var nameNode = node.arguments[0];
-    var parametersNode = node.arguments[1];
+    var attrNode = node.arguments[1];
+    var parametersNode = node.arguments[2];
 
     var legal_port_regex = /^[A-Za-z]\w*$/;
     if (nameNode.type !== 'Literal') {
@@ -562,8 +569,36 @@ function checkNewPorts(node) {
     var port = {
       name: nameNode.value,
       function: nameNode.value,
-      directions: []
+      directions: [],
+      attributes: []
     };
+
+    // Set the directions based on the port attributes
+    for (var i=0; i<attrNode.elements.length; i++) {
+      var attr = attrNode.elements[i].value;
+      if (port.directions.indexOf('input') == -1) {
+        if (attr == PORT_ATTR_WRITE) {
+          port.directions.push('input');
+        }
+      }
+      if (port.directions.indexOf('output') == -1) {
+        if (attr == PORT_ATTR_READ ||
+            attr == PORT_ATTR_EVENT ||
+            attr == PORT_ATTR_EVENT_PERIODIC ||
+            attr == PORT_ATTR_EVENT_CHANGE) {
+          port.directions.push('output');
+        }
+      }
+      port.attributes.push(attr);
+    }
+
+    // Make sure that if this port creates any events, it also
+    // has the PORT_ATTR_EVENT attribute.
+    if (port.attributes.indexOf(PORT_ATTR_EVENT) == -1 &&
+        (port.attributes.indexOf(PORT_ATTR_EVENT_PERIODIC) ||
+         port.attributes.indexOf(PORT_ATTR_EVENT_CHANGE))) {
+      port.attributes.push(PORT_ATTR_EVENT);
+    }
 
     if (parametersNode !== undefined) {
       if (parametersNode.type !== 'ObjectExpression') {
@@ -579,13 +614,13 @@ function checkNewPorts(node) {
       port.type = 'string';
     }
 
-    if (node.arguments[2] !== undefined) {
-      var warning = {
-        title: "The '" + FUNC_NEW_PORT + "' function takes only 2 arguments, the rest are ignored",
-        loc: node.loc,
-      };
-      warnings.push(warning);
-    }
+    // if (node.arguments[2] !== undefined) {
+    //   var warning = {
+    //     title: "The '" + FUNC_NEW_PORT + "' function takes only 2 arguments, the rest are ignored",
+    //     loc: node.loc,
+    //   };
+    //   warnings.push(warning);
+    // }
 
     created_port_list.push(port);
   }

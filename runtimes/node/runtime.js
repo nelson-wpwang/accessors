@@ -15,22 +15,73 @@ var info  = debug_lib('accessors:info');
 var warn  = debug_lib('accessors:warn');
 var error = debug_lib('accessors:error');
 
-var AcessorRuntimeException = Error;
+var _remove_from_array = function (item, arr) {
+	var to_remove = -1;
+	for (var i=0; i<arr.length; i++) {
+		if (arr[i] === item) {
+			to_remove = i;
+			break;
+		}
+	}
+	if (to_remove > -1) {
+		arr.splice(to_remove, 1);
+	}
+}
 
-// Keep track of callbacks on observe ports. Also keep track of error callbacks,
-// so if the listener gets booted we can alert the error callback.
-var _observe_listeners = {};
+// Add a listener to an output port.
+//
+// If temporary == true, de-register the callback after it is called once
+var _register_subscriber = function (port_name, temporary, done_fn, error_fn) {
+
+	if (error_fn !== 'function') {
+		error_fn = function (s) {
+			error('Got error with no error function: ' + s);
+		};
+	}
+
+	if (!(port_name in _port_subscribers)) {
+		error_fn('Port "' + port_name + '" does not exist.');
+		return;
+	}
+
+	if (temporary) {
+		var on_called = function (val) {
+			// First thing, remove these callbacks
+			_remove_from_array(on_called, _port_subscribers[port_name].success);
+			_remove_from_array(on_err, _port_subscribers[port_name].error);
+
+			// Then call the actual function we care about
+			done_fn(val);
+		}
+		var on_err = function (err) {
+			// First thing, remove these callbacks
+			_remove_from_array(on_called, _port_subscribers[port_name].success);
+			_remove_from_array(on_err, _port_subscribers[port_name].error);
+
+			// Then call the actual function we care about
+			error_fn(val);
+		}
+		_port_subscribers[port_name].success.push(on_called);
+		_port_subscribers[port_name].error.push(on_err);
+
+	} else {
+		// Add the callbacks to the correct callback arrays.
+		_port_subscribers[port_name].success.push(done_fn);
+		_port_subscribers[port_name].error.push(error_fn);
+	}
+}
 
 // Function that wraps calling a port. This sets up all of the promises/futures
 // code so that "await" works.
-var _do_port_call = function (port, port_name, direction, value, done_fn, error_fn) {
+var _do_port_call = function (port_name, direction, value, done_fn, error_fn) {
 	var r;
 
 	// in the OUTPUT case, there is no value.
 	// in the other cases, there should be a value
-	if (direction == 'output' && typeof value === 'function') {
+	if (direction === 'output' && typeof value === 'function') {
 		error_fn = done_fn;
 		done_fn = value;
+		value = null;
 	}
 
 	if (typeof done_fn === 'undefined') {
@@ -47,64 +98,28 @@ var _do_port_call = function (port, port_name, direction, value, done_fn, error_
 
 	info("before port call of " + port_name + "(" + value + ")");
 
-	// Need to handle observe specially.
-	// With observe, value is a callback that we have to remember.
-	if (direction == 'observe' && typeof value === 'function') {
-		info('Adding observe callback for ' + port_name);
-		if (!(port_name in _observe_listeners)) {
-			_observe_listeners[port_name] = {
-				data_callbacks: [],
-				error_callbacks: []
-			};
-		}
-		// Check that this callback hasn't already been registered
-		var already_added = false;
-		for (var i=0; i<_observe_listeners[port_name].data_callbacks.length; i++) {
-			if (_observe_listeners[port_name].data_callbacks[i] == value) {
-				info('Function for port ' + port_name + ' already added.');
-				already_added = true;
-				break;
-			}
-		}
-		if (!already_added) {
-			// Add the callback to the listener list
-			_observe_listeners[port_name].data_callbacks.push(value);
-			_observe_listeners[port_name].error_callbacks.push(error_fn);
-		}
-
-		// Now we only need to call the actual accessor if we haven't set
-		// up an observe callback before.
-		if (_observe_listeners[port_name].data_callbacks.length > 1) {
-			done_fn();
-			return;
-		} else {
-			// If this is the first listener we need to call the accessor
-			// with `true` so that it sets up the callback
-			value = true;
-		}
+	// With output, we need to register the given callback before calling the
+	// output handling functions. temporary is set to true so that this will
+	// only get called once.
+	if (direction === 'output') {
+		_register_subscriber(port_name, true, done_fn, error_fn);
 	}
 
 	// Determine which functions to call.
-	// By default, just call the port function.
-	var to_call = [port];
-	if (direction === 'input') {
-		// If this is an input, however, call all functions that have been
-		// configured as handlers (dynamically or upon creation).
-		to_call = _input_handlers[port_name];
+	// These are based on the port handlers that were configured.
+	var to_call = [];
+	if (port_name === 'init') {
+		to_call = [init];
+	} else if (port_name === 'wrapup') {
+		to_call = [wrapup];
+	} else {
+		to_call = _port_handlers[port_name][direction];
 	}
 
 	var d = domain.create();
 
 	d.on('error', function (err) {
 		d.exit();
-
-		// If an error occurred while setting up the observe, remove the
-		// registered callbacks
-		if (direction === 'observe') {
-			_observe_listeners[port_name].data_callbacks = [];
-			_observe_listeners[port_name].error_callbacks = [];
-		}
-
 		error_fn(err);
 	});
 
@@ -120,7 +135,13 @@ var _do_port_call = function (port, port_name, direction, value, done_fn, error_
 					});
 
 					def().done(function () {
-						done_fn(r);
+						// We only call the callback when this is an input.
+						// If this is an output, when the accessor calls
+						// `send()` the done callback will be called.
+						// We also call done for init and wrapup
+						if (direction === 'input' || direction === null) {
+							done_fn(r);
+						}
 
 					}, function (err) {
 						// Throw this error so that the domain can pick it up.
@@ -129,7 +150,9 @@ var _do_port_call = function (port, port_name, direction, value, done_fn, error_
 					info("port call running asynchronously");
 
 				} else {
-					done_fn(r);
+					if (direction === 'input' || direction === null) {
+						done_fn(r);
+					}
 				}
 			})(to_call[i]);
 		}
@@ -149,34 +172,32 @@ var addInputHandler = function (port_name, func) {
 	if (typeof port_name === 'function') {
 		// Using the function in this way defines a new fire() function
 		// Check for duplicates
-		for (var i=0; i<_input_handlers._fire.length; i++) {
-			if (_input_handlers._fire[i] === port_name) {
+		for (var i=0; i<_port_handlers._fire.length; i++) {
+			if (_port_handlers._fire[i] === port_name) {
 				error('Adding duplicate fire() function.');
 				return null;
 			}
 		}
 		// Add the new fire function before the original fire function
-		_input_handlers._fire.unshift(port_name);
+		_port_handlers._fire.unshift(port_name);
 		return ['_fire', func];
 	}
-
-
 
 	if (func === null || func === 'undefined') {
 		// Ignore this case.
 		return;
 	}
 	if (typeof func === 'function') {
-		if (port_name in _input_handlers) {
+		if (port_name in _port_handlers) {
 			// Check that this hasn't already been added.
-			for (var i=0; i<_input_handlers[port_name].length; i++) {
-				if (func === _input_handlers[port_name][i]) {
+			for (var i=0; i<_port_handlers[port_name].input.length; i++) {
+				if (func === _port_handlers[port_name].input[i]) {
 					error('Already added this handler function.');
 					return null;
 				}
 			}
 
-			_input_handlers[port_name].push(func);
+			_port_handlers[port_name].input.push(func);
 			// Return the name and the function so it can be removed,
 			// if desired.
 			return [port_name, func];
@@ -193,20 +214,50 @@ var addInputHandler = function (port_name, func) {
 var removeInputHandler = function (handle) {
 	if (handle instanceof Array) {
 		if (handle.length == 2) {
-			if (handle[0] in _input_handlers) {
-				var to_remove = -1;
-				// Iterate through the callbacks looking for
-				for (var i=0; i<_input_handlers[handle[0]].length; i++) {
-					var handler = _input_handlers[handle[0]][i];
-					if (handler === handle[1]) {
-						to_remove = i;
-						break;
-					}
+			if (handle[0] in _port_handlers) {
+				_remove_from_array(handle[1], _port_handlers[handle[0]].input);
+			} else {
+				error('Remove handle for non-existent port.');
+			}
+		} else {
+			error('Bad handle, wrong length.');
+		}
+	} else {
+		error('Bad handle, not array.')
+	}
+}
+
+
+var addOutputHandler = function (port_name, func) {
+	if (typeof func === 'function') {
+		if (port_name in _port_handlers) {
+			// Check that this hasn't already been added.
+			for (var i=0; i<_port_handlers[port_name].output.length; i++) {
+				if (func === _port_handlers[port_name].output[i]) {
+					error('Already added this handler function.');
+					return null;
 				}
-				if (to_remove > -1) {
-					// Actually remove it from the array
-					_input_handlers[handle[0]].splice(to_remove, 1);
-				}
+			}
+
+			_port_handlers[port_name].output.push(func);
+			// Return the name and the function so it can be removed,
+			// if desired.
+			return [port_name, func];
+		} else {
+			error('Assigning a new output handler to port_name that does not exist.');
+		}
+	} else {
+		error('Output handler must be a function');
+	}
+	return null;
+}
+
+// This allows an accessor to remove an input callback
+var removeOutputHandler = function (handle) {
+	if (handle instanceof Array) {
+		if (handle.length == 2) {
+			if (handle[0] in _port_handlers) {
+				_remove_from_array(handle[1], _port_handlers[handle[0]].output);
 			} else {
 				error('Remove handle for non-existent port.');
 			}
@@ -239,28 +290,33 @@ var get = function (port_name) {
 var send = function (port_name, val) {
 	info("SEND: " + port_name + " <= " + val);
 
-	if (port_name in _observe_listeners) {
+	if (port_name in _port_subscribers) {
 
-		// In case a callback fails, we want to remove it
-		var listeners_to_remove = [];
+		// // In case a callback fails, we want to remove it
+		// var listeners_to_remove = [];
 
-		for (var i=0; i<_observe_listeners[port_name].data_callbacks.length; i++) {
-			try {
-				_observe_listeners[port_name].data_callbacks[i](val);
-			} catch (err) {
-				warn('Removing observe listener ' + i + ' due to exception.');
-				listeners_to_remove.push(i);
-			}
+		for (var i=0; i<_port_subscribers[port_name].success.length; i++) {
+			(function (fn) {
+				try {
+					fn(val);
+				} catch (err) {
+					error('Could not send event.');
+					// warn('Removing observe listener ' + i + ' due to exception.');
+					// listeners_to_remove.push(i);
+				}
+			})(_port_subscribers[port_name].success[i]);
 		}
 
-		// Remove broken listeners
-		while (listeners_to_remove.length) {
-			var to_remove = listeners_to_remove.pop();
-			_observe_listeners[port_name].data_callbacks.splice(to_remove, 1);
-			_observe_listeners[port_name].error_callbacks[to_remove]('Removed');
-			_observe_listeners[port_name].error_callbacks.splice(to_remove, 1);
-		}
+		// // Remove broken listeners
+		// while (listeners_to_remove.length) {
+		// 	var to_remove = listeners_to_remove.pop();
+		// 	_observe_listeners[port_name].data_callbacks.splice(to_remove, 1);
+		// 	_observe_listeners[port_name].error_callbacks[to_remove]('Removed');
+		// 	_observe_listeners[port_name].error_callbacks.splice(to_remove, 1);
+		// }
 
+	} else {
+		info('No subscribers for this port.');
 	}
 }
 
