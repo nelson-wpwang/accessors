@@ -376,6 +376,21 @@ class Interface():
 			detail['name'] = '/' + '/'.join(port.split('.'))
 			detail['function'] = function_name
 			detail['interface_path'] = self.path
+
+			# NOT SURE IF THIS SHOULD BE HERE
+			if 'attributes' in detail:
+				detail['directions'] = []
+				if 'read' in detail['attributes']:
+					detail['directions'].append('output');
+				if 'write' in detail['attributes']:
+					detail['directions'].append('input');
+				if 'event' in detail['attributes'] or \
+				   'eventPeriodic' in detail['attributes'] or \
+				   'eventChange' in detail['attributes']:
+					detail['directions'].append('output');
+
+
+
 			# We add some (currently) optional keys to make downstream stuff
 			# easier, TODO: re-think about what should be required in the
 			# definition of a complete accessor
@@ -628,89 +643,94 @@ def process_accessor(
 			# Delete ambiguous entries
 			del inferred_iface_ports[name]
 
-		accessor['normalized_interface_ports'] = []
-		name_map = {}
-		for port in accessor['interface_ports']:
-			if '.' not in port['name']:
-				# Port is an unqualified name
-				if port['name'] in inferred_iface_ports:
-					norm = inferred_iface_ports[port['name']]
-				else:
-					if port['name'] in inferred_iface_ports_to_delete:
-						errors.appendleft({
-							'title': "Unqualified ambiguous port",
-							'extra': [
-								"The port named " + port['name'] + " belongs to multiple implemented interfaces",
-								"It must be fully qualified",
-							]})
-						raise NotImplementedError
-					else:
-						warnings.appendleft({
-							'title': 'Undeclared port implementation',
-							'extra': [
-								"The port named " + port['name'] + " does not belong to any implemented interface or created port.",
-								"It is ignored."]
-							})
-						norm = ''
-			else:
-				# Port is a fully qualified name
-				try:
-					norm = Interface.normalize(port['name'])
-				except KeyError:
-					errors.appendleft({
-						'title': "The port named " + port['name'] + " does not match any known interface",
-						})
-					raise NotImplementedError
 
-			if norm in accessor['normalized_interface_ports']:
-				errors.appendleft({
-					'title': 'Duplicate port conflict',
-					'extra': [
-						'Found trying to insert ' + port['name'],
-						'But had previously inserted ' + norm
-					]})
-				raise NotImplementedError
-			accessor['normalized_interface_ports'].append(norm)
-			name_map[norm] = port
+		# CANT CHECK THIS WITH addInputHandler SYSTEM (AT LEAST NOT WITH THIS CODE)
+		# accessor['normalized_interface_ports'] = []
+		# name_map = {}
+		# for port in accessor['interface_ports']:
+		# 	if '.' not in port['name']:
+		# 		# Port is an unqualified name
+		# 		if port['name'] in inferred_iface_ports:
+		# 			norm = inferred_iface_ports[port['name']]
+		# 		else:
+		# 			if port['name'] in inferred_iface_ports_to_delete:
+		# 				errors.appendleft({
+		# 					'title': "Unqualified ambiguous port",
+		# 					'extra': [
+		# 						"The port named " + port['name'] + " belongs to multiple implemented interfaces",
+		# 						"It must be fully qualified",
+		# 					]})
+		# 				raise NotImplementedError
+		# 			else:
+		# 				warnings.appendleft({
+		# 					'title': 'Undeclared port implementation',
+		# 					'extra': [
+		# 						"The port named " + port['name'] + " does not belong to any implemented interface or created port.",
+		# 						"It is ignored."]
+		# 					})
+		# 				norm = ''
+		# 	else:
+		# 		# Port is a fully qualified name
+		# 		try:
+		# 			norm = Interface.normalize(port['name'])
+		# 		except KeyError:
+		# 			errors.appendleft({
+		# 				'title': "The port named " + port['name'] + " does not match any known interface",
+		# 				})
+		# 			raise NotImplementedError
+
+		# 	if norm in accessor['normalized_interface_ports']:
+		# 		errors.appendleft({
+		# 			'title': 'Duplicate port conflict',
+		# 			'extra': [
+		# 				'Found trying to insert ' + port['name'],
+		# 				'But had previously inserted ' + norm
+		# 			]})
+		# 		raise NotImplementedError
+		# 	accessor['normalized_interface_ports'].append(norm)
+		#	name_map[norm] = port
 
 		for claim in accessor['implements']:
 			iface = interface_tree[claim['interface']]
 			for req in iface:
-				if req not in accessor['normalized_interface_ports']:
-					errors.appendleft({
-						'title': 'Incomplete interface implementation -- missing port',
-						'extra': [
-							"Interface %s requires %s" % (
-								claim['interface'],
-								req,
-								),
-							"But %s from %s only implements %s" % (
-								accessor['name'],
-								accessor['_path'],
-								accessor['normalized_interface_ports'],
-								)
-							]
-						})
-					complete_interface = False
-				for direction in iface[req]['directions']:
-					if direction not in name_map[req]['directions']:
-						errors.appendleft({
-							'title': 'Incomplete interface implemetnation -- missing port direction',
-							'extra': [
-								"Interface %s port %s requires %s" % (
-									iface,
-									req,
-									iface[req]['directions'],
-									),
-								"But %s from %s only implements %s" % (
-									accessor['name'],
-									accessor['_path'],
-									name_map[req]['directions'],
-									)
-								]
-							})
-						complete_interface = False
-				accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
+				# if req not in accessor['normalized_interface_ports']:
+				# 	errors.appendleft({
+				# 		'title': 'Incomplete interface implementation -- missing port',
+				# 		'extra': [
+				# 			"Interface %s requires %s" % (
+				# 				claim['interface'],
+				# 				req,
+				# 				),
+				# 			"But %s from %s only implements %s" % (
+				# 				accessor['name'],
+				# 				accessor['_path'],
+				# 				accessor['normalized_interface_ports'],
+				# 				)
+				# 			]
+				# 		})
+				# 	complete_interface = False
+				# for direction in iface[req]['directions']:
+				# 	if direction not in name_map[req]['directions']:
+				# 		errors.appendleft({
+				# 			'title': 'Incomplete interface implementation -- missing port direction',
+				# 			'extra': [
+				# 				"Interface %s port %s requires %s" % (
+				# 					iface,
+				# 					req,
+				# 					iface[req]['directions'],
+				# 					),
+				# 				"But %s from %s only implements %s" % (
+				# 					accessor['name'],
+				# 					accessor['_path'],
+				# 					name_map[req]['directions'],
+				# 					)
+				# 				]
+				# 			})
+				# 		complete_interface = False
+				# accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
+				accessor['ports'].append(iface.get_port_detail(req, ''))
+
+
 
 		# Run the other accessor checker concept
 		#err = validate_accessor.check(accessor)
@@ -735,6 +755,7 @@ def process_accessor(
 		for port in sends_to:
 			impl = None
 			for p in accessor['ports']:
+				print(p['name'])
 				if p['name'] == port:
 					impl = p
 					break
@@ -744,12 +765,12 @@ def process_accessor(
 					})
 				complete_interface = False
 				continue
-			if 'observe' not in p['directions']:
-				# Perhaps this should instead implicitly make this an observable
-				# port, perhaps that's too much magic.
-				warnings.appendleft({
-					'title': "Send to '{}' sends to a port that is not declared as an observable port".format(port)
-					})
+			# if 'observe' not in p['directions']:
+			# 	# Perhaps this should instead implicitly make this an observable
+			# 	# port, perhaps that's too much magic.
+			# 	warnings.appendleft({
+			# 		'title': "Send to '{}' sends to a port that is not declared as an observable port".format(port)
+			# 		})
 
 		if 'code' in accessor:
 			accessor['code_alternates'] = {}

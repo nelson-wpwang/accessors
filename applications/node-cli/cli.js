@@ -149,6 +149,7 @@ function console_from_ir (accessor_id, accessor_ir) {
 		print_ports();
 
 		function subscribe_callback (data) {
+			console.log('CLI: got observe callback'.blue);
 			console.log(data);
 		}
 
@@ -187,7 +188,7 @@ function console_from_ir (accessor_id, accessor_ir) {
 				question = question.substring(0, question.length-2) + ']: ';
 
 				// If it's ambiguous ask, otherwise choose the only option.
-				if (port.directions.length > 1) {
+				if ((question.match(/,/g) || []).length > 0) {
 					cmd = readline.question(question.bold.blue);
 				}
 
