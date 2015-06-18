@@ -164,7 +164,7 @@ function console_from_ir (accessor_id, accessor_ir) {
 			if (isNaN(port_index) || port_index < 0 || port_index >= accessor_ir.ports.length) {
 				console.log('Invalid port index'.yellow);
 				print_ports();
-				interact();
+				setTimeout(interact, 1000);
 			} else {
 				var port = accessor_ir.ports[port_index];
 				var cmd;

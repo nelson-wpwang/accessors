@@ -227,6 +227,10 @@ var removeInputHandler = function (handle) {
 	}
 }
 
+// var addBundleHandler = function (bundle_name, func) {
+
+// }
+
 
 var addOutputHandler = function (port_name, func) {
 	if (typeof func === 'function') {

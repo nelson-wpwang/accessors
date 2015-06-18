@@ -44,6 +44,6 @@ module.exports.callFn = function (fn) {
 
 module.exports.forEach = function (arr, callback) {
 	for (var i=0; i<arr.length; i++) {
-		callFn(callback, arr[i]);
+		module.exports.callFn(callback, arr[i]);
 	}
 }
