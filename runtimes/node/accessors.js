@@ -175,6 +175,7 @@ function get_accessor_ir_from_url (url, success_cb, error_cb) {
 	info('art::gair Retrieving ' + url);
 	request(url, function (err, response, body) {
 		if (!err && response.statusCode == 200) {
+			info('art::gair Successfully got ' + url);
 			var accessor = JSON.parse(body);
 			success_cb(accessor);
 		} else {

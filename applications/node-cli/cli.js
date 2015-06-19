@@ -409,6 +409,7 @@ function console_from_ir (accessor_id, accessor_ir) {
 
 		// Check to see if we have any saved parameters for this accessor
 		if (accessor_id in saved_parameters) {
+			info('Have saved copies of this device.');
 
 			top = blessed.list({
 				parent: screen,
@@ -461,6 +462,10 @@ function console_from_ir (accessor_id, accessor_ir) {
 			top.down(1);
 			screen.render();
 			top.focus();
+
+		} else {
+			// None saved, need to get parameters
+			enter_parameters(accessor_id, accessor_ir);
 		}
 
 	} else {
@@ -520,16 +525,14 @@ if (argv._.length == 0) {
 
 	// Get list of all valid accessors
 	accessors.get_accessor_list(function (accessor_list) {
-		var accessor_list_sorted = accessor_list.sort()
+		var accessor_list_sorted = accessor_list.sort();
 
-		// Handle when items are selected in the top
-		top.once('select', function (val, index) {
+		function accessor_selected (val, index) {
 			var path = accessor_list_sorted[index-1];
 
 			info('Using accessor ' + path);
 
 			accessors.get_accessor_ir(path, function (accessor_ir) {
-
 				screen.remove(top);
 				// screen.render();
 				console_from_ir(path, accessor_ir);
@@ -538,8 +541,12 @@ if (argv._.length == 0) {
 				error('ERROR'.red);
 				error('Error getting accessor IR');
 				error(err);
+				top.once('select', accessor_selected);
 			});
-		});
+		}
+
+		// Handle when items are selected in the top
+		top.once('select', accessor_selected);
 
 		var title = 'Select Accessor to use: ';
 		top.setItems([title.bold].concat(accessor_list_sorted));
