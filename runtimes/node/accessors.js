@@ -81,6 +81,8 @@ if ('host_server' in argv) {
 }
 info('Using host server ' + host_server + ' for accessors.');
 
+var print_functions = {};
+
 /* Update the server to pull accessors from.
  */
 function set_host_server (server) {
@@ -91,6 +93,14 @@ function set_host_server (server) {
  */
 function get_host_server () {
 	return host_server;
+}
+
+function set_output_functions (functions) {
+	print_functions = functions;
+
+	if ('debug' in print_functions) {
+		debug.log = print_functions.debug;
+	}
 }
 
 /* Return a list of all accessors
@@ -202,7 +212,7 @@ function create_accessor (path, parameters, success_cb, error_cb) {
 	} else if ('/tests' == path.slice(0, 6)) {
 		get_test_accessor_ir(path, ir_callback, error_cb);
 	} else {
-		console.log(">>" + path.slice(0, 6) + "<<");
+		info(">>" + path.slice(0, 6) + "<<");
 		get_accessor_ir(path, ir_callback, error_cb);
 	}
 }
@@ -263,6 +273,9 @@ function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
 
 	// Provide access to the JSON metadata via _meta
 	device._meta = accessor_ir;
+
+	// Allow us to set custom functions for console.log, etc
+	device._set_output_functions(print_functions);
 
 	info("art::create_accessor before init-ing " + accessor_ir.name);
 	device.init(function () {
@@ -351,7 +364,10 @@ module.exports.wrapup = function (succ_cb, err_cb) {
   } else {
     succ_cb();
   }
-};`;
+};
+
+module.exports._set_output_functions = _set_output_functions;
+`;
 
 	return export_str;
 }
@@ -359,6 +375,7 @@ module.exports.wrapup = function (succ_cb, err_cb) {
 module.exports = {
 	set_host_server:      set_host_server,
 	get_host_server:      get_host_server,
+	set_output_functions: set_output_functions,
 	get_accessor_list:    get_accessor_list,
 	compile_dev_accessor: compile_dev_accessor,
 	get_dev_accessor_ir:  get_dev_accessor_ir,

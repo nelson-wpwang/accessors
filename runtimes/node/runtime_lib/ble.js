@@ -97,13 +97,13 @@ module.exports.Central = function* () {
 						var on_disconnect = scanner[5];
 						var on_error = scanner[6];
 						if (typeof on_disconnect === 'function') {
-							peripheral.on('disconnect', on_disconnect);
+							peripheral.once('disconnect', on_disconnect);
 						}
 						peripheral.connect(function (err) {
 							if (err) {
 								error('Unable to connect to peripheral ' + err);
 								// Make sure we don't just keep trying to connect
-								b.scanStop(scanner);
+								// b.scanStop(scanner);
 								if (typeof on_error === 'function') {
 									lib.callFn(on_error, err);
 								}

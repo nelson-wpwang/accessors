@@ -8,6 +8,7 @@
 
 var accessors = require('accessors.io');
 
+var blessed   = require('blessed');
 var fs        = require('fs');
 var colors    = require('colors');
 var _         = require('lodash');
@@ -43,88 +44,48 @@ if (argv.debug) {
 var info = debug('accessors-cli:info');
 var error = debug('accessors-cli:error');
 
+function cli_log (s) {
+	bottom.insertBottom(s);
+}
+
+debug.log = cli_log
+
 // Get some python like .format action
 sf.extendString();
 
+// Setup curses like windows
+// We need this because it allows us to read input while also
+// printing output.
+var screen = blessed.screen();
+var top = null;
+
+var bottom = blessed.log({
+	parent: screen,
+	mouse: true,
+	keys: true,
+	top: '25%',
+	left: 0,
+	width: '100%',
+	height: '75%',
+	border: {
+		type: 'line',
+		fg: 'black'
+	},
+	scrollbar: {
+		bg: 'blue'
+	}
+});
+
+// Exit on ctrl-c
+screen.key('C-c', function () {
+	process.exit(0);
+});
+
+// So we don't have to type in parameters every time
 var saved_parameters = {}
 
-// Get the longest string in an array's length
-// http://stackoverflow.com/questions/6521245/finding-longest-string-in-array/12548884#12548884
-function longest (a, key) {
-	var c = 0, d = 0, l = 0, i = a.length;
-	if (i) while (i--) {
-		if (key !== 'undefined') {
-			d = a[i][key].length;
-		} else {
-			d = a[i].length;
-		}
-		if (d > c) l = i; c = d;
-	}
-	return c;
-}
-
-
-function console_from_ir (accessor_id, accessor_ir) {
-	// Ask the user for all parameters
-	var saved_device = false; // keep track of if we know about this device
-	var parameters = {};
-	if (accessor_ir.parameters.length > 0) {
-
-		// Check to see if we have any saved parameters for this accessor
-		if (accessor_id in saved_parameters) {
-
-			// Get the longest parameter name
-			var longest_parameter = longest(accessor_ir.parameters, 'name') + 3;
-
-			console.log('');
-			console.log('Found the following saved instances of '+accessor_id+':');
-			for (var i=0; i<saved_parameters[accessor_id].length; i++) {
-				var saved_entry = saved_parameters[accessor_id][i];
-				process.stdout.write(i+':  ');
-
-				var j = 0;
-				for (var parameter_name in saved_entry.parameters) {
-					if (saved_entry.parameters.hasOwnProperty(parameter_name)) {
-						if (j != 0) process.stdout.write('    ');
-						// console.log(parameter_name + ': ' + saved_entry.parameters[parameter_name]);
-						console.log(('{0:-'+longest_parameter+'}{1}').format((parameter_name+':'), saved_entry.parameters[parameter_name]));
-						j += 1;
-					}
-				}
-			}
-			console.log(i+':  ' + 'Create New'.green);
-
-			while (true) {
-				var answer = parseInt(readline.question('Which device: '.bold.blue));
-				if (isNaN(answer) || answer < 0 || answer > saved_parameters[accessor_id].length) {
-					console.log('Invalid entry, try again.'.yellow);
-				} else {
-					break;
-				}
-			}
-
-			if (answer < saved_parameters[accessor_id].length) {
-				// Use saved parameters
-				parameters = saved_parameters[accessor_id][answer].parameters;
-				saved_device = true;
-			}
-		}
-		if (!(accessor_id in saved_parameters) || answer >= saved_parameters[accessor_id].length) {
-			// Use new parameters
-			console.log('');
-			console.log('Please enter parameters: ');
-			for (var i=0; i<accessor_ir.parameters.length; i++) {
-				var param = accessor_ir.parameters[i];
-				var answer = readline.question('  ' + param.name + ': ');
-				parameters[param.name] = answer;
-			}
-		}
-	}
-
-	// Now actually ask questions about the accessor for interacting with
-	console.log('');
-	console.log('Creating a device based on '+accessor_id+'.');
-	console.log('');
+// Got parameters and all that, now actually interact with the device
+function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 
 	accessors.load_accessor(accessor_ir, parameters, function (accessor) {
 
@@ -140,79 +101,208 @@ function console_from_ir (accessor_id, accessor_ir) {
 			fs.writeFileSync(argv.parameters, JSON.stringify(saved_parameters));
 		}
 
-		function print_ports () {
-			console.log('Ports:');
-			for (var i=0; i<accessor_ir.ports.length; i++) {
-				console.log('  ' + i + ': ' + accessor_ir.ports[i].function);
-			}
-		}
-		print_ports();
-
 		function subscribe_callback (data) {
-			console.log('CLI: got observe callback'.blue);
-			console.log(data);
+			bottom.insertBottom('CLI: got event callback'.blue);
+			if (typeof data === 'object') {
+				bottom.insertBottom(JSON.stringify(data));
+			} else {
+				bottom.insertBottom(data + '');
+			}
 		}
 
 		function interact (val) {
 			// We call interact as the success callback. We may
 			// have succeeded in getting something from the device
 			if (val !== undefined) {
-				console.log('Returned from accessor: '.magenta + val);
+				bottom.insertBottom('Returned from accessor: '.magenta + val);
 			}
 
-			var port_index = parseInt(readline.question('Port: '.bold.blue));
-			if (isNaN(port_index) || port_index < 0 || port_index >= accessor_ir.ports.length) {
-				console.log('Invalid port index'.yellow);
-				print_ports();
-				setTimeout(interact, 1000);
-			} else {
-				var port = accessor_ir.ports[port_index];
-				var cmd;
+			// Display a list of ports
+			top = blessed.list({
+				parent: screen,
+				keys: true,
+				mouse: true,
+				top: 0,
+				left: 0,
+				width: '100%',
+				height: '25%',
+				content: 'huh??',
+				border: {
+					type: 'line',
+					fg: 'black'
+				},
+				selectedBg: 'blue',
+				selectedFg: 'white'
+			});
 
-				// Ask the user how to interact with the port
-				var question = 'Direction: [';
+			var ports = [];
+			for (var i=0; i<accessor_ir.ports.length; i++) {
+				ports.push(accessor_ir.ports[i].name);
+			}
+
+			var title = 'Select a port:';
+			top.setItems([title.bold].concat(ports));
+
+			// Select a port
+			top.once('select', function (val, index) {
+				screen.remove(top);
+
+				if (index == 0) {
+					interact();
+					return;
+				}
+
+				var port = accessor_ir.ports[index-1];
+
+				top = blessed.list({
+					parent: screen,
+					keys: true,
+					mouse: true,
+					top: 0,
+					left: 0,
+					width: '100%',
+					height: '25%',
+					border: {
+						type: 'line',
+						fg: 'black'
+					},
+					selectedBg: 'blue',
+					selectedFg: 'white'
+				});
+
+				var options = [];
+
+				// Determine what we can do with this port
 				if (port.directions.indexOf('output') > -1) {
 					if (port.attributes.indexOf('event') > -1) {
-						question += 'listen, ';
-						cmd = 'listen';
+						options.push('listen');
 					}
 					if (port.attributes.indexOf('read') > -1) {
-						question += 'get, ';
-						cmd = 'get';
+						options.push('get');
 					}
 				}
 				if (port.directions.indexOf('input') > -1) {
-					question += 'set, ';
-					cmd = 'set';
-				}
-				question = question.substring(0, question.length-2) + ']: ';
-
-				// If it's ambiguous ask, otherwise choose the only option.
-				if ((question.match(/,/g) || []).length > 0) {
-					cmd = readline.question(question.bold.blue);
+					options.push('set');
 				}
 
-				if (cmd == 'get') {
-					accessor.read(port.name, interact, function (err) {
-						console.log('CLI: error ' + err);
-					});
-				} else if (cmd == 'set') {
-					var val = readline.question('value: '.bold.blue);
-					if (val == 'true') {
-						val = true;
-					} else if (val == 'false') {
-						val = false;
+				title = 'How do you want to interact with the port: ';
+				top.setItems([title.bold].concat(options));
+
+				// Select an action to do on the port
+				top.once('select', function (val, index) {
+					screen.remove(top);
+
+					if (index == 0) {
+						interact();
+						return;
 					}
-					accessor.write(port.name, val, interact);
-				} else if (cmd == 'listen') {
-					accessor.subscribe(port.name, subscribe_callback);
-					console.log('Added subscription to port'.magenta);
-					interact();
-				} else {
-					console.log(('"'+cmd+'" is not a valid direction').yellow);
-					interact();
-				}
-			}
+
+					var action = options[index-1];
+
+					// Respond based on the different actions
+					if (action == 'get') {
+						accessor.read(port.name, interact, function (err) {
+							error('CLI: error ' + err);
+							interact();
+						});
+
+					} else if (action == 'set') {
+
+						// Set it up so we can write to the device
+						top = blessed.form({
+							parent: screen,
+							keys: true,
+							mouse: true,
+							top: 0,
+							left: 0,
+							width: '100%',
+							height: '25%',
+							border: {
+								type: 'line',
+								fg: 'black'
+							}
+						});
+
+						var t = blessed.text({
+							parent: top,
+							content: 'Value: ',
+							left: 0,
+							top: 0
+						});
+
+						var p = blessed.textbox({
+							parent: top,
+							mouse: true,
+							keys: true,
+							shrink: true,
+							inputOnFocus: true,
+							left: 7,
+							top: 0
+						});
+						p.focus();
+
+						var done = blessed.button({
+							parent: top,
+							mouse: true,
+							keys: true,
+							shrink: true,
+							left: 0,
+							top: 1,
+							name: 'Done',
+							content: 'Done',
+							style: {
+								bg: 'lightgray',
+								hover: {
+									bg: 'blue',
+									fg: 'white'
+								},
+								focus: {
+									bg: 'blue',
+									fg: 'white'
+								},
+							}
+						});
+
+						done.once('press', function () {
+							top.submit();
+						});
+
+						top.once('submit', function (data) {
+							screen.remove(top);
+							var val = data.textbox;
+
+							if (val == 'true') {
+								val = true;
+							} else if (val == 'false') {
+								val = false;
+							}
+
+							accessor.write(port.name, val, interact, function (err) {
+								error('Error writing port!');
+								error(err + '');
+								interact();
+							});
+						});
+
+						screen.render();
+
+					} else if (action == 'listen') {
+						accessor.subscribe(port.name, subscribe_callback);
+						console.log('Added subscription to port'.magenta);
+						interact();
+					}
+				});
+
+				top.down(1);
+				screen.render();
+				top.focus();
+
+			});
+
+			top.down(1);
+			screen.render();
+			top.focus();
+
 		}
 		interact();
 
@@ -226,6 +316,168 @@ function console_from_ir (accessor_id, accessor_ir) {
 		console.log(err);
 	});
 }
+
+function enter_parameters (accessor_id, accessor_ir) {
+	var parameters = {};
+
+	top = blessed.form({
+		parent: screen,
+		keys: true,
+		mouse: true,
+		top: 0,
+		left: 0,
+		width: '100%',
+		height: '25%',
+		border: {
+			type: 'line',
+			fg: 'black'
+		},
+		content: 'Please enter the parameters: '
+	});
+
+	for (var i=0; i<accessor_ir.parameters.length; i++) {
+		var param = accessor_ir.parameters[i];
+
+		var t = blessed.text({
+			parent: top,
+			content: param.name + ':',
+			left: 5,
+			top: i+1
+		});
+
+		var p = blessed.textbox({
+			parent: top,
+			mouse: true,
+			keys: true,
+			shrink: true,
+			inputOnFocus: true,
+			content: param.name + ':',
+			left: 7+param.name.length,
+			top: i+1
+		});
+		if (i==0) {
+			p.focus();
+		}
+	}
+
+	var done = blessed.button({
+		parent: top,
+		mouse: true,
+		keys: true,
+		shrink: true,
+		left: 0,
+		top: i+2,
+		name: 'Done',
+		content: 'Done',
+		style: {
+			bg: 'lightgray',
+			hover: {
+				bg: 'blue',
+				fg: 'white'
+			},
+			focus: {
+				bg: 'blue',
+				fg: 'white'
+			},
+		}
+	});
+
+	done.once('press', function () {
+		top.submit();
+	});
+
+	top.once('submit', function (data) {
+		for (var i=0; i<accessor_ir.parameters.length; i++) {
+			var param = accessor_ir.parameters[i];
+			parameters[param.name] = data.textbox[i];
+		}
+		screen.remove(top);
+		load_accessor(accessor_id, accessor_ir, parameters, false);
+	});
+
+	screen.render();
+}
+
+
+function console_from_ir (accessor_id, accessor_ir) {
+	// Ask the user for all parameters
+	// var saved_device = false; // keep track of if we know about this device
+	var parameters = {};
+	if (accessor_ir.parameters.length > 0) {
+
+		var answer = 10000;
+
+		// Check to see if we have any saved parameters for this accessor
+		if (accessor_id in saved_parameters) {
+
+			top = blessed.list({
+				parent: screen,
+				keys: true,
+				mouse: true,
+				top: 0,
+				left: 0,
+				width: '100%',
+				height: '25%',
+				border: {
+					type: 'line',
+					fg: 'black'
+				},
+				selectedBg: 'blue',
+				selectedFg: 'white'
+			});
+
+			var saved_options = [];
+
+			for (var i=0; i<saved_parameters[accessor_id].length; i++) {
+			 	var saved_entry = saved_parameters[accessor_id][i];
+			 	var option = '';
+
+				for (var parameter_name in saved_entry.parameters) {
+					if (saved_entry.parameters.hasOwnProperty(parameter_name)) {
+						option += parameter_name + ': ' + saved_entry.parameters[parameter_name] + '; ';
+					}
+				}
+				saved_options.push(option);
+			}
+			saved_options.push('Create New');
+
+			var title = 'Select a saved device:';
+			top.setItems([title.bold].concat(saved_options));
+
+			top.once('select', function (val, index) {
+				screen.remove(top);
+				index -= 1;
+
+				if (index < saved_parameters[accessor_id].length) {
+					parameters = saved_parameters[accessor_id][index].parameters;
+					load_accessor(accessor_id, accessor_ir, parameters, true);
+
+				} else {
+					enter_parameters(accessor_id, accessor_ir);
+				}
+
+			});
+
+			top.down(1);
+			screen.render();
+			top.focus();
+		}
+
+	} else {
+		load_accessor(accessor_id, accessor_ir, parameters, false);
+	}
+
+
+}
+
+// Setup console.log
+var print_functions = {
+	console_log: function (val) { bottom.insertBottom(val); },
+	console_info: function (val) { bottom.insertBottom(val); },
+	console_error: function (val) { bottom.insertBottom(val); },
+	debug: cli_log
+}
+accessors.set_output_functions(print_functions);
 
 // Read in any save parameters
 // Format:
@@ -247,52 +499,58 @@ if (fs.existsSync(argv.parameters)) {
 if (argv._.length == 0) {
 	// Use the host server. Allow the user to choose from a list.
 
+	top = blessed.list({
+		parent: screen,
+		keys: true,
+		mouse: true,
+		top: 0,
+		left: 0,
+		width: '100%',
+		height: '25%',
+		border: {
+			type: 'line',
+			fg: 'black'
+		},
+		selectedBg: 'blue',
+		selectedFg: 'white'
+	});
+
+	screen.render();
+	top.focus();
+
 	// Get list of all valid accessors
 	accessors.get_accessor_list(function (accessor_list) {
-		accessor_list_sorted = accessor_list.sort()
+		var accessor_list_sorted = accessor_list.sort()
 
-		// Need longest path
-		var longest_path = 0;
-		for (var i=0; i<accessor_list_sorted.length; i++) {
-			if (accessor_list_sorted[i].length > longest_path) {
-				longest_path = accessor_list_sorted[i].length;
-			}
-		}
+		// Handle when items are selected in the top
+		top.once('select', function (val, index) {
+			var path = accessor_list_sorted[index-1];
 
-		longest_path += 3;
-		for (var i=0; i<accessor_list_sorted.length; i++) {
-			// console.log(i+':  '+accessor_list_sorted[i]);
-			var url = accessors.get_host_server() + '/view/accessor' + accessor_list_sorted[i];
-			console.log(('{0:-5}{1:-'+longest_path+'}{2}').format(i+':', accessor_list_sorted[i], url.gray));
-		}
+			info('Using accessor ' + path);
 
-		// Ask for which accessor we want to interact with
-		while (true) {
-			var index = parseInt(readline.question('Which accessor: '.bold.blue));
-			if (isNaN(index) || index < 0 || index >= accessor_list_sorted.length) {
-				console.log('Invalid choice'.yellow);
-			} else {
-				break;
-			}
-		}
-		var path = accessor_list_sorted[index];
-		info('Using accessor ' + path);
+			accessors.get_accessor_ir(path, function (accessor_ir) {
 
-		// Request info about that accessor (basically so we can determine
-		// which parameters to ask for)
-
-		accessors.get_accessor_ir(path, function (accessor_ir) {
-			console_from_ir(path, accessor_ir);
-		},
-		function (err) {
-			console.log('ERROR'.red);
-			console.log('Error getting accessor IR');
-			console.log(err);
+				screen.remove(top);
+				// screen.render();
+				console_from_ir(path, accessor_ir);
+			},
+			function (err) {
+				error('ERROR'.red);
+				error('Error getting accessor IR');
+				error(err);
+			});
 		});
+
+		var title = 'Select Accessor to use: ';
+		top.setItems([title.bold].concat(accessor_list_sorted));
+
+		top.down(1);
+		screen.render();
+
 	},
 	function (err) {
-		console.log('ERROR'.red);
-		console.log(err);
+		error('ERROR'.red);
+		error(err);
 	});
 } else {
 	// Use a local file as an accessor
@@ -300,36 +558,35 @@ if (argv._.length == 0) {
 	console.log('[INFO]   '.blue + ' Loading and running ' + accessor_local_path);
 	accessors.compile_dev_accessor(accessor_local_path, function (dev_uuid) {
 
-		console.log('[SUCCESS]'.green + ' Created new development accessor!');
-		console.log('To view more information about the accessor, please view');
-		console.log('')
-		console.log('  ' + accessors.get_host_server() + '/dev/view/accessor/' + dev_uuid);
-		console.log('')
+		info('[SUCCESS]'.green + ' Created new development accessor!');
+		info('To view more information about the accessor, please view');
+		info('')
+		info('  ' + accessors.get_host_server() + '/dev/view/accessor/' + dev_uuid);
+		info('')
 
 		accessors.get_dev_accessor_ir(dev_uuid, function (accessor_ir) {
 			console_from_ir(accessor_local_path, accessor_ir);
 		},
 		function (err) {
-			console.log('ERROR'.red);
-			console.log('Error getting dev accessor IR');
-			console.log(err);
+			error('ERROR'.red);
+			error('Error getting dev accessor IR');
+			error(err);
 		});
 	},
 	function (err, dev_uuid) {
 		if (dev_uuid) {
-			console.log('ERROR'.red);
-			error('Accessor parsing failed.');
-			error(err);
-			console.log('Failed to parse and create an accessor object from that accessor.');
-			console.log('To view the errors, please view');
-			console.log('');
-			console.log('  ' + accessors.get_host_server() + '/dev/view/accessor/' + dev_uuid);
-			console.log('')
+			error('ERROR'.red);
+			error('Failed to parse and create an accessor object from that accessor.');
+			error('To view the errors, please view');
+			error('');
+			error('  ' + accessors.get_host_server() + '/dev/view/accessor/' + dev_uuid);
+			error('')
 		} else {
-			console.log('ERROR'.red);
-			error('Could not connect to the host server.');
-			console.log('An error occurred when trying to contact the host server.')
-			console.log('Perhaps it\'s down?')
+			error('ERROR'.red);
+			error('An error occurred when trying to contact the host server.')
+			error('Perhaps it\'s down?')
 		}
 	});
 }
+
+screen.render();

@@ -159,6 +159,18 @@ var _do_port_call = function (port_name, direction, value, done_fn, error_fn) {
 	});
 }
 
+var _set_output_functions = function (functions) {
+	if ('console_log' in functions) {
+		console.log = functions.console_log;
+	}
+	if ('console_info' in functions) {
+		console.info = functions.console_info;
+	}
+	if ('console_error' in functions) {
+		console.error = functions.console_error;
+	}
+}
+
 // These function are NOOPs and are only used by the Host Server to understand
 // properties of the accessor/device, and do not have any meaning when
 // running an accessor.
