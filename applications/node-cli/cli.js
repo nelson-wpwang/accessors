@@ -401,12 +401,8 @@ function enter_parameters (accessor_id, accessor_ir) {
 
 function console_from_ir (accessor_id, accessor_ir) {
 	// Ask the user for all parameters
-	// var saved_device = false; // keep track of if we know about this device
 	var parameters = {};
 	if (accessor_ir.parameters.length > 0) {
-
-		var answer = 10000;
-
 		// Check to see if we have any saved parameters for this accessor
 		if (accessor_id in saved_parameters) {
 			info('Have saved copies of this device.');
@@ -449,11 +445,13 @@ function console_from_ir (accessor_id, accessor_ir) {
 				screen.remove(top);
 				index -= 1;
 
-				if (index < saved_parameters[accessor_id].length) {
+				if (index < saved_parameters[accessor_id].length && index >= 0) {
+					// Use the saved device
 					parameters = saved_parameters[accessor_id][index].parameters;
 					load_accessor(accessor_id, accessor_ir, parameters, true);
 
 				} else {
+					// Ask the user to enter parameters to create a new one
 					enter_parameters(accessor_id, accessor_ir);
 				}
 
@@ -471,8 +469,6 @@ function console_from_ir (accessor_id, accessor_ir) {
 	} else {
 		load_accessor(accessor_id, accessor_ir, parameters, false);
 	}
-
-
 }
 
 // Setup console.log

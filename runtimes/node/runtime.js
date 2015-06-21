@@ -357,21 +357,3 @@ var load_dependency = function (path, parameters) {
 var print = function (val) {
 	console.log(val);
 }
-
-var _js_setInterval = setInterval;
-var setInterval = function (fn, ms) {
-	return _js_setInterval(function () {
-		callFn(fn);
-	}, ms);
-}
-
-var _js_setTimeout = setTimeout;
-var setTimeout = function (fn, ms) {
-	return _js_setTimeout(function () {
-		callFn(fn);
-	}, ms);
-}
-
-
-
-
