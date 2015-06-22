@@ -284,10 +284,11 @@ function load_accessor (accessor_ir, parameters, cb) {
 	device._set_output_functions(print_functions);
 
 	info("art::create_accessor before init-ing " + accessor_ir.name);
-	device.init(function (err) {
-		info("post-init callback start");
-		cb(err, device);
-	});
+	cb(null, device);
+	// device.init(function (err) {
+	// 	info("post-init callback start");
+	// 	cb(err, device);
+	// });
 
 }
 

@@ -89,88 +89,54 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 
 	accessors.load_accessor(accessor_ir, parameters, function (err, accessor) {
 
-		if (err) {
-			console.log('ERROR'.red);
-			error(err);
+		accessor.init(function (err) {
 
-			console.log('Failed when creating an accessor.');
-			console.log('Likely this is an error inside of the init() function.');
-			console.log(err);
-			return;
-		}
-
-		// Successfully loaded this device. If this is new and we are saving,
-		// now would be a good time to save it.
-		if (!argv.no_save && !saved_device) {
-			if (!(accessor_id in saved_parameters)) {
-				saved_parameters[accessor_id] = [];
-			}
-			saved_parameters[accessor_id].push({
-				parameters: parameters
-			});
-			fs.writeFileSync(argv.parameters, JSON.stringify(saved_parameters));
-		}
-
-		function subscribe_callback (err, data) {
-			bottom.insertBottom('CLI: got event callback'.blue);
 			if (err) {
-				error('CLI: event callback error: ' + err);
-			} else {
-				if (typeof data === 'object') {
-					bottom.insertBottom(JSON.stringify(data));
+				console.log('ERROR'.red);
+				error(err);
+
+				console.log('Failed when creating an accessor.');
+				console.log('Likely this is an error inside of the init() function.');
+				console.log(err);
+				return;
+			}
+
+			// Successfully loaded this device. If this is new and we are saving,
+			// now would be a good time to save it.
+			if (!argv.no_save && !saved_device) {
+				if (!(accessor_id in saved_parameters)) {
+					saved_parameters[accessor_id] = [];
+				}
+				saved_parameters[accessor_id].push({
+					parameters: parameters
+				});
+				fs.writeFileSync(argv.parameters, JSON.stringify(saved_parameters));
+			}
+
+			function subscribe_callback (err, data) {
+				bottom.insertBottom('CLI: got event callback'.blue);
+				if (err) {
+					error('CLI: event callback error: ' + err);
 				} else {
-					bottom.insertBottom(data + '');
+					if (typeof data === 'object') {
+						bottom.insertBottom(JSON.stringify(data));
+					} else {
+						bottom.insertBottom(data + '');
+					}
 				}
 			}
-		}
 
-		function interact (err, val) {
-			if (err) {
-				error('CLI: error ' + err);
-			}
-			// We call interact as the success callback. We may
-			// have succeeded in getting something from the device
-			if (val !== undefined) {
-				bottom.insertBottom('Returned from accessor: '.magenta + val);
-			}
-
-			// Display a list of ports
-			top = blessed.list({
-				parent: screen,
-				keys: true,
-				mouse: true,
-				top: 0,
-				left: 0,
-				width: '100%',
-				height: '25%',
-				content: 'huh??',
-				border: {
-					type: 'line',
-					fg: 'black'
-				},
-				selectedBg: 'blue',
-				selectedFg: 'white'
-			});
-
-			var ports = [];
-			for (var i=0; i<accessor_ir.ports.length; i++) {
-				ports.push(accessor_ir.ports[i].name);
-			}
-
-			var title = 'Select a port:';
-			top.setItems([title.bold].concat(ports));
-
-			// Select a port
-			top.once('select', function (val, index) {
-				screen.remove(top);
-
-				if (index == 0) {
-					interact();
-					return;
+			function interact (err, val) {
+				if (err) {
+					error('CLI: error ' + err);
+				}
+				// We call interact as the success callback. We may
+				// have succeeded in getting something from the device
+				if (val !== undefined) {
+					bottom.insertBottom('Returned from accessor: '.magenta + val);
 				}
 
-				var port = accessor_ir.ports[index-1];
-
+				// Display a list of ports
 				top = blessed.list({
 					parent: screen,
 					keys: true,
@@ -179,6 +145,7 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 					left: 0,
 					width: '100%',
 					height: '25%',
+					content: 'huh??',
 					border: {
 						type: 'line',
 						fg: 'black'
@@ -187,25 +154,15 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 					selectedFg: 'white'
 				});
 
-				var options = [];
-
-				// Determine what we can do with this port
-				if (port.directions.indexOf('output') > -1) {
-					if (port.attributes.indexOf('event') > -1) {
-						options.push('listen');
-					}
-					if (port.attributes.indexOf('read') > -1) {
-						options.push('get');
-					}
-				}
-				if (port.directions.indexOf('input') > -1) {
-					options.push('set');
+				var ports = [];
+				for (var i=0; i<accessor_ir.ports.length; i++) {
+					ports.push(accessor_ir.ports[i].name);
 				}
 
-				title = 'How do you want to interact with the port: ';
-				top.setItems([title.bold].concat(options));
+				var title = 'Select a port:';
+				top.setItems([title.bold].concat(ports));
 
-				// Select an action to do on the port
+				// Select a port
 				top.once('select', function (val, index) {
 					screen.remove(top);
 
@@ -214,107 +171,153 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 						return;
 					}
 
-					var action = options[index-1];
+					var port = accessor_ir.ports[index-1];
 
-					// Respond based on the different actions
-					if (action == 'get') {
-						accessor.read(port.name, interact);
+					top = blessed.list({
+						parent: screen,
+						keys: true,
+						mouse: true,
+						top: 0,
+						left: 0,
+						width: '100%',
+						height: '25%',
+						border: {
+							type: 'line',
+							fg: 'black'
+						},
+						selectedBg: 'blue',
+						selectedFg: 'white'
+					});
 
-					} else if (action == 'set') {
+					var options = [];
 
-						// Set it up so we can write to the device
-						top = blessed.form({
-							parent: screen,
-							keys: true,
-							mouse: true,
-							top: 0,
-							left: 0,
-							width: '100%',
-							height: '25%',
-							border: {
-								type: 'line',
-								fg: 'black'
-							}
-						});
-
-						var t = blessed.text({
-							parent: top,
-							content: 'Value: ',
-							left: 0,
-							top: 0
-						});
-
-						var p = blessed.textbox({
-							parent: top,
-							mouse: true,
-							keys: true,
-							shrink: true,
-							inputOnFocus: true,
-							left: 7,
-							top: 0
-						});
-						p.focus();
-
-						var done = blessed.button({
-							parent: top,
-							mouse: true,
-							keys: true,
-							shrink: true,
-							left: 0,
-							top: 1,
-							name: 'Done',
-							content: 'Done',
-							style: {
-								bg: 'lightgray',
-								hover: {
-									bg: 'blue',
-									fg: 'white'
-								},
-								focus: {
-									bg: 'blue',
-									fg: 'white'
-								},
-							}
-						});
-
-						done.once('press', function () {
-							top.submit();
-						});
-
-						top.once('submit', function (data) {
-							screen.remove(top);
-							var val = data.textbox;
-
-							if (val == 'true') {
-								val = true;
-							} else if (val == 'false') {
-								val = false;
-							}
-
-							accessor.write(port.name, val, interact);
-						});
-
-						screen.render();
-
-					} else if (action == 'listen') {
-						accessor.on(port.name, subscribe_callback);
-						console.log('Added subscription to port'.magenta);
-						interact();
+					// Determine what we can do with this port
+					if (port.directions.indexOf('output') > -1) {
+						if (port.attributes.indexOf('event') > -1) {
+							options.push('listen');
+						}
+						if (port.attributes.indexOf('read') > -1) {
+							options.push('get');
+						}
 					}
+					if (port.directions.indexOf('input') > -1) {
+						options.push('set');
+					}
+
+					title = 'How do you want to interact with the port: ';
+					top.setItems([title.bold].concat(options));
+
+					// Select an action to do on the port
+					top.once('select', function (val, index) {
+						screen.remove(top);
+
+						if (index == 0) {
+							interact();
+							return;
+						}
+
+						var action = options[index-1];
+
+						// Respond based on the different actions
+						if (action == 'get') {
+							accessor.read(port.name, interact);
+
+						} else if (action == 'set') {
+
+							// Set it up so we can write to the device
+							top = blessed.form({
+								parent: screen,
+								keys: true,
+								mouse: true,
+								top: 0,
+								left: 0,
+								width: '100%',
+								height: '25%',
+								border: {
+									type: 'line',
+									fg: 'black'
+								}
+							});
+
+							var t = blessed.text({
+								parent: top,
+								content: 'Value: ',
+								left: 0,
+								top: 0
+							});
+
+							var p = blessed.textbox({
+								parent: top,
+								mouse: true,
+								keys: true,
+								shrink: true,
+								inputOnFocus: true,
+								left: 7,
+								top: 0
+							});
+							p.focus();
+
+							var done = blessed.button({
+								parent: top,
+								mouse: true,
+								keys: true,
+								shrink: true,
+								left: 0,
+								top: 1,
+								name: 'Done',
+								content: 'Done',
+								style: {
+									bg: 'lightgray',
+									hover: {
+										bg: 'blue',
+										fg: 'white'
+									},
+									focus: {
+										bg: 'blue',
+										fg: 'white'
+									},
+								}
+							});
+
+							done.once('press', function () {
+								top.submit();
+							});
+
+							top.once('submit', function (data) {
+								screen.remove(top);
+								var val = data.textbox;
+
+								if (val == 'true') {
+									val = true;
+								} else if (val == 'false') {
+									val = false;
+								}
+
+								accessor.write(port.name, val, interact);
+							});
+
+							screen.render();
+
+						} else if (action == 'listen') {
+							accessor.on(port.name, subscribe_callback);
+							console.log('Added subscription to port'.magenta);
+							interact();
+						}
+					});
+
+					top.down(1);
+					screen.render();
+					top.focus();
+
 				});
 
 				top.down(1);
 				screen.render();
 				top.focus();
 
-			});
-
-			top.down(1);
-			screen.render();
-			top.focus();
-
-		}
-		interact();
+			}
+			interact();
+		});
 
 	});
 }
