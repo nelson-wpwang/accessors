@@ -105,18 +105,18 @@ function set_output_functions (functions) {
 
 /* Return a list of all accessors
  */
-function get_accessor_list (success_cb, error_cb) {
+function get_accessor_list (cb) {
 	info('art::get_accessor_list');
 
 	var url = host_server + '/list/all';
 	request(url, function (err, response, body) {
 		if (!err && response.statusCode == 200) {
-			success_cb(JSON.parse(body));
+			cb(null, JSON.parse(body));
 		} else {
 			error('Could not get list of accessors.')
 			error(err)
 			if (response) error('Response code: ' + response.statusCode)
-			error_cb('Could not retrieve accessor list from host server');
+			cb('Could not retrieve accessor list from host server');
 		}
 	})
 }
@@ -124,7 +124,7 @@ function get_accessor_list (success_cb, error_cb) {
 /* Compile an accessor under development without committing. Note this still
  * sends the accessor to a remote server for compilation
  */
-function compile_dev_accessor (path, success_cb, error_cb) {
+function compile_dev_accessor (path, cb) {
 	info('art::compile_dev_accessor ' + path);
 
 	var buf = fs.readFileSync(path, 'utf8');
@@ -135,54 +135,54 @@ function compile_dev_accessor (path, success_cb, error_cb) {
 	}, function (err, response, body) {
 		info('art::server resp');
 		if (!err && response.statusCode == 200) {
-			success_cb(response.headers['x-acc-name']);
+			cb(null, response.headers['x-acc-name']);
 		} else {
 			error(err)
 			if (response) error('Response code: ' + response.statusCode)
 			error(body);
 			if (response) {
-				error_cb(err, response.headers['x-acc-name']);
+				cb(err, response.headers['x-acc-name']);
 			} else {
-				error_cb(err);
+				cb(err);
 			}
 		}
 	});
 }
 
-function get_test_accessor_ir (path, success_cb, error_cb) {
+function get_test_accessor_ir (path, cb) {
 	if (path[0] != '/') path = '/'+path;
 	info('art::get_test_accessor_ir from path: ' + path);
 	var url = host_server + '/test/accessor' + path + '.json';
-	get_accessor_ir_from_url(url, success_cb, error_cb);
+	get_accessor_ir_from_url(url, cb);
 }
 
-function get_dev_accessor_ir (path, success_cb, error_cb) {
+function get_dev_accessor_ir (path, cb) {
 	if (path[0] != '/') path = '/'+path;
 	info('art::get_dev_accessor_ir from path: ' + path);
 	var url = host_server + '/dev/accessor' + path + '.json';
-	get_accessor_ir_from_url(url, success_cb, error_cb);
+	get_accessor_ir_from_url(url, cb);
 }
 
 // Ask for an accessor from the accessor host server and return the
 // Accessor Intermediate Representation object.
-function get_accessor_ir (path, success_cb, error_cb) {
+function get_accessor_ir (path, cb) {
 	info('art::get_accessor_ir from path: ' + path);
 	var url = host_server + '/accessor' + path + '.json';
-	get_accessor_ir_from_url(url, success_cb, error_cb);
+	get_accessor_ir_from_url(url, cb);
 }
 
-function get_accessor_ir_from_url (url, success_cb, error_cb) {
+function get_accessor_ir_from_url (url, cb) {
 	info('art::gair Retrieving ' + url);
 	request(url, function (err, response, body) {
 		if (!err && response.statusCode == 200) {
 			info('art::gair Successfully got ' + url);
 			var accessor = JSON.parse(body);
-			success_cb(accessor);
+			cb(null, accessor);
 		} else {
 			error('Accessor retrieval failed.')
 			error(err)
 			if (response) error('Response code: ' + response.statusCode)
-			error_cb('Could not retrieve accessor from host server');
+			cb('Could not retrieve accessor from host server');
 		}
 	});
 }
@@ -201,20 +201,24 @@ function get_accessor_ir_from_url (url, success_cb, error_cb) {
  *     error_cb(error_msg)
  *
  */
-function create_accessor (path, parameters, success_cb, error_cb) {
+function create_accessor (path, parameters, cb) {
 	info('art::create_accessor from path: ' + path);
 
-	var ir_callback = function (accessor) {
-		load_accessor(accessor, parameters, success_cb, error_cb);
+	var ir_callback = function (err, accessor) {
+		if (err) {
+			cb(err);
+		} else {
+			load_accessor(accessor, parameters, cb);
+		}
 	};
 
 	if ('/dev' == path.slice(0, 4)) {
-		get_dev_accessor_ir(path, ir_callback, error_cb);
+		get_dev_accessor_ir(path, ir_callback);
 	} else if ('/tests' == path.slice(0, 6)) {
-		get_test_accessor_ir(path, ir_callback, error_cb);
+		get_test_accessor_ir(path, ir_callback);
 	} else {
 		info(">>" + path.slice(0, 6) + "<<");
-		get_accessor_ir(path, ir_callback, error_cb);
+		get_accessor_ir(path, ir_callback);
 	}
 }
 
@@ -226,7 +230,7 @@ function create_accessor (path, parameters, success_cb, error_cb) {
  * parameters:  object of key:value parameters
  *
  */
-function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
+function load_accessor (accessor_ir, parameters, cb) {
 	info('art::create_accessor starting to create ' + accessor_ir.name);
 
 	if (parameters == undefined) {
@@ -280,10 +284,10 @@ function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
 	device._set_output_functions(print_functions);
 
 	info("art::create_accessor before init-ing " + accessor_ir.name);
-	device.init(function () {
+	device.init(function (err) {
 		info("post-init callback start");
-		success_cb(device);
-	}, error_cb);
+		cb(err, device);
+	});
 
 }
 

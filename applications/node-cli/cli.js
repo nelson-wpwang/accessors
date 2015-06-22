@@ -87,7 +87,17 @@ var saved_parameters = {}
 // Got parameters and all that, now actually interact with the device
 function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 
-	accessors.load_accessor(accessor_ir, parameters, function (accessor) {
+	accessors.load_accessor(accessor_ir, parameters, function (err, accessor) {
+
+		if (err) {
+			console.log('ERROR'.red);
+			error(err);
+
+			console.log('Failed when creating an accessor.');
+			console.log('Likely this is an error inside of the init() function.');
+			console.log(err);
+			return;
+		}
 
 		// Successfully loaded this device. If this is new and we are saving,
 		// now would be a good time to save it.
@@ -306,14 +316,6 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 		}
 		interact();
 
-	},
-	function (err) {
-		console.log('ERROR'.red);
-		error(err);
-
-		console.log('Failed when creating an accessor.');
-		console.log('Likely this is an error inside of the init() function.');
-		console.log(err);
 	});
 }
 
@@ -520,7 +522,13 @@ if (argv._.length == 0) {
 	top.focus();
 
 	// Get list of all valid accessors
-	accessors.get_accessor_list(function (accessor_list) {
+	accessors.get_accessor_list(function (err, accessor_list) {
+		if (err) {
+			error('ERROR'.red);
+			error(err);
+			return;
+		}
+
 		var accessor_list_sorted = accessor_list.sort();
 
 		function accessor_selected (val, index) {
@@ -528,16 +536,16 @@ if (argv._.length == 0) {
 
 			info('Using accessor ' + path);
 
-			accessors.get_accessor_ir(path, function (accessor_ir) {
-				screen.remove(top);
-				// screen.render();
-				console_from_ir(path, accessor_ir);
-			},
-			function (err) {
-				error('ERROR'.red);
-				error('Error getting accessor IR');
-				error(err);
-				top.once('select', accessor_selected);
+			accessors.get_accessor_ir(path, function (err, accessor_ir) {
+				if (err) {
+					error('ERROR'.red);
+					error('Error getting accessor IR');
+					error(err);
+					top.once('select', accessor_selected);
+				} else {
+					screen.remove(top);
+					console_from_ir(path, accessor_ir);
+				}
 			});
 		}
 
@@ -550,44 +558,45 @@ if (argv._.length == 0) {
 		top.down(1);
 		screen.render();
 
-	},
-	function (err) {
-		error('ERROR'.red);
-		error(err);
 	});
 } else {
 	// Use a local file as an accessor
 	var accessor_local_path = argv._[0];
 	console.log('[INFO]   '.blue + ' Loading and running ' + accessor_local_path);
-	accessors.compile_dev_accessor(accessor_local_path, function (dev_uuid) {
+	accessors.compile_dev_accessor(accessor_local_path, function (err, dev_uuid) {
 
-		info('[SUCCESS]'.green + ' Created new development accessor!');
-		info('To view more information about the accessor, please view');
-		info('')
-		info('  ' + accessors.get_host_server() + '/dev/view/accessor/' + dev_uuid);
-		info('')
+		if (err) {
+			if (dev_uuid) {
+				error('ERROR'.red);
+				error('Failed to parse and create an accessor object from that accessor.');
+				error('To view the errors, please view');
+				error('');
+				error('  ' + accessors.get_host_server() + '/dev/view/accessor/' + dev_uuid);
+				error('')
+			} else {
+				error('ERROR'.red);
+				error('An error occurred when trying to contact the host server.')
+				error('Perhaps it\'s down?')
+			}
 
-		accessors.get_dev_accessor_ir(dev_uuid, function (accessor_ir) {
-			console_from_ir(accessor_local_path, accessor_ir);
-		},
-		function (err) {
-			error('ERROR'.red);
-			error('Error getting dev accessor IR');
-			error(err);
-		});
-	},
-	function (err, dev_uuid) {
-		if (dev_uuid) {
-			error('ERROR'.red);
-			error('Failed to parse and create an accessor object from that accessor.');
-			error('To view the errors, please view');
-			error('');
-			error('  ' + accessors.get_host_server() + '/dev/view/accessor/' + dev_uuid);
-			error('')
 		} else {
-			error('ERROR'.red);
-			error('An error occurred when trying to contact the host server.')
-			error('Perhaps it\'s down?')
+
+			info('[SUCCESS]'.green + ' Created new development accessor!');
+			info('To view more information about the accessor, please view');
+			info('')
+			info('  ' + accessors.get_host_server() + '/dev/view/accessor/' + dev_uuid);
+			info('')
+
+			accessors.get_dev_accessor_ir(dev_uuid, function (err, accessor_ir) {
+				if (err) {
+					error('ERROR'.red);
+					error('Error getting dev accessor IR');
+					error(err);
+
+				} else {
+					console_from_ir(accessor_local_path, accessor_ir);
+				}
+			});
 		}
 	});
 }
