@@ -6,6 +6,7 @@
 
 var lib        = require('lib');
 
+var util       = require('util');
 var domain     = require('domain');
 var Q          = require('q');
 var debug_lib  = require('debug');
@@ -14,6 +15,10 @@ var debug = debug_lib('accessors:debug');
 var info  = debug_lib('accessors:info');
 var warn  = debug_lib('accessors:warn');
 var error = debug_lib('accessors:error');
+
+// We use `accessor_object` to keep track of `this` for the accessor
+// object so we can use the EventEmitter `emit()` function.
+var accessor_object = null;
 
 var _remove_from_array = function (item, arr) {
 	var to_remove = -1;
@@ -28,58 +33,14 @@ var _remove_from_array = function (item, arr) {
 	}
 }
 
-// Add a listener to an output port.
-//
-// If temporary == true, de-register the callback after it is called once
-var _register_subscriber = function (port_name, temporary, done_fn, error_fn) {
-
-	if (error_fn !== 'function') {
-		error_fn = function (s) {
-			error('Got error with no error function: ' + s);
-		};
-	}
-
-	if (!(port_name in _port_subscribers)) {
-		error_fn('Port "' + port_name + '" does not exist.');
-		return;
-	}
-
-	if (temporary) {
-		var on_called = function (val) {
-			// First thing, remove these callbacks
-			_remove_from_array(on_called, _port_subscribers[port_name].success);
-			_remove_from_array(on_err, _port_subscribers[port_name].error);
-
-			// Then call the actual function we care about
-			done_fn(val);
-		}
-		var on_err = function (err) {
-			// First thing, remove these callbacks
-			_remove_from_array(on_called, _port_subscribers[port_name].success);
-			_remove_from_array(on_err, _port_subscribers[port_name].error);
-
-			// Then call the actual function we care about
-			error_fn(val);
-		}
-		_port_subscribers[port_name].success.push(on_called);
-		_port_subscribers[port_name].error.push(on_err);
-
-	} else {
-		// Add the callbacks to the correct callback arrays.
-		_port_subscribers[port_name].success.push(done_fn);
-		_port_subscribers[port_name].error.push(error_fn);
-	}
-}
-
 // Function that wraps calling a port. This sets up all of the promises/futures
 // code so that "await" works.
-var _do_port_call = function (port_name, direction, value, done_fn, error_fn) {
+var _do_port_call = function (port_name, direction, value, done_fn) {
 	var r;
 
 	// in the OUTPUT case, there is no value.
 	// in the other cases, there should be a value
 	if (direction === 'output' && typeof value === 'function') {
-		error_fn = done_fn;
 		done_fn = value;
 		value = null;
 	}
@@ -89,12 +50,6 @@ var _do_port_call = function (port_name, direction, value, done_fn, error_fn) {
 			warn("Port call of " + port_name + " finished successfully with no callback");
 		}
 	}
-	if (typeof error_fn === 'undefined') {
-		error_fn = function (err) {
-			warn("Port call of " + port_name + " had error with no error callback");
-			debug(err);
-		}
-	}
 
 	info("before port call of " + port_name + "(" + value + ")");
 
@@ -102,7 +57,7 @@ var _do_port_call = function (port_name, direction, value, done_fn, error_fn) {
 	// output handling functions. temporary is set to true so that this will
 	// only get called once.
 	if (direction === 'output') {
-		_register_subscriber(port_name, true, done_fn, error_fn);
+		accessor_object.once(port_name, done_fn);
 	}
 
 	// Determine which functions to call.
@@ -120,7 +75,7 @@ var _do_port_call = function (port_name, direction, value, done_fn, error_fn) {
 
 	d.on('error', function (err) {
 		d.exit();
-		error_fn(err);
+		done_fn(err);
 	});
 
 	d.run(function() {
@@ -140,7 +95,7 @@ var _do_port_call = function (port_name, direction, value, done_fn, error_fn) {
 						// `send()` the done callback will be called.
 						// We also call done for init and wrapup
 						if (direction === 'input' || direction === null) {
-							done_fn(r);
+							done_fn(null, r);
 						}
 
 					}, function (err) {
@@ -151,7 +106,7 @@ var _do_port_call = function (port_name, direction, value, done_fn, error_fn) {
 
 				} else {
 					if (direction === 'input' || direction === null) {
-						done_fn(r);
+						done_fn(null, r);
 					}
 				}
 			})(to_call[i]);
@@ -285,8 +240,6 @@ var removeOutputHandler = function (handle) {
 	}
 }
 
-
-
 /* `get()` allows an accessor to read the input on one of its ports that
  * comes from the user of the accessor. Currently, the node.js runtime is
  * exclusively dataflow, meaning calling `get()` has no effect as there is
@@ -305,35 +258,7 @@ var get = function (port_name) {
  */
 var send = function (port_name, val) {
 	info("SEND: " + port_name + " <= " + val);
-
-	if (port_name in _port_subscribers) {
-
-		// // In case a callback fails, we want to remove it
-		// var listeners_to_remove = [];
-
-		for (var i=0; i<_port_subscribers[port_name].success.length; i++) {
-			(function (fn) {
-				try {
-					fn(val);
-				} catch (err) {
-					error('Could not send event.');
-					// warn('Removing observe listener ' + i + ' due to exception.');
-					// listeners_to_remove.push(i);
-				}
-			})(_port_subscribers[port_name].success[i]);
-		}
-
-		// // Remove broken listeners
-		// while (listeners_to_remove.length) {
-		// 	var to_remove = listeners_to_remove.pop();
-		// 	_observe_listeners[port_name].data_callbacks.splice(to_remove, 1);
-		// 	_observe_listeners[port_name].error_callbacks[to_remove]('Removed');
-		// 	_observe_listeners[port_name].error_callbacks.splice(to_remove, 1);
-		// }
-
-	} else {
-		info('No subscribers for this port.');
-	}
+	accessor_object.emit(port_name, null, val);
 }
 
 /* `get_parameter()` allows an accessor to retrieve specific parameters

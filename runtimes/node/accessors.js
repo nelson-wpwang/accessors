@@ -270,7 +270,8 @@ function load_accessor (accessor_ir, parameters, success_cb, error_cb) {
 	}
 	info("art::create_accessor before requireFromString " + accessor_ir.name);
 
-	var device = requireFromString(module_as_string);
+	var device_req = requireFromString(module_as_string);
+	var device = new device_req.Accessor();
 
 	// Provide access to the JSON metadata via _meta
 	device._meta = accessor_ir;
@@ -301,13 +302,9 @@ function requireFromString(src) {
 //   _port_handlers = {
 //       <port_name>: {input: [<func>], output: [<func>]},
 //   }
-//   _port_subscribers = {
-//       <port_name>: {success: [<func>], error: [<func>]}
-//   }
 // for all ports.
 function get_port_handler_arrays (accessor) {
 	var ret = "var _port_handlers = {_fire: [],";
-	var reu = "var _port_subscribers = {";
 
 	for (var i=0; i<accessor.ports.length; i++) {
 		var port = accessor.ports[i];
@@ -319,55 +316,52 @@ function get_port_handler_arrays (accessor) {
 		}
 		if (port.directions.indexOf('output') > -1) {
 			ret += "output: [],"
-			reu += "'" + port.name + "': {success: [], error: []},";
 		}
 		ret += "},"
 
 	}
 	ret += '};';
-	reu += '};';
 
-	return ret + reu;
+	return ret;
 }
 
 function get_exports (accessor) {
 	// need to keep a list of module exports for toplevel to call
 	var export_str = `
-module.exports = {};
 
-module.exports.init = function (succ_cb, err_cb) {
+module.exports.Accessor = function () {
+	accessor_object = this;
+};
+util.inherits(module.exports.Accessor, require('events').EventEmitter);
+
+module.exports.Accessor.prototype.init = function (cb) {
   if (typeof init !== "undefined") {
-    _do_port_call("init", null, null, succ_cb, err_cb);
+    _do_port_call("init", null, null, cb);
   } else {
-    succ_cb();
+    cb();
   }
 };
 
 // Write a port to set its value or control the device
-module.exports.write = function (port_name, value, succ_cb, err_cb) {
-  _do_port_call(port_name, "input", value, succ_cb, err_cb);
+module.exports.Accessor.prototype.write = function (port_name, value, cb) {
+  _do_port_call(port_name, "input", value, cb);
 };
 
 // Read a port to get its current value
-module.exports.read = function (port_name, succ_cb, err_cb) {
-  _do_port_call(port_name, "output", null, succ_cb, err_cb);
-};
-
-// Get notified when an output port gets called.
-module.exports.subscribe = function (port_name, cb, err_cb) {
-  _register_subscriber(port_name, false, cb, err_cb);
+module.exports.Accessor.prototype.read = function (port_name, cb) {
+  _do_port_call(port_name, "output", null, cb);
 };
 
 // Cleanup accessor state.
-module.exports.wrapup = function (succ_cb, err_cb) {
+module.exports.Accessor.prototype.wrapup = function (cb) {
   if (typeof wrapup !== "undefined") {
-    _do_port_call("wrapup", null, null, succ_cb, err_cb);
+    _do_port_call("wrapup", null, null, cb);
   } else {
-    succ_cb();
+    cb();
   }
 };
 
-module.exports._set_output_functions = _set_output_functions;
+module.exports.Accessor.prototype._set_output_functions = _set_output_functions;
 `;
 
 	return export_str;

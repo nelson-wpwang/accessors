@@ -101,16 +101,23 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 			fs.writeFileSync(argv.parameters, JSON.stringify(saved_parameters));
 		}
 
-		function subscribe_callback (data) {
+		function subscribe_callback (err, data) {
 			bottom.insertBottom('CLI: got event callback'.blue);
-			if (typeof data === 'object') {
-				bottom.insertBottom(JSON.stringify(data));
+			if (err) {
+				error('CLI: event callback error: ' + err);
 			} else {
-				bottom.insertBottom(data + '');
+				if (typeof data === 'object') {
+					bottom.insertBottom(JSON.stringify(data));
+				} else {
+					bottom.insertBottom(data + '');
+				}
 			}
 		}
 
-		function interact (val) {
+		function interact (err, val) {
+			if (err) {
+				error('CLI: error ' + err);
+			}
 			// We call interact as the success callback. We may
 			// have succeeded in getting something from the device
 			if (val !== undefined) {
@@ -201,10 +208,7 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 
 					// Respond based on the different actions
 					if (action == 'get') {
-						accessor.read(port.name, interact, function (err) {
-							error('CLI: error ' + err);
-							interact();
-						});
+						accessor.read(port.name, interact);
 
 					} else if (action == 'set') {
 
@@ -277,17 +281,13 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 								val = false;
 							}
 
-							accessor.write(port.name, val, interact, function (err) {
-								error('Error writing port!');
-								error(err + '');
-								interact();
-							});
+							accessor.write(port.name, val, interact);
 						});
 
 						screen.render();
 
 					} else if (action == 'listen') {
-						accessor.subscribe(port.name, subscribe_callback);
+						accessor.on(port.name, subscribe_callback);
 						console.log('Added subscription to port'.magenta);
 						interact();
 					}
