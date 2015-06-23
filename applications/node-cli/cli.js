@@ -12,6 +12,7 @@ var blessed   = require('blessed');
 var fs        = require('fs');
 var colors    = require('colors');
 var _         = require('lodash');
+var _eval     = require('eval');
 var async     = require('async');
 var debug     = require('debug');
 var readline  = require('readline-sync');
@@ -291,6 +292,8 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 									val = true;
 								} else if (val == 'false') {
 									val = false;
+								} else if (port.type == 'object') {
+									val = _eval('exports.val='+val).val;
 								}
 
 								accessor.write(port.name, val, interact);
@@ -394,7 +397,11 @@ function enter_parameters (accessor_id, accessor_ir) {
 	top.once('submit', function (data) {
 		for (var i=0; i<accessor_ir.parameters.length; i++) {
 			var param = accessor_ir.parameters[i];
-			parameters[param.name] = data.textbox[i];
+			if (accessor_ir.parameters.length == 1) {
+				parameters[param.name] = data.textbox;
+			} else {
+				parameters[param.name] = data.textbox[i];
+			}
 		}
 		screen.remove(top);
 		load_accessor(accessor_id, accessor_ir, parameters, false);

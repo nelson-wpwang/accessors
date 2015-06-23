@@ -129,6 +129,7 @@ var _set_output_functions = function (functions) {
 // properties of the accessor/device, and do not have any meaning when
 // running an accessor.
 var createPort = function() {};
+var createPortBundle = function() {};
 var provideInterface = function() {};
 var provide_interface = function() {};
 
