@@ -310,11 +310,13 @@ function requireFromString(src) {
 // for all ports.
 function get_port_handler_arrays (accessor) {
 	var ret = "var _port_handlers = {_fire: [],";
+	var reu = "var _port_values = {";
 
 	for (var i=0; i<accessor.ports.length; i++) {
 		var port = accessor.ports[i];
 
 		ret += "'" + port.name + "': {";
+		reu += "'" + port.name + "': null,";
 
 		if (port.directions.indexOf('input') > -1) {
 			ret += "input: [],"
@@ -326,8 +328,9 @@ function get_port_handler_arrays (accessor) {
 
 	}
 	ret += '};';
+	reu += '};';
 
-	return ret;
+	return ret + reu;
 }
 
 function get_exports (accessor) {
@@ -349,6 +352,7 @@ module.exports.Accessor.prototype.init = function (cb) {
 
 // Write a port to set its value or control the device
 module.exports.Accessor.prototype.write = function (port_name, value, cb) {
+  _port_values[port_name] = value;
   _do_port_call(port_name, "input", value, cb);
 };
 

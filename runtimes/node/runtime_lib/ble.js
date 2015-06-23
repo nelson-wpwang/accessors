@@ -114,8 +114,8 @@ module.exports.Central = function* () {
 					}
 				}
 			}
-		})
-	})
+		});
+	});
 
 	// The runtime will do its best to stay connected to a particular device.
 	b.stayConnected = function (uuid, name, mac_address, on_connect, on_disconnect, on_error) {

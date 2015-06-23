@@ -2,7 +2,6 @@
 'use strict';
 
 /*** Core Functions ***/
-// (Those not in the rt namespace)
 
 var lib        = require('lib');
 
@@ -241,16 +240,11 @@ var removeOutputHandler = function (handle) {
 }
 
 /* `get()` allows an accessor to read the input on one of its ports that
- * comes from the user of the accessor. Currently, the node.js runtime is
- * exclusively dataflow, meaning calling `get()` has no effect as there is
- * no conceptual method to read the value of an input as it only exists
- * as an impluse, and not as a state.
- *
- * Therefore we just return null
+ * comes from the user of the accessor. We do this be returning the last
+ * value that was written.
  */
 var get = function (port_name) {
-	info("PORT GET: " + port_name + " => NOT SUPPORTED");
-	return null;
+	return _port_values[port_name];
 }
 
 /* `send()` is used by observe ports to forward data to any interested
