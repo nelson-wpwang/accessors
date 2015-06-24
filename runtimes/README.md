@@ -347,6 +347,9 @@ to an AMQP server will a fully defined AMQP URL.
 Create a queue from a RabbitMQ exchange with the given routing key call `callback`
 with all incoming data packets.
 
+- _Blocking_ `<void> [amqp_connection].publish(<string> exchange, <string> routing_key, <string> pkt)`:
+Publish data to a RabbitMQ exchange.
+
 
 ### GATD v0.1
 

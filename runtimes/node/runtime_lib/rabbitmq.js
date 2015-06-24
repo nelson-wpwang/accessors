@@ -29,5 +29,16 @@ module.exports.Client = function* (url) {
 		});
 	}
 
+	a.publish = function* (exchange, routing_key, pkt) {
+		var defer2 = Q.defer();
+
+		conn.exchange(exchange, {'passive': true}, function (xch) {
+			xch.publish(routing_key, pkt);
+			defer2.resolve();
+		});
+
+		return yield defer2.promise;
+	}
+
 	return yield defer.promise;
 }
