@@ -313,11 +313,13 @@ function requireFromString(src) {
 function get_port_handler_arrays (accessor) {
 	var ret = "var _port_handlers = {_fire: [],";
 	var reu = "var _port_values = {";
+	var rev = 'var _port_names = {';
 
 	for (var i=0; i<accessor.ports.length; i++) {
 		var port = accessor.ports[i];
 
 		ret += "'" + port.name + "': {";
+		rev += "'" + port.name + "': '" + port.name + "',";
 
 		var def = 'null';
 		if ('value' in port) {
@@ -333,11 +335,17 @@ function get_port_handler_arrays (accessor) {
 		}
 		ret += "},"
 
+		// Put all ports in the canonical port names object
+		for (var j=0; j<port.aliases.length; j++) {
+			rev += "'" + port.aliases[j] + "': '" + port.name + "',";
+		}
 	}
+
 	ret += '};';
 	reu += '};';
+	rev += '};';
 
-	return ret + reu;
+	return ret + reu + rev;
 }
 
 function get_exports (accessor) {

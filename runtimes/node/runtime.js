@@ -32,10 +32,18 @@ var _remove_from_array = function (item, arr) {
 	}
 }
 
+// Ports can have multiple names based on if they are custom or part of
+// an interface. This function accepts any valid name and returns
+// the canonical name.
+var _get_canonical_port_name (port_name) {
+	return _port_names[port_name];
+}
+
 // Function that wraps calling a port. This sets up all of the promises/futures
 // code so that "await" works.
 var _do_port_call = function (port_name, direction, value, done_fn) {
 	var r;
+	port_name = _get_canonical_port_name(port_name);
 
 	// in the OUTPUT case, there is no value.
 	// in the other cases, there should be a value
@@ -145,6 +153,7 @@ var provide_interface = function() {};
 // This allows the accessor to specify a function that should get bound
 // to a particular input
 var addInputHandler = function (port_name, func) {
+	port_name = _get_canonical_port_name(port_name);
 	if (typeof port_name === 'function') {
 		// Using the function in this way defines a new fire() function
 		// Check for duplicates
@@ -209,6 +218,7 @@ var removeInputHandler = function (handle) {
 
 
 var addOutputHandler = function (port_name, func) {
+	port_name = _get_canonical_port_name(port_name);
 	if (typeof func === 'function') {
 		if (port_name in _port_handlers) {
 			// Check that this hasn't already been added.
@@ -254,6 +264,7 @@ var removeOutputHandler = function (handle) {
  * value that was written.
  */
 var get = function (port_name) {
+	port_name = _get_canonical_port_name(port_name);
 	return _port_values[port_name];
 }
 
@@ -261,6 +272,7 @@ var get = function (port_name) {
  * listeners. The runtime maintains the callback list.
  */
 var send = function (port_name, val) {
+	port_name = _get_canonical_port_name(port_name);
 	info("SEND: " + port_name + " <= " + val);
 	accessor_object.emit(port_name, null, val);
 }
