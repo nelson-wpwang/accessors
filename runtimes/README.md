@@ -58,13 +58,21 @@ To simplify development, the accessor runtime provides some support for
 masking the highly asychronous nature of javascript. In particular, blocking
 operations such as network requests that normally require a callback are
 tranformed into non-blocking synchronous calls. The allows accessors to write
-much simpler code, such as:
+much simpler code, so instead of:
 
 ```javascript
-var s = yield* socket.socket('AF_INET6', 'SOCK_STREAM');
-yield* s.connect(('::1', 12345));
-s.send('Hello');
-var resp = yield* s.recv();
+http.get('url.com', function (response) {
+  http.post('url.com', response.body + 1, function (response2) {
+    ...other nested calls
+  });
+});
+
+accessors can do:
+
+```javascript
+var response = yield* http.get('url.com');
+var response2 = yield* http.post('url.com', response.body + 1);
+...other calls...
 ```
 
 In practice, the only impact on the accessor writer is that the accessor must
