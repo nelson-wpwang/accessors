@@ -2,26 +2,24 @@
 
 var accessors = require('../accessors');
 
-accessors.create_accessor('/sensor/ambient/BLEES', {}, function (blees) {
-	blees.Light.observe(function (data) {
-		console.log('Light is: ' + data + ' lux');
-	}, function () {}, function () {});
-},
-function (err) {
-	console.log('Error loading accessor.');
-	console.log(err);
-});
+var parameters = {
+	mac_address: 'c0:98:e5:30:52:01'
+}
 
-// accessors.compile_dev_accessor('~/git/accessor-files/accessors/sensor/ambient/BLEES.js', function (dev_uuid) {
-// 	accessors.get_dev_accessor_ir(dev_uuid, function (accessor_ir) {
-// 		accessors.load_accessor(accessor_ir, {mac_address: 'c0:98:e5:30:da:e4'}, function (blees) {
-// 			oort.Light.observe(function (blees) {
-// 				console.log('Light is: ' + data + ' lux');
-// 			}, function () {}, function () {});
-// 		});
-// 	});
-// },
-// function (err) {
-// 	console.log('Error loading accessor.');
-// 	console.log(err);
-// });
+accessors.create_accessor('/sensor/ambient/BLEES', parameters, function (err, blees) {
+	if (err) {
+		console.error('Could not create accessor: ' + err);
+		return;
+	}
+	blees.init(function(err) {
+		if (err) {
+			console.error('Could not init');
+			console.error(err);
+			return;
+		}
+
+		blees.on('Light', function (err, data) {
+			console.log('Light is: ' + data + ' lux');
+		});
+	});
+});

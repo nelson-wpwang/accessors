@@ -95,6 +95,7 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 						});
 
 						def().done(function () {
+							d.exit();
 							// We only call the callback when this is an input.
 							// If this is an output, when the accessor calls
 							// `send()` the done callback will be called.
@@ -110,6 +111,7 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 						info("port call running asynchronously");
 
 					} else {
+						d.exit();
 						if (direction === 'input' || direction === null) {
 							done_fn(null, r);
 						}
