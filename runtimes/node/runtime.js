@@ -70,47 +70,54 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 		to_call = _port_handlers[port_name][direction];
 	}
 
-	var d = domain.create();
+	if (to_call.length === 0) {
+		// No handlers for this port, just do the callback
+		done_fn(null);
 
-	d.on('error', function (err) {
-		d.exit();
-		done_fn(err);
-	});
+	} else {
+		// Have work to do
+		var d = domain.create();
 
-	d.run(function() {
-		// Iterate all functions in the port list and call them, checking
-		// if they are generators and whatnot.
-		for (var i=0; i<to_call.length; i++) {
-			(function (port) {
-				r = port(value);
-				if (r && typeof r.next == 'function') {
-					var def = Q.async(function* () {
-						r = yield* port(value);
-					});
+		d.on('error', function (err) {
+			d.exit();
+			done_fn(err);
+		});
 
-					def().done(function () {
-						// We only call the callback when this is an input.
-						// If this is an output, when the accessor calls
-						// `send()` the done callback will be called.
-						// We also call done for init and wrapup
+		d.run(function() {
+			// Iterate all functions in the port list and call them, checking
+			// if they are generators and whatnot.
+			for (var i=0; i<to_call.length; i++) {
+				(function (port) {
+					r = port(value);
+					if (r && typeof r.next == 'function') {
+						var def = Q.async(function* () {
+							r = yield* port(value);
+						});
+
+						def().done(function () {
+							// We only call the callback when this is an input.
+							// If this is an output, when the accessor calls
+							// `send()` the done callback will be called.
+							// We also call done for init and wrapup
+							if (direction === 'input' || direction === null) {
+								done_fn(null, r);
+							}
+
+						}, function (err) {
+							// Throw this error so that the domain can pick it up.
+							throw err;
+						});
+						info("port call running asynchronously");
+
+					} else {
 						if (direction === 'input' || direction === null) {
 							done_fn(null, r);
 						}
-
-					}, function (err) {
-						// Throw this error so that the domain can pick it up.
-						throw err;
-					});
-					info("port call running asynchronously");
-
-				} else {
-					if (direction === 'input' || direction === null) {
-						done_fn(null, r);
 					}
-				}
-			})(to_call[i]);
-		}
-	});
+				})(to_call[i]);
+			}
+		});
+	}
 }
 
 var _set_output_functions = function (functions) {

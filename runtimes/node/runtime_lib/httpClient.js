@@ -30,14 +30,14 @@ function* request_fn(options) {
 					statusCode: response.statusCode
 				});
 			} else {
-				request_defer.reject("httpRequest failed with code " + request.statusCode + " at URL: " + url);
+				request_defer.reject("httpRequest failed with code " + response.statusCode + " at URL: " + options.url);
 			}
 		} else {
-			request_defer.reject("httpRequest at URL: " + url + " had an error: \n" + error);
+			request_defer.reject("httpRequest at URL: " + options.url + " had an error: \n" + error);
 		}
 	});
 
-	info('before yield in rt.http.request');
+	info('before yield in http.request');
 	return yield request_defer.promise;
 }
 
