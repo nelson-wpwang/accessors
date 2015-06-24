@@ -1086,12 +1086,14 @@ node_runtime_example = string.Template(
 
 var accessors = require('accessors.io');
 $parameters
-accessors.create_accessor('$path_and_name', $parameters_arg, function ($instance) {
+accessors.create_accessor('$path_and_name', $parameters_arg, function (err, $instance) {
+    if (err) {
+    	console.log('Error when creating $path_and_name accessor.');
+    	console.log(err);
+    	return;
+    }
 
-$ports}, function (err) {
-    console.log('Error when creating $path_and_name accessor.');
-    console.log(err);
-});''')
+$ports});''')
 
 node_runtime_example_parameters = string.Template(
 '''
@@ -1103,31 +1105,23 @@ node_runtime_example_parameters_entries = string.Template('''    $name: '',
 ''')
 
 node_runtime_example_ports_input = string.Template(
-'''    $instance.$port_function.input(value, function () {
+'''    $instance.write('$port_name', value, function (err) {
         // Setting the port completed successfully.
-    }, function (err) {
-        console.log('Setting port $port_name failed.');
     });
 
 ''')
 
 node_runtime_example_ports_output = string.Template(
-'''    $instance.$port_function.output(function (value) {
+'''    $instance.read('$port_name', function (err, value) {
         console.log('Read $port_name and got: ' + value);
-    }, function (err) {
-        console.log('Reading port $port_name failed.');
     });
 
 ''')
 
 node_runtime_example_ports_observe = string.Template(
-'''    $instance.$port_function.observe(function (data) {
+'''    $instance.on('$port_name', function (data) {
         console.log('Callback with ' + data);
-    }, function () {
-        console.log('Observe port "$port_name" setup successfully');
-    }, function (err) {
-        console.log('Reading port $port_name failed.');
-    });
+    };
 
 ''')
 
@@ -1239,23 +1233,20 @@ class handler_accessor_page (JinjaBaseHandler):
 		python_ex_ports = ''
 		for port in record['accessor']['ports']:
 			if 'input' in port['directions']:
-				node_ex_ports += node_runtime_example_ports_input.substitute(port_function=port['function'],
-		                                                                     instance=record['accessor']['safe_name'],
+				node_ex_ports += node_runtime_example_ports_input.substitute(instance=record['accessor']['safe_name'],
 				                                                             port_name=port['name'])
 				python_ex_ports += python_runtime_example_ports_input.substitute(port_function=port['function'],
 				                                                                 instance=record['accessor']['safe_name'],
 				                                                                 port_name=port['name'])
 			if 'output' in port['directions']:
-				node_ex_ports += node_runtime_example_ports_output.substitute(port_function=port['function'],
-		                                                                      instance=record['accessor']['safe_name'],
+				node_ex_ports += node_runtime_example_ports_output.substitute(instance=record['accessor']['safe_name'],
 				                                                              port_name=port['name'])
 				python_ex_ports += python_runtime_example_ports_output.substitute(port_function=port['function'],
 				                                                                  instance=record['accessor']['safe_name'],
 				                                                                  port_name=port['name'])
-			if 'observe' in port['directions']:
-				node_ex_ports += node_runtime_example_ports_observe.substitute(port_function=port['function'],
-		                                                                      instance=record['accessor']['safe_name'],
-				                                                              port_name=port['name'])
+			if 'event' in port['attributes']:
+				node_ex_ports += node_runtime_example_ports_observe.substitute(instance=record['accessor']['safe_name'],
+				                                                               port_name=port['name'])
 				python_ex_ports += python_runtime_example_ports_observe.substitute(port_function=port['function'],
 				                                                                   instance=record['accessor']['safe_name'],
 				                                                                   port_name=port['name'])
@@ -1362,15 +1353,15 @@ class handler_accessor_example (handler_accessor_page):
 
 ### Templates for example code for implementing a given interface
 tmpl_accessor_interface = string.Template(
-'''// name:
-// author:
-// email:
-//
-// <accessor title>
-// ================
-//
-// <accessor description>
-//
+'''/**
+ * <accessor title>
+ * ================
+ *
+ * <accessor description>
+ *
+ * @module
+ * @author name <email>
+ */
 
 function setup () {
     provideInterface('$interface_name');
@@ -1385,10 +1376,9 @@ $port_functions''')
 tmpl_accessor_interface_port_init = string.Template('''
     add${direction}Handler('$port', ${port}$direction);''')
 tmpl_accessor_interface_port_impl = string.Template('''
-${port}${direction} = function* ($argument) {
-    /* ... */
-    $return_stmt
-}
+var ${port}${direction} = function* ($argument) {
+    // $help
+$return_stmt}
 ''')
 
 # Page that describes an interface
@@ -1416,7 +1406,9 @@ class handler_interface_page (JinjaBaseHandler):
 						direction='Read',
 						port=name,
 						argument='',
-						return_stmt='return val;',
+						help='Implement here what happens when the ' + name + ' port is read.',
+						return_stmt="""    send('"""+name+"""', val);
+""",
 						)
 			if 'write' in props['attributes']:
 				port_init += tmpl_accessor_interface_port_init.substitute(
@@ -1428,7 +1420,8 @@ class handler_interface_page (JinjaBaseHandler):
 						direction='Write',
 						port=name,
 						argument='val',
-						return_stmt="send('"+name+"', val);",
+						help='Implement the logic for handing incoming data to the ' + name + ' port.',
+						return_stmt='',
 						)
 
 		def recurse_interfaces (interface):

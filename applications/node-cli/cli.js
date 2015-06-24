@@ -286,6 +286,7 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 									content: 'Done',
 									style: {
 										bg: 'lightgray',
+										fg: 'black',
 										hover: {
 											bg: 'blue',
 											fg: 'white'
@@ -397,6 +398,7 @@ function enter_parameters (accessor_id, accessor_ir) {
 		content: 'Done',
 		style: {
 			bg: 'lightgray',
+			fg: 'black',
 			hover: {
 				bg: 'blue',
 				fg: 'white'
