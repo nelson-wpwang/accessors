@@ -45,8 +45,16 @@ if (argv.debug) {
 var info = debug('accessors-cli:info');
 var error = debug('accessors-cli:error');
 
+var MAX_DISPLAY_LINES = 500;
+
 function cli_log (s) {
 	bottom.insertBottom(s);
+
+	var numlines = bottom.getLines().length;
+	while (numlines > MAX_DISPLAY_LINES) {
+		bottom.deleteTop();
+		numlines -= 1;
+	}
 }
 
 debug.log = cli_log

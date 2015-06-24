@@ -176,12 +176,19 @@ Create a one-off port for this accessor. Valid attributes:
     Options are optional, and the `options` argument can be omitted entirely
     if not used.
 
+- `<void> createPortBundle(<string> name, <array> port_names)`: Group two or more
+ports together into a conceptual group. This is useful for ports where setting
+only one (or reading only one) doesn't make much sense, that is, they only have
+meaning in a group. Creating a port bundle allows the accessor to define
+handler functions that will only execute when there is data ready for all
+of the ports in the bundle.
+
 - `<void> provideInterface(<string> path)`: Specify that this
 accessor implements a particular interface.
 
 - `<accessor> loadDependency(<string> path, <object> parameters)`: Loads a
-  new accessor as a dependency. Dependencies are guaranteed to exist at
-  runtime.
+new accessor as a dependency. Dependencies are guaranteed to exist at
+runtime.
    - Dependencies are lazily init-ed, meaning that the dependency's `init`
      method is not called until the first time the dependency is accessed.
    - You may call a dependency's `init` method directly to force immediate
@@ -193,6 +200,13 @@ accessor implements a particular interface.
 
 These can be used inside of an accessor for getting data and for outputing
 data.
+
+- `<void> addInputHandler(<string> port_name, <function> handler)`: Define
+a function that will be called when the given port receives and new input
+data. This is typically called in `init()`.
+
+- `<void> addOuputHandler(<string> port_name, <function> handler)`: Specify
+a function to be called when the given port is _read_ from.
 
 - `<string> getParameter(<string> parameter_name)`: Get the value of a
 configured parameter that was passed to accessor when it was created. Parameters
