@@ -408,9 +408,12 @@ function enter_parameters (accessor_id, accessor_ir) {
 		for (var i=0; i<accessor_ir.parameters.length; i++) {
 			var param = accessor_ir.parameters[i];
 			if (accessor_ir.parameters.length == 1) {
-				parameters[param.name] = data.textbox;
+				var p = data.textbox;
 			} else {
-				parameters[param.name] = data.textbox[i];
+				var p = data.textbox[i];
+			}
+			if (p !== '') {
+				parameters[param.name] = p;
 			}
 		}
 		screen.remove(top);

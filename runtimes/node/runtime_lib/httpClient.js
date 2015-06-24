@@ -41,7 +41,7 @@ function* request_fn(options) {
 	return yield request_defer.promise;
 }
 
-module.exports.requestFinish = request_fn;
+module.exports.request = request_fn;
 
 module.exports.get = function* get(url) {
 	var options = {}
