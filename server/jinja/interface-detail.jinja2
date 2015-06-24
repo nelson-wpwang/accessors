@@ -3,7 +3,7 @@
 
   <div class="col-md-7">
     {% if extends_depth == 1 %}
-    <h4>Ports</h4>
+    <h3>Ports</h3>
     {% endif %}
     <ul class="list-group accessor-ports-list">
       {% for name in interface.ports %}
@@ -16,6 +16,7 @@
           </div>
           <div class="col-sm-4 accessor-ports-list-config">
             <b>Directions</b>: &nbsp;{{ port.directions|join(', ') }}<br />
+            <b>Attributes</b>: &nbsp;{{ port.attributes|join(', ') }}<br />
             <b>Type</b>: &nbsp;{{ port.type }}<br />
             {% if 'units' in port %}<b>Units</b>: &nbsp;{{ port.units }}<br />{% endif %}
             {% if 'options' in port %}<b>Options</b>: &nbsp;{{ port.options }}<br />{% endif %}
@@ -32,13 +33,17 @@
 {% endif %}
 
 {% if interface.extends %}
-<h3>Interfaces {{ interface }} extends:</h3>
+<h3>Extends</h3>
+<p>
+  This interface extends the following interfaces, and therefore includes
+  their ports.
+</p>
 <div style="padding-left: 50px;">
   {% set e_list = interface.extends %}
   {% for interface in e_list %}
   <h4><a href="/view/interface{{ interface }}">{{ interface }}</a></h4>
-  {% set extends_depth = extends_depth + 1 %}
-  {% include "interface-detail.jinja2" %}
+  {# {% set extends_depth = extends_depth + 1 %}
+  {% include "interface-detail.jinja2" %} #}
   {% endfor %}
 </div>
 {% endif %}

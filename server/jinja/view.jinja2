@@ -137,6 +137,21 @@ Accessor: {{ record.name }} | Accessor Library
 {% endif %}
 
 
+<h2>Required Libraries</h2>
+{% if accessor.runtime_imports %}
+<ul class="list-group">
+  {% for imp in accessor.runtime_imports %}
+  <li class="list-group-item">
+    <h4>{{ imp.name }}</h4>
+    {#<p>{{ dep.description }}</p>#}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<em>This accessor does not need any libraries</em>
+{% endif %}
+
+
 <h2>Usage Examples</h2>
 
 <h3>Node.js</h3>
