@@ -522,7 +522,7 @@ def process_accessor(
 			try:
 				m = re.search('(?P<author>.+) (?P<email>\<.+@.+\>)', jsdoc['author']).groupdict()
 				author = m['author']
-				email = m['email']
+				email = m['email'][1:-1]
 			except (AttributeError, KeyError):
 				parse_error("@author must include email", path)
 		else:
@@ -1088,12 +1088,19 @@ var accessors = require('accessors.io');
 $parameters
 accessors.create_accessor('$path_and_name', $parameters_arg, function (err, $instance) {
     if (err) {
-    	console.log('Error when creating $path_and_name accessor.');
-    	console.log(err);
-    	return;
+        console.log('Error when creating $path_and_name accessor.');
+        console.log(err);
+        return;
     }
 
-$ports});''')
+    $instance.init(function (err) {
+        if (err) {
+            console.log('Erro when initing the accessor: ' + err);
+            return;
+        }
+
+$ports    });
+});''')
 
 node_runtime_example_parameters = string.Template(
 '''
@@ -1105,23 +1112,23 @@ node_runtime_example_parameters_entries = string.Template('''    $name: '',
 ''')
 
 node_runtime_example_ports_input = string.Template(
-'''    $instance.write('$port_name', value, function (err) {
-        // Setting the port completed successfully.
-    });
+'''        $instance.write('$port_name', value, function (err) {
+            // Setting the port completed successfully.
+        });
 
 ''')
 
 node_runtime_example_ports_output = string.Template(
-'''    $instance.read('$port_name', function (err, value) {
-        console.log('Read $port_name and got: ' + value);
-    });
+'''        $instance.read('$port_name', function (err, value) {
+            console.log('Read $port_name and got: ' + value);
+        });
 
 ''')
 
 node_runtime_example_ports_observe = string.Template(
-'''    $instance.on('$port_name', function (data) {
-        console.log('Callback with ' + data);
-    };
+'''        $instance.on('$port_name', function (data) {
+            console.log('Callback with ' + data);
+        };
 
 ''')
 
