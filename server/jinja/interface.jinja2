@@ -63,7 +63,9 @@ The {{ interface }} Interface | Accessor Library
 </ul>
 {% endif %}
 
+{% if interface.accessors or interface.accessors_by_extends %}
 <hr />
+{% endif %}
 
 <div class="row">
   <div class="col-md-7">
@@ -75,7 +77,7 @@ The {{ interface }} Interface | Accessor Library
   </div>
 </div>
 
-<h4>Example Stub Code To Implement this Interface</h4>
+<h3>Example Stub Code To Implement this Interface</h3>
 <div class="panel panel-default">
   <div class="panel-body">
     <pre class="line-numbers"><code class="language-javascript">
