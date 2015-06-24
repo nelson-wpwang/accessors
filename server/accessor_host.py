@@ -6,6 +6,7 @@ coloredlogs.install(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 import argparse
+import bidict
 import pprint
 import collections
 import copy
@@ -387,13 +388,14 @@ class Interface():
 				continue
 		raise KeyError
 
-	def get_port_detail(self, port, function_name):
+	def get_port_detail(self, port, aliases=None):
+		aliases = aliases or set()
 		name = port.split('.')[-1]
 		if port in self.ports:
 			detail = copy.deepcopy(self.json['ports'][name])
 			detail['name'] = '/' + '/'.join(port.split('.')[:-1])
 			detail['name'] += '.' + name
-			detail['function'] = function_name
+			detail['aliases'] = list(aliases)
 			detail['interface_path'] = self.path
 
 			# We add some (currently) optional keys to make downstream stuff
@@ -404,9 +406,10 @@ class Interface():
 			if 'display_name' not in detail:
 				detail['display_name'] = port.split('.')[-1]
 			return detail
+		aliases.add(port)
 		iface = '/' + '/'.join(port.split('.')[:-1])
 		log.debug(iface)
-		return interface_tree[iface].get_port_detail(port, function_name)
+		return interface_tree[iface].get_port_detail(port, aliases)
 
 	def register_accessor(self, acc_path, from_ext=False):
 		'''Record accessors that implement this interface and recurse into extends'''
@@ -625,40 +628,52 @@ def process_accessor(
 				port['type'] = 'string'
 			if 'display_name' not in port:
 				port['display_name'] = port['name'].split('.')[-1]
-			if len(port['directions']) == 0:
-				errors.appendleft({
-					'title': "Created port {} implements no directions".format(port['name']),
-					'extra': [
-						"All ports must define at least one of [input, output, observe]",
-						"e.g., {}.output = function() {{ return 'current_value'; }}".format(port['name']),
-					]})
-				complete_interface = False
 
-		inferred_iface_ports = {}
-		inferred_iface_ports_to_delete = []
+		# For all provided interfaces, creates a map 'Beta' -> '/alpha.Beta'
+		# Ambiguous entries, that is /alpha and /gamma both have Beta port, are
+		# removed from the unqualified list and added to the conflicts list
+		#
+		# This uses only information gleaned from provideInterface calls
+		unqualified_iface_ports = bidict.bidict()
+		unqualified_iface_port_conflicts = []
 		for claim in accessor['implements']:
 			iface = interface_tree[claim['interface']]
 			for port in iface:
-				name = port.split('.')[-1]
-				if name in inferred_iface_ports:
-					inferred_iface_ports_to_delete.append(name)
+				unqualified = port.split('.')[-1]
+				if unqualified in unqualified_iface_ports:
+					unqualified_iface_port_conflicts.append(unqualified)
 				else:
-					inferred_iface_ports[name] = port
-		for name in inferred_iface_ports_to_delete:
-			# Delete ambiguous entries
-			del inferred_iface_ports[name]
+					unqualified_iface_ports[unqualified] = port
+		for unqualified in unqualified_iface_port_conflicts:
+			del unqualified_iface_ports[unqualified]
 
 
-		accessor['normalized_interface_ports'] = []
-		name_map = {}
-		pprint.pprint(accessor['interface_ports'])
-		for port in accessor['interface_ports']:
+		# Process the interface ports to validate their usage. These are ports
+		# that used in port constructs (addInputHandler et al) that were not
+		# created by createPort
+		#
+		# This establishes a map of 'arbitrary port qualifier' -> 'fully
+		# qualified provided interface port name'
+		#
+		# This also establishes a list of aliases, that is
+		# 'FQ provided interface name' -> 'any identifier that refers to it'
+		accessor['normalized_interface_ports'] = {}
+		accessor['port_alias_map'] = {}
+
+		print(accessor['interface_ports'])
+		fixme_eventually = []
+		for s in sends_to:
+			fixme_eventually.append({
+				'directions': ['output'],
+				'name': s,
+				})
+		for port in accessor['interface_ports'] + fixme_eventually:
 			if '.' not in port['name']:
 				# Port is an unqualified name
-				if port['name'] in inferred_iface_ports:
-					norm = inferred_iface_ports[port['name']]
+				if port['name'] in unqualified_iface_ports:
+					norm = unqualified_iface_ports[port['name']]
 				else:
-					if port['name'] in inferred_iface_ports_to_delete:
+					if port['name'] in unqualified_iface_port_conflicts:
 						errors.appendleft({
 							'title': "Unqualified ambiguous port",
 							'extra': [
@@ -673,7 +688,7 @@ def process_accessor(
 								"The port named " + port['name'] + " does not belong to any implemented interface or created port.",
 								"It is ignored."]
 							})
-						norm = ''
+						norm = None
 			else:
 				# Port is a fully qualified name
 				try:
@@ -683,22 +698,15 @@ def process_accessor(
 						'title': "The port named " + port['name'] + " does not match any known interface",
 						})
 					raise NotImplementedError
-
-			if norm in accessor['normalized_interface_ports']:
-				errors.appendleft({
-					'title': 'Duplicate port conflict',
-					'extra': [
-						'Found trying to insert ' + port['name'],
-						'But had previously inserted ' + norm
-					]})
-				raise NotImplementedError
-			accessor['normalized_interface_ports'].append(norm)
-			name_map[norm] = port
+			accessor['normalized_interface_ports'][port['name']] = norm
+			if norm not in accessor['port_alias_map']:
+				accessor['port_alias_map'][norm] = set()
+			accessor['port_alias_map'][norm].add(port['name'])
 
 		for claim in accessor['implements']:
 			iface = interface_tree[claim['interface']]
 			for req in iface:
-				if req not in accessor['normalized_interface_ports']:
+				if req not in accessor['port_alias_map']:
 					errors.appendleft({
 						'title': 'Incomplete interface implementation -- missing port',
 						'extra': [
@@ -714,26 +722,30 @@ def process_accessor(
 							]
 						})
 					complete_interface = False
-				for direction in iface[req]['directions']:
-					if direction not in name_map[req]['directions']:
-						errors.appendleft({
-							'title': 'Incomplete interface implementation -- missing port direction',
-							'extra': [
-								"Interface %s port %s requires %s" % (
-									iface,
-									req,
-									iface[req]['directions'],
-									),
-								"But %s from %s only implements %s" % (
-									accessor['name'],
-									accessor['_path'],
-									name_map[req]['directions'],
-									)
-								]
-							})
-						complete_interface = False
-				accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
+				#for direction in iface[req]['directions']:
+				#	if direction not in name_map[req]['directions']:
+				#		warnings.appendleft({
+				#			'title': 'Incomplete interface implementation -- missing port direction',
+				#			'extra': [
+				#				"Interface %s port %s requires %s" % (
+				#					iface,
+				#					req,
+				#					iface[req]['directions'],
+				#					),
+				#				"But %s from %s only implements %s" % (
+				#					accessor['name'],
+				#					accessor['_path'],
+				#					name_map[req]['directions'],
+				#					)
+				#				]
+				#			})
+				accessor['ports'].append(iface.get_port_detail(
+					req,
+					accessor['port_alias_map'][req]
+					))
 
+		for norm in accessor['port_alias_map']:
+			accessor['port_alias_map'][norm] = list(accessor['port_alias_map'][norm])
 
 		# Run the other accessor checker concept
 		#err = validate_accessor.check(accessor)
@@ -753,33 +765,6 @@ def process_accessor(
 			accessor['code'] = {}
 		if 'dependencies' not in accessor:
 			accessor['dependencies'] = []
-
-		# Validate that things that are sent to with `send` are observe ports
-		for port in sends_to:
-			#print("ACCESSOR SENDS TO:", port)
-			for p in accessor['ports']:
-				#print("     AND HAS PORT:", p['name'])
-				if p['name'][1:].replace('/','.') in name_map:
-					alias = name_map[p['name'][1:].replace('/','.')]['name']
-					#print(" WHICH ALIASES TO:", alias)
-					if alias == port:
-						impl = p
-						break
-				elif p['name'] == port:
-					impl = p
-					break
-			else:
-				errors.appendleft({
-					'title': "Attempt to send to '{}', but that is not a created port or a port in a provided interface".format(port),
-					})
-				complete_interface = False
-				continue
-			# if 'observe' not in p['directions']:
-			# 	# Perhaps this should instead implicitly make this an observable
-			# 	# port, perhaps that's too much magic.
-			# 	warnings.appendleft({
-			# 		'title': "Send to '{}' sends to a port that is not declared as an observable port".format(port)
-			# 		})
 
 		if 'code' in accessor:
 			accessor['code_alternates'] = {}
@@ -1247,19 +1232,19 @@ class handler_accessor_page (JinjaBaseHandler):
 			if 'input' in port['directions']:
 				node_ex_ports += node_runtime_example_ports_input.substitute(instance=record['accessor']['safe_name'],
 				                                                             port_name=port['name'])
-				python_ex_ports += python_runtime_example_ports_input.substitute(port_function=port['function'],
+				python_ex_ports += python_runtime_example_ports_input.substitute(port_function=port['name'],
 				                                                                 instance=record['accessor']['safe_name'],
 				                                                                 port_name=port['name'])
 			if 'output' in port['directions']:
 				node_ex_ports += node_runtime_example_ports_output.substitute(instance=record['accessor']['safe_name'],
 				                                                              port_name=port['name'])
-				python_ex_ports += python_runtime_example_ports_output.substitute(port_function=port['function'],
+				python_ex_ports += python_runtime_example_ports_output.substitute(port_function=port['name'],
 				                                                                  instance=record['accessor']['safe_name'],
 				                                                                  port_name=port['name'])
 			if 'event' in port['attributes']:
 				node_ex_ports += node_runtime_example_ports_observe.substitute(instance=record['accessor']['safe_name'],
 				                                                               port_name=port['name'])
-				python_ex_ports += python_runtime_example_ports_observe.substitute(port_function=port['function'],
+				python_ex_ports += python_runtime_example_ports_observe.substitute(port_function=port['name'],
 				                                                                   instance=record['accessor']['safe_name'],
 				                                                                   port_name=port['name'])
 
