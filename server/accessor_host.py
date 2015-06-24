@@ -377,7 +377,6 @@ class Interface():
 			detail['function'] = function_name
 			detail['interface_path'] = self.path
 
-			# NOT SURE IF THIS SHOULD BE HERE
 			if 'attributes' in detail:
 				detail['directions'] = []
 				if 'read' in detail['attributes']:
@@ -388,8 +387,6 @@ class Interface():
 				   'eventPeriodic' in detail['attributes'] or \
 				   'eventChange' in detail['attributes']:
 					detail['directions'].append('output');
-
-
 
 			# We add some (currently) optional keys to make downstream stuff
 			# easier, TODO: re-think about what should be required in the
@@ -1368,14 +1365,21 @@ tmpl_accessor_interface = string.Template(
 // <accessor description>
 //
 
-function* init () {
+function setup () {
     provide_interface('$interface_name');
+}
+
+function* init() {$port_inits
+    // Use the fully qualified interface port if disambiguation is necessary.
+    // '$port_disambig_short' is an alias to '$port_disambig'
 }
 $port_functions''')
 
-tmpl_accessor_interface_port = string.Template(
-'''
-$port_name.$port_direction = function* ($port_argument) {
+tmpl_accessor_interface_port_init = string.Template('''
+    add${direction}Handler('$port', ${port}$direction);''')
+tmpl_accessor_interface_port_impl = string.Template('''
+${port}${direction} = function* ($argument) {
+    /* ... */
     $return_stmt
 }
 ''')
@@ -1386,36 +1390,55 @@ class handler_interface_page (JinjaBaseHandler):
 		path = '/'+path
 		interface = interface_tree[path]
 
+		port_init = ''
+		port_impl = ''
+		last_name = None
+
 		def example_port (name, props):
-			out = ''
-			for direction,arg,ret in [('input','val',''),
-			                          ('output','','return val;'),
-			                          ('observe','','send(\'/$port_name_sl\', val)')]:
-				if direction in props['directions']:
-					template_str = tmpl_accessor_interface_port
-					for i in range(0,2):
-						template_str = string.Template(template_str.substitute(
-							port_name=name,
-							port_direction=direction,
-							port_argument=arg,
-							return_stmt=ret,
-							port_name_sl=name.split('.')[1]))
-					out += template_str.substitute()
-			return out
+			nonlocal port_init
+			nonlocal port_impl
+			nonlocal last_name
+			last_name = name
+			name = name.split('.')[-1]
+			if 'read' in props['attributes']:
+				port_init += tmpl_accessor_interface_port_init.substitute(
+						direction='Read',
+						port=name,
+						)
+				port_impl += tmpl_accessor_interface_port_impl.substitute(
+						direction='Read',
+						port=name,
+						argument='',
+						return_stmt='return val;',
+						)
+			if 'write' in props['attributes']:
+				port_init += tmpl_accessor_interface_port_init.substitute(
+						direction='Write',
+						port=name,
+						return_stmt=''
+						)
+				port_impl += tmpl_accessor_interface_port_impl.substitute(
+						direction='Write',
+						port=name,
+						argument='val',
+						return_stmt="send('"+name+"', val);",
+						)
 
 		def recurse_interfaces (interface):
-			out = ''
 			for port_name,port_props in interface.ports.items():
-				out += example_port(port_name, port_props)
+				example_port(port_name, port_props)
 			for extent in interface.extends:
-				out += recurse_interfaces(extent)
-			return out
+				recurse_interfaces(extent)
 
-		port_strings = recurse_interfaces(interface)
+		recurse_interfaces(interface)
 
 		stub_code = tmpl_accessor_interface.substitute(
 			interface_name=interface.path,
-			port_functions=port_strings)
+			port_inits=port_init,
+			port_disambig_short=last_name.split('.')[-1],
+			port_disambig=last_name,
+			port_functions=port_impl,
+			)
 
 		data = {
 				'interface': interface,
