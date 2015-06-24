@@ -1373,7 +1373,7 @@ tmpl_accessor_interface = string.Template(
 //
 
 function setup () {
-    provide_interface('$interface_name');
+    provideInterface('$interface_name');
 }
 
 function* init() {$port_inits
