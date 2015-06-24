@@ -235,81 +235,88 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 
 						} else if (action == 'set') {
 
-							// Set it up so we can write to the device
-							top = blessed.form({
-								parent: screen,
-								keys: true,
-								mouse: true,
-								top: 0,
-								left: 0,
-								width: '100%',
-								height: '25%',
-								border: {
-									type: 'line',
-									fg: 'black'
-								}
-							});
+							if (port.type === 'button') {
+								// We don't need a value if this is just
+								// a button
+								accessor.write(port.name, null, interact);
+							} else {
 
-							var t = blessed.text({
-								parent: top,
-								content: 'Value: ',
-								left: 0,
-								top: 0
-							});
+								// Set it up so we can write to the device
+								top = blessed.form({
+									parent: screen,
+									keys: true,
+									mouse: true,
+									top: 0,
+									left: 0,
+									width: '100%',
+									height: '25%',
+									border: {
+										type: 'line',
+										fg: 'black'
+									}
+								});
 
-							var p = blessed.textbox({
-								parent: top,
-								mouse: true,
-								keys: true,
-								shrink: true,
-								inputOnFocus: true,
-								left: 7,
-								top: 0
-							});
-							p.focus();
+								var t = blessed.text({
+									parent: top,
+									content: 'Value: ',
+									left: 0,
+									top: 0
+								});
 
-							var done = blessed.button({
-								parent: top,
-								mouse: true,
-								keys: true,
-								shrink: true,
-								left: 0,
-								top: 1,
-								name: 'Done',
-								content: 'Done',
-								style: {
-									bg: 'lightgray',
-									hover: {
-										bg: 'blue',
-										fg: 'white'
-									},
-									focus: {
-										bg: 'blue',
-										fg: 'white'
-									},
-								}
-							});
+								var p = blessed.textbox({
+									parent: top,
+									mouse: true,
+									keys: true,
+									shrink: true,
+									inputOnFocus: true,
+									left: 7,
+									top: 0
+								});
+								p.focus();
 
-							done.once('press', function () {
-								top.submit();
-							});
+								var done = blessed.button({
+									parent: top,
+									mouse: true,
+									keys: true,
+									shrink: true,
+									left: 0,
+									top: 1,
+									name: 'Done',
+									content: 'Done',
+									style: {
+										bg: 'lightgray',
+										hover: {
+											bg: 'blue',
+											fg: 'white'
+										},
+										focus: {
+											bg: 'blue',
+											fg: 'white'
+										},
+									}
+								});
 
-							top.once('submit', function (data) {
-								screen.remove(top);
-								var val = data.textbox;
+								done.once('press', function () {
+									top.submit();
+								});
 
-								if (val == 'true') {
-									val = true;
-								} else if (val == 'false') {
-									val = false;
-								} else if (port.type == 'object') {
-									val = _eval('exports.val='+val).val;
-								}
+								top.once('submit', function (data) {
+									screen.remove(top);
+									var val = data.textbox;
 
-								accessor.write(port.name, val, interact);
-							});
+									if (val == 'true') {
+										val = true;
+									} else if (val == 'false') {
+										val = false;
+									} else if (port.type == 'object') {
+										val = _eval('exports.val='+val).val;
+									}
 
-							screen.render();
+									accessor.write(port.name, val, interact);
+								});
+
+								screen.render();
+							}
 
 						} else if (action == 'listen') {
 							accessor.on(port.name, subscribe_callback);
