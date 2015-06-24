@@ -319,6 +319,24 @@ class Interface():
 					#self.ports.append(self.path[1:].replace('/', '.') + '.' + port)
 					self.ports[self.path[1:].replace('/', '.') + '.' + port] = self.json['ports'][port]
 
+				if 'directions' in self.json['ports'][port]:
+					raise NotImplementedError("Interface files should not specify directions, only attributes")
+
+				if 'attributes' not in self.json['ports'][port]:
+					log.warn("No attributes on interface %s ?", file_path)
+					self.json['ports'][port]['attributes'] = ''
+
+				directions = []
+				if 'read' in self.json['ports'][port]['attributes']:
+					directions.append('output');
+				if 'write' in self.json['ports'][port]['attributes']:
+					directions.append('input');
+				if 'event'         in self.json['ports'][port]['attributes'] or \
+				   'eventPeriodic' in self.json['ports'][port]['attributes'] or \
+				   'eventChange'   in self.json['ports'][port]['attributes']:
+					directions.append('output');
+				self.json['ports'][port]['directions'] = directions
+
 			self.extends = []
 			if 'extends' in self.json:
 				if type(self.json['extends']) == type(''):
@@ -376,17 +394,6 @@ class Interface():
 			detail['name'] = '/' + '/'.join(port.split('.'))
 			detail['function'] = function_name
 			detail['interface_path'] = self.path
-
-			if 'attributes' in detail:
-				detail['directions'] = []
-				if 'read' in detail['attributes']:
-					detail['directions'].append('output');
-				if 'write' in detail['attributes']:
-					detail['directions'].append('input');
-				if 'event' in detail['attributes'] or \
-				   'eventPeriodic' in detail['attributes'] or \
-				   'eventChange' in detail['attributes']:
-					detail['directions'].append('output');
 
 			# We add some (currently) optional keys to make downstream stuff
 			# easier, TODO: re-think about what should be required in the
