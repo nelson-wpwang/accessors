@@ -212,20 +212,22 @@ To add a new interface or modify an existing interface, commit a change to the
     </td>
     <td>
       {% for ext in iface.extends %}
-      {% for name in ext %}
-      {% set port = ext.ports[name] %}
-      {% if 'observe' in port.directions %}
-      <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
-      {% endif %}
-      {% if 'input' in port.directions %}
-      <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
-      {% endif %}
-      {{ name.split('.')[-1] }}
-      {% if 'output' in port.directions %}
-      <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
-      {% endif %}
-      <br />
-      {% endfor %}
+        {% for name in ext %}
+          {% set port = ext.ports[name] %}
+          {% if port %}
+            {% if 'observe' in port.directions %}
+              <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+            {% endif %}
+            {% if 'input' in port.directions %}
+              <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+            {% endif %}
+            {{ name.split('.')[-1] }}
+            {% if 'output' in port.directions %}
+              <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+            {% endif %}
+            <br />
+          {% endif %} {# if port #}
+        {% endfor %}
       {% endfor %}
     </td>
     <td>
