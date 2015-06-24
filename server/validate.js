@@ -256,17 +256,20 @@ function checkSend(node) {
       return;
     }
 
+    // TODO: Consider putting this back, but forcing it to be a string is
+    //       cramping my style
     if (node.arguments[0].type != 'Literal') {
-      errors.push({
-        loc: node.arguments[0].loc,
-        title: "First argument to send must be a string literal",
-        extra: ["It is currently of type "+node.arguments[0].type],
-      });
-      return;
-    }
+      // errors.push({
+      //   loc: node.arguments[0].loc,
+      //   title: "First argument to send must be a string literal",
+      //   extra: ["It is currently of type "+node.arguments[0].type],
+      // });
+      // return;
 
-    if (sends_to_list.indexOf(node.arguments[0].value) == -1) {
-      sends_to_list.push(node.arguments[0].value);
+    } else {
+      if (sends_to_list.indexOf(node.arguments[0].value) == -1) {
+        sends_to_list.push(node.arguments[0].value);
+      }
     }
 
     // TODO: Would be nice to validate the type of arguments[1], but it will
