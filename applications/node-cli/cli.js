@@ -14,7 +14,7 @@ var colors    = require('colors');
 var _         = require('lodash');
 var _eval     = require('eval');
 var async     = require('async');
-var debug     = require('debug');
+var debug_lib = require('debug');
 var readline  = require('readline-sync');
 var sf        = require('stringformat');
 var argv      = require('yargs')
@@ -40,10 +40,11 @@ var argv      = require('yargs')
 
 // Configure debugging
 if (argv.debug) {
-	debug.enable('accessors-cli.*');
+	debug_lib.enable('accessors-cli.*');
 }
-var info = debug('accessors-cli:info');
-var error = debug('accessors-cli:error');
+var info = debug_lib('accessors-cli:info');
+var error = debug_lib('accessors-cli:error');
+var debug = debug_lib('accessors-cli:debug');
 
 var MAX_DISPLAY_LINES = 500;
 
@@ -57,7 +58,7 @@ function cli_log (s) {
 	}
 }
 
-debug.log = cli_log
+debug_lib.log = cli_log
 
 // Get some python like .format action
 sf.extendString();

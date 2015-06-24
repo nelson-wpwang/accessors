@@ -32,7 +32,7 @@ try {
 	var request     = require('request');
 	var fs          = require('fs');
 	var semver      = require('semver');
-	var debug       = require('debug');
+	var debug_lib   = require('debug');
 	var vm          = require('vm');
 	var hashmap     = require('hashmap');
 
@@ -66,10 +66,11 @@ Consider using io.js instead of Node.js';
 // or pass --debug as a command line option
 //
 if (argv.debug) {
-	debug.enable('accessors.*');
+	debug_lib.enable('accessors.*');
 }
-var info = debug('accessors:info');
-var error = debug('accessors:error');
+var info = debug_lib('accessors:info');
+var error = debug_lib('accessors:error');
+var debug = debug_lib('accessors:debug');
 
 
 var host_server = 'http://accessors.io';
@@ -99,7 +100,7 @@ function set_output_functions (functions) {
 	print_functions = functions;
 
 	if ('debug' in print_functions) {
-		debug.log = print_functions.debug;
+		debug_lib.log = print_functions.debug;
 	}
 }
 
@@ -137,10 +138,11 @@ function compile_dev_accessor (path, cb) {
 		if (!err && response.statusCode == 200) {
 			cb(null, response.headers['x-acc-name']);
 		} else {
-			error(err)
+			if (err) error(err);
 			if (response) error('Response code: ' + response.statusCode)
 			error(body);
 			if (response) {
+				if (!err) err = response.statusCode;
 				cb(err, response.headers['x-acc-name']);
 			} else {
 				cb(err);
