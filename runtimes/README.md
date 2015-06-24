@@ -66,6 +66,7 @@ http.get('url.com', function (response) {
     ...other nested calls
   });
 });
+```
 
 accessors can do:
 
