@@ -388,6 +388,23 @@ function checkNewPortParameters(port, pnode) {
           });
           continue;
         }
+      } else if (prop.key.name === 'value') {
+        if (prop.value.type !== 'Literal') {
+          errors.push({
+            loc: prop.loc,
+            title: port.name + " value must be a static string",
+          });
+          continue;
+        }
+        if (port.value !== undefined) {
+          errors.push({
+            loc: prop.loc,
+            title: port.name + ": duplicate key value. This is the second definiton.",
+          });
+          continue;
+        }
+        port.value = prop.value.value;
+
       } else if (prop.key.name === 'units') {
         if (prop.value.type !== 'Literal') {
           errors.push({
@@ -595,8 +612,8 @@ function checkNewPorts(node) {
     // Make sure that if this port creates any events, it also
     // has the PORT_ATTR_EVENT attribute.
     if (port.attributes.indexOf(PORT_ATTR_EVENT) == -1 &&
-        (port.attributes.indexOf(PORT_ATTR_EVENT_PERIODIC) ||
-         port.attributes.indexOf(PORT_ATTR_EVENT_CHANGE))) {
+        (port.attributes.indexOf(PORT_ATTR_EVENT_PERIODIC) > -1 ||
+         port.attributes.indexOf(PORT_ATTR_EVENT_CHANGE) > -1)) {
       port.attributes.push(PORT_ATTR_EVENT);
     }
 

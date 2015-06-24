@@ -98,18 +98,7 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 
 	accessors.load_accessor(accessor_ir, parameters, function (err, accessor) {
 
-		accessor.init(function (err) {
-
-			if (err) {
-				console.log('ERROR'.red);
-				error(err);
-
-				console.log('Failed when creating an accessor.');
-				console.log('Likely this is an error inside of the init() function.');
-				console.log(err);
-				return;
-			}
-
+		if (!err) {
 			// Successfully loaded this device. If this is new and we are saving,
 			// now would be a good time to save it.
 			if (!argv.no_save && !saved_device) {
@@ -120,6 +109,19 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 					parameters: parameters
 				});
 				fs.writeFileSync(argv.parameters, JSON.stringify(saved_parameters));
+			}
+		}
+
+		accessor.init(function (err) {
+
+			if (err) {
+				console.log('ERROR'.red);
+				error(err);
+
+				console.log('Failed when creating an accessor.');
+				console.log('Likely this is an error inside of the init() function.');
+				console.log(err);
+				return;
 			}
 
 			function subscribe_callback (err, data) {

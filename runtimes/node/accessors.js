@@ -316,7 +316,12 @@ function get_port_handler_arrays (accessor) {
 		var port = accessor.ports[i];
 
 		ret += "'" + port.name + "': {";
-		reu += "'" + port.name + "': null,";
+
+		var def = 'null';
+		if ('value' in port) {
+			def = "'" + port.value + "'";
+		}
+		reu += "'" + port.name + "': " + def + ",";
 
 		if (port.directions.indexOf('input') > -1) {
 			ret += "input: [],"

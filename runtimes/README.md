@@ -320,10 +320,10 @@ module for details.
 
     var coap = require('coapClient');
 
-- _Blocking_ `<string> coap.get(<string> url)`: Create a CoAP get request
+- _Blocking_ `<IncomingMessage> coap.get(<string> url)`: Create a CoAP get request
 to the specified URL.
 
-- _Blocking_ `<string> coap.post(<string> url, <string> body)`: POST via
+- _Blocking_ `<IncomingMessage> coap.post(<string> url, <string> body)`: POST via
 CoAP to a specified resource.
 
 - `<void> coap.observe(<string> url, <function> callback)`: Connect to an

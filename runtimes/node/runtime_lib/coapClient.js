@@ -14,7 +14,12 @@ function* _coapCommon(ogm) {
 	var defer = Q.defer();
 	ogm.on('response', function (resp) {
 		info("CoAP complete, resp payload: " + resp.payload.toString('utf-8'));
-		defer.resolve(resp);
+		var out = {
+			statusCode: resp.code,
+			statusMessage: '',
+			body: resp.payload
+		}
+		defer.resolve(out);
 	});
 	info("CoAP yielding for I/O operation");
 	return yield defer.promise;
