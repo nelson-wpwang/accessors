@@ -35,14 +35,16 @@ var _remove_from_array = function (item, arr) {
 // Ports can have multiple names based on if they are custom or part of
 // an interface. This function accepts any valid name and returns
 // the canonical name.
-var _get_canonical_port_name (port_name) {
+var _get_canonical_port_name = function (port_name) {
+	if (['init', 'wrapup'].indexOf(port_name) > -1) {
+		return port_name;
+	}
 	return _port_names[port_name];
 }
 
 // Function that wraps calling a port. This sets up all of the promises/futures
 // code so that "await" works.
 var _do_port_call = function (port_name, direction, value, done_fn) {
-	var r;
 	port_name = _get_canonical_port_name(port_name);
 
 	// in the OUTPUT case, there is no value.
@@ -85,6 +87,7 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 	} else {
 		// Have work to do
 		var d = domain.create();
+		var r;
 
 		d.on('error', function (err) {
 			d.exit();
