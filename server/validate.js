@@ -27,8 +27,11 @@ try {
  */
 
 var FUNC_NEW_PORT = 'createPort';
+var FUNC_NEW_PORT_BUNDLE = 'createPortBundle';
 var FUNC_USE_INTERFACE = 'provideInterface';
 var FUNC_GET_PARAMETER = 'getParameter';
+var FUNC_MAP_READ_FUNC = 'addInputHandler';
+var FUNC_MAP_WRITE_FUNC = 'addOutputHandler';
 
 var LEGACY_FUNCTIONS = ['create_port', 'provide_interface', 'get_parameter'];
 
@@ -37,6 +40,8 @@ var PORT_ATTR_READ = 'read';
 var PORT_ATTR_EVENT = 'event';
 var PORT_ATTR_EVENT_PERIODIC = 'eventPeriodic';
 var PORT_ATTR_EVENT_CHANGE = 'eventChange';
+
+var legal_port_regex = /^[A-Za-z]\w*$/;
 
  /*****************************************************************************/
 
@@ -172,7 +177,6 @@ function checkProvideInterface(node) {
 
     iface = {
       interface: node.arguments[0].value,
-      provides: []
     };
 
     if (node.arguments[1] !== undefined) {
@@ -562,7 +566,8 @@ function checkNewPortParameters(port, pnode) {
 }
 
 var created_port_list = [];
-// var interface_port_list = [];
+var created_port_bundle_list = [];
+var interface_port_list = [];
 
 function checkNewPorts(node) {
   if (node.callee.name === FUNC_NEW_PORT) {
@@ -570,7 +575,6 @@ function checkNewPorts(node) {
     var attrNode = node.arguments[1];
     var parametersNode = node.arguments[2];
 
-    var legal_port_regex = /^[A-Za-z]\w*$/;
     if (nameNode.type !== 'Literal') {
       errors.push({
         loc: node.loc,
@@ -646,76 +650,102 @@ function checkNewPorts(node) {
   }
 }
 
+function checkNewPortBundles(node) {
+  if (node.callee.name === FUNC_NEW_PORT_BUNDLE) {
+    var nameNode = node.arguments[0];
+    var portsNode = node.arguments[1];
+
+    if (nameNode.type !== 'Literal') {
+      errors.push({
+        loc: node.loc,
+        title: "First argument to '" + FUNC_NEW_PORT_BUNDLE + "'' must be a fixed string",
+        extra: ["The current argument is of type "+nameNode.type],
+      });
+    }
+    if (!legal_port_regex.test(nameNode.value)) {
+      errors.push({
+        loc: nameNode.loc,
+        title: "Bundle name " + nameNode.value + " is not a legal port name",
+        extra: ["Legal names must match "+legal_port_regex],
+      });
+    }
+
+    var bundle = {
+      name: nameNode.value,
+    };
+
+    created_port_bundle_list.push(bundle);
+  }
+}
+
 // // Looking for <PortName>.<direction> = function* () {
 // function checkPortFunction(node) {
 //   if (node.operator == '=') {
 //     if (node.left.type == 'MemberExpression' && node.right.type == 'FunctionExpression') {
-//       var direction = node.left.property.name;
-//       var name_obj = node.left.object;
-//       var portName = ''
-//       while (name_obj.type == 'MemberExpression') {
-//         if (portName.length) {
-//           portName = name_obj.property.name + '.' + portName;
-//         } else {
-//           portName = name_obj.property.name;
-//         }
-//         name_obj = name_obj.object;
-//       }
-//       if (portName.length) {
-//         portName = name_obj.name + '.' + portName;
-//       } else {
-//         portName = name_obj.name;
-//       }
 
+function checkPortFunction(node) {
+  var direction = null;
+  if (node.callee.name === FUNC_MAP_READ_FUNC) {
+    direction = 'input';
+  } else if (node.callee.name === FUNC_MAP_WRITE_FUNC) {
+    direction = 'output';
+  }
+  if (direction != null) {
+    if (node.arguments[0].type !== 'Literal') {
+      errors.push({
+        loc: node.loc,
+        title: "First argument to addXXXHandler must be a string literal",
+      });
+      return;
+    }
+    var portName = node.arguments[0].value;
+    var created = false;
 
-//       var created = false;
+    // Check if this is a port we know about
+    for (var i=0; i<created_port_list.length; i++) {
+      if (created_port_list[i].name == portName) {
 
-//       // Check if this is a port we know about
-//       for (var i=0; i<created_port_list.length; i++) {
-//         if (created_port_list[i].name == portName) {
+        // Check that the direction is valid
+        if (created_port_list[i].attributes.indexOf(direction) == -1) {
+          warnings.push({
+            loc: node.loc,
+            title: '"' + direction + '" is an invalid direction for port "' + portName + '"',
+          })
+          continue;
+        }
+        created = true;
+      }
+    };
 
-//           // Check that the direction is valid
-//           if (['input', 'output', 'observe'].indexOf(direction) == -1) {
-//             warnings.push({
-//               loc: node.loc,
-//               title: '"' + direction + '" is an invalid direction for port "' + portName + '"',
-//             })
-//             continue;
-//           }
+    // Ignore port bundles for now
+    for (var i=0; i<created_port_bundle_list.length; i++) {
+      if (created_port_bundle_list[i].name == portName) {
+        created = true;
+      }
+    }
 
-//           created_port_list[i].directions.push(direction);
-//           created = true;
-//         }
-//       };
+    if (!created) {
+      // Don't have a list a priori of interfaces, so learn as we go
+      var known_iface = false;
+      for (var i=0; i<interface_port_list.length; i++) {
+        if (interface_port_list[i].name == portName) {
+          interface_port_list[i].directions.push(direction);
+          known_iface = true;
+        }
+      };
 
-//       if (!created) {
-//         // Only interested in things that match <string>.<direction>
-//         if (['input', 'output', 'observe'].indexOf(direction) == -1) {
-//           return;
-//         }
+      if (!known_iface) {
+        var port = {
+          name: portName,
+          directions: []
+        };
+        port.directions.push(direction);
 
-//         // Don't have a list a priori of interfaces, so learn as we go
-//         var known_iface = false;
-//         for (var i=0; i<interface_port_list.length; i++) {
-//           if (interface_port_list[i].name == portName) {
-//             interface_port_list[i].directions.push(direction);
-//             known_iface = true;
-//           }
-//         };
-
-//         if (!known_iface) {
-//           var port = {
-//             name: portName,
-//             directions: []
-//           };
-//           port.directions.push(direction);
-
-//           interface_port_list.push(port);
-//         }
-//       }
-//     }
-//   }
-// }
+        interface_port_list.push(port);
+      }
+    }
+  }
+}
 
 
 function checkLegacyCode(node) {
@@ -753,8 +783,9 @@ function on_read(err, data) {
       checkGetParameter(node);
       checkSend(node);
       checkNewPorts(node);
+      checkNewPortBundles(node);
       checkLegacyCode(node);
-
+      checkPortFunction(node);
     } else if (node.type == 'AssignmentExpression') {
       // Looking for <PortName>.<direction> = function* ()
       // checkPortFunction(node);
@@ -781,7 +812,7 @@ function on_read(err, data) {
     parameters: parameter_list,
     sends_to: sends_to_list,
     created_ports: created_port_list,
-    // interface_ports: interface_port_list
+    interface_ports: interface_port_list
   };
 
   console.log(JSON.stringify(data));
