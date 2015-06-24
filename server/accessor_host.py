@@ -651,7 +651,8 @@ def process_accessor(
 
 		# Process the interface ports to validate their usage. These are ports
 		# that used in port constructs (addInputHandler et al) that were not
-		# created by createPort
+		# created by createPort; that's less true actually, the sends_to hack
+		# mixes in some stuff from createPort
 		#
 		# This establishes a map of 'arbitrary port qualifier' -> 'fully
 		# qualified provided interface port name'
@@ -683,12 +684,16 @@ def process_accessor(
 							]})
 						raise NotImplementedError
 					else:
-						warnings.appendleft({
-							'title': 'Undeclared port implementation',
-							'extra': [
-								"The port named " + port['name'] + " does not belong to any implemented interface or created port.",
-								"It is ignored."]
-							})
+						for c in accessor['created_ports']:
+							if c['name'] == port['name']:
+								break
+						else:
+							warnings.appendleft({
+								'title': 'Undeclared port implementation',
+								'extra': [
+									"The port named " + port['name'] + " does not belong to any implemented interface or created port.",
+									"It is ignored."]
+								})
 						norm = None
 			else:
 				# Port is a fully qualified name

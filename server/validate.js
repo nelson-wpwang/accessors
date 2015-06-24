@@ -706,10 +706,11 @@ function checkPortFunction(node) {
       if (created_port_list[i].name == portName) {
 
         // Check that the direction is valid
-        if (created_port_list[i].attributes.indexOf(direction) == -1) {
+        if (created_port_list[i].directions.indexOf(direction) == -1) {
           warnings.push({
             loc: node.loc,
             title: '"' + direction + '" is an invalid direction for port "' + portName + '"',
+            extra: ['Port attributes: ' + created_port_list[i].attributes],
           })
           continue;
         }
