@@ -636,14 +636,40 @@ def process_accessor(
 		# maximize the number of errors we report per compilation
 		complete_interface = True
 
+
+		# Ports have a few different names, consider an accessor that implements
+		# the `/lighting/light` interface, which includes a `Power` port that
+		# the interface inherited from the `/onoff` interface:
+		#
+		#  * Canonical name:            /onoff.Power
+		#  * Fully-qualified name (fq): /lighting/light.Power
+		#  * Unqualified name:          Power
+		#
+		# For created ports, these three names will all be the same, but are
+		# included in mappings as a convenience. The FQ name is determined by
+		# the accessor's provideInterface call. The term "alias" refers to any
+		# of the names for the same port
+		#
+		# port_aliases_to_fq: {'any alias' -> 'FQ name'}
+		# port_fq_to_aliases: {'FQ name' -> ['canonical', 'FQ', 'unqualified']}
+		accessor['port_aliases_to_fq'] = {}
+		accessor['port_fq_to_aliases'] = {}
+
 		accessor['ports'] = copy.deepcopy(accessor['created_ports'])
 		for port in accessor['ports']:
+			# This should have been covered by validate.js
+			assert '.' not in port['name']
+			assert '/' not in port['name']
+
 			if 'type' not in port:
 				port['type'] = 'string'
 			if 'display_name' not in port:
-				port['display_name'] = port['name'].split('.')[-1]
+				port['display_name'] = port['name']
 			if 'aliases' not in port:
 				port['aliases'] = []
+
+			accessor['port_aliases_to_fq'][port['name']] = port['name']
+			accessor['port_fq_to_aliases'][port['name']] = set(port['name'])
 
 		# For all provided interfaces, creates a map 'Beta' -> '/alpha.Beta'
 		# Ambiguous entries, that is /alpha and /gamma both have Beta port, are
@@ -668,14 +694,6 @@ def process_accessor(
 		# that used in port constructs (addInputHandler et al) that were not
 		# created by createPort; that's less true actually, the sends_to hack
 		# mixes in some stuff from createPort
-		#
-		# This establishes a map of 'arbitrary port qualifier' -> 'fully
-		# qualified provided interface port name'
-		#
-		# This also establishes a list of aliases, that is
-		# 'FQ provided interface name' -> 'any identifier that refers to it'
-		accessor['port_aliases_to_fq'] = {}
-		accessor['port_fq_to_aliases'] = {}
 
 		print(accessor['interface_ports'])
 		fixme_eventually = []
@@ -709,7 +727,7 @@ def process_accessor(
 									"The port named " + port['name'] + " does not belong to any implemented interface or created port.",
 									"It is ignored."]
 								})
-						norm = None
+						norm = port['name']
 			else:
 				# Port is a fully qualified name
 				try:
@@ -854,6 +872,11 @@ def process_accessor(
 						}
 
 				accessor['ports'].append(bundle_port)
+				accessor['port_aliases_to_fq'][bundle_port['name']] = bundle_port['name']
+				if bundle_port['name'] not in accessor['port_fq_to_aliases']:
+					accessor['port_fq_to_aliases'][bundle_port['name']] = []
+				if bundle_port['name'] not in accessor['port_fq_to_aliases'][bundle_port['name']]:
+					accessor['port_fq_to_aliases'][bundle_port['name']].append(bundle_port['name'])
 
 		# Run the other accessor checker concept
 		#err = validate_accessor.check(accessor)
