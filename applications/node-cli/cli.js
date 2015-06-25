@@ -310,7 +310,7 @@ function load_accessor (accessor_id, accessor_ir, parameters, saved_device) {
 										val = true;
 									} else if (val == 'false') {
 										val = false;
-									} else if (port.type == 'object') {
+									} else if (port.type == 'object' || 'bundles_ports' in port) {
 										val = _eval('exports.val='+val).val;
 									}
 

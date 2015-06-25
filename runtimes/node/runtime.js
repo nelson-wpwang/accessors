@@ -35,17 +35,17 @@ var _remove_from_array = function (item, arr) {
 // Ports can have multiple names based on if they are custom or part of
 // an interface. This function accepts any valid name and returns
 // the canonical name.
-var _get_canonical_port_name = function (port_name) {
+var _get_fq_port_name = function (port_name) {
 	if (['init', 'wrapup'].indexOf(port_name) > -1) {
 		return port_name;
 	}
-	return _port_names[port_name];
+	return _port_aliases_to_fq[port_name];
 }
 
 // Function that wraps calling a port. This sets up all of the promises/futures
 // code so that "await" works.
 var _do_port_call = function (port_name, direction, value, done_fn) {
-	port_name = _get_canonical_port_name(port_name);
+	port_name = _get_fq_port_name(port_name);
 
 	// in the OUTPUT case, there is no value.
 	// in the other cases, there should be a value
@@ -56,11 +56,17 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 
 	if (typeof done_fn === 'undefined') {
 		done_fn = function () {
-			warn("Port call of " + port_name + " finished successfully with no callback");
+			warn("Port call of " + port_name + " finished with no callback");
 		}
 	}
 
 	info("before port call of " + port_name + "(" + value + ")");
+
+	// If this is an input, we need to save the value that we are writing to
+	// the accessor
+	if (direction === 'input') {
+		_port_values[port_name] = value;
+	}
 
 	// With output, we need to register the given callback before calling the
 	// output handling functions. temporary is set to true so that this will
@@ -77,7 +83,63 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 	} else if (port_name === 'wrapup') {
 		to_call = [wrapup];
 	} else {
-		to_call = _port_handlers[port_name][direction];
+		if (direction == 'input') {
+			// When writing to a port, we need to find the correct input
+			// handler(s) to call. With simple ports, this is easy. With
+			// ports that are in a bundle, however, we want to call the most
+			// specific handler that is registered. For instance, if we
+			// have three ports: X, Y, and Z, and those are in a bundle
+			// called Location, and there is a handler for Z and a handler
+			// for the bundle, then if X is written to we call the Location
+			// bundle handler. But if Z is written to, we call the handler for
+			// Z and NOT the bundle handler.
+			if (_port_handlers[port_name][direction].length > 0) {
+				// Most specific port had handlers, use those
+				to_call = _port_handlers[port_name][direction];
+			} else {
+				// Look for bundles the port is in and see if any of those
+				// have handlers. Stop when a handler is found
+				var cur_name = port_name;
+				while (true) {
+					if (cur_name in _port_to_bundle) {
+						var bundle = _port_to_bundle[cur_name];
+						if (_port_handlers[bundle][direction].length > 0) {
+							to_call = _port_handlers[bundle][direction];
+
+							// Now that we are calling a bundle, we need
+							// to update the val that we are going to pass
+							// to the handler.
+							var newval = {};
+							for (var i=0; i<_bundle_to_ports[bundle].length; i++) {
+								var bundleport = _bundle_to_ports[bundle][i];
+								var bundleportval = _port_values[bundleport];
+								newval[bundleport] = bundleportval;
+								for (var j=0; j<_port_fq_to_aliases[bundleport].length; j++) {
+									var bundleportalias = _port_fq_to_aliases[bundleport][j];
+									newval[bundleportalias] = bundleportval;
+								}
+							}
+							value = newval;
+							info(JSON.stringify(value));
+
+							// This break stops the code from looking for
+							// other bundles
+							break;
+
+						} else {
+							// This bundle has no handlers, keep looking up
+							cur_name = bundle;
+						}
+					} else {
+						// No handler and not in bundle, nothing to call
+						break;
+					}
+				}
+			}
+
+		} else {
+			to_call = _port_handlers[port_name][direction];
+		}
 	}
 
 	if (to_call.length === 0) {
@@ -156,7 +218,7 @@ var provide_interface = function() {};
 // This allows the accessor to specify a function that should get bound
 // to a particular input
 var addInputHandler = function (port_name, func) {
-	port_name = _get_canonical_port_name(port_name);
+	port_name = _get_fq_port_name(port_name);
 	if (typeof port_name === 'function') {
 		// Using the function in this way defines a new fire() function
 		// Check for duplicates
@@ -221,7 +283,7 @@ var removeInputHandler = function (handle) {
 
 
 var addOutputHandler = function (port_name, func) {
-	port_name = _get_canonical_port_name(port_name);
+	port_name = _get_fq_port_name(port_name);
 	if (typeof func === 'function') {
 		if (port_name in _port_handlers) {
 			// Check that this hasn't already been added.
@@ -267,7 +329,7 @@ var removeOutputHandler = function (handle) {
  * value that was written.
  */
 var get = function (port_name) {
-	port_name = _get_canonical_port_name(port_name);
+	port_name = _get_fq_port_name(port_name);
 	return _port_values[port_name];
 }
 
@@ -275,7 +337,7 @@ var get = function (port_name) {
  * listeners. The runtime maintains the callback list.
  */
 var send = function (port_name, val) {
-	port_name = _get_canonical_port_name(port_name);
+	port_name = _get_fq_port_name(port_name);
 	info("SEND: " + port_name + " <= " + val);
 	accessor_object.emit(port_name, null, val);
 }

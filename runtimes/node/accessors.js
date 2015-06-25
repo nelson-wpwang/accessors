@@ -313,13 +313,15 @@ function requireFromString(src) {
 function get_port_handler_arrays (accessor) {
 	var ret = "var _port_handlers = {_fire: [],";
 	var reu = "var _port_values = {";
-	var rev = 'var _port_names = {';
+	var rev = "var _port_aliases_to_fq = ";
+	var rew = "var _port_fq_to_aliases = ";
+	var rex = "var _port_to_bundle = ";
+	var rey = "var _bundle_to_ports = ";
 
 	for (var i=0; i<accessor.ports.length; i++) {
 		var port = accessor.ports[i];
 
 		ret += "'" + port.name + "': {";
-		rev += "'" + port.name + "': '" + port.name + "',";
 
 		var def = 'null';
 		if ('value' in port) {
@@ -334,18 +336,21 @@ function get_port_handler_arrays (accessor) {
 			ret += "output: [],"
 		}
 		ret += "},"
-
-		// Put all ports in the canonical port names object
-		for (var j=0; j<port.aliases.length; j++) {
-			rev += "'" + port.aliases[j] + "': '" + port.name + "',";
-		}
 	}
 
 	ret += '};';
 	reu += '};';
-	rev += '};';
 
-	return ret + reu + rev;
+	// Need a map of all port names to the fully qualified port name
+	rev += JSON.stringify(accessor.port_aliases_to_fq) + ';';
+	// Need a map of fq port names to all others that may match
+	rew += JSON.stringify(accessor.port_fq_to_aliases) + ';';
+	// Need a map of fq port names to the bundle they are in
+	rex += JSON.stringify(accessor.port_to_bundle) + ';';
+	// Need a map of bundle names to the ports in that button
+	rey += JSON.stringify(accessor.bundle_to_ports) + ';';
+
+	return ret + reu + rev + rew + rex + rey;
 }
 
 function get_exports (accessor) {
