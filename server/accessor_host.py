@@ -766,12 +766,22 @@ def process_accessor(
 			accessor['port_fq_to_aliases'][norm] = list(accessor['port_fq_to_aliases'][norm])
 
 
+		# Generate some convenience mappings for downstream as well:
+		#
+		# 'port_to_bundle' {port_str -> bundle_str}
+		# 'bundle_to_ports' {bundle_str -> [port_str, port_str, ...] }
+
+		accessor['port_to_bundle'] = {}
+		accessor['bundle_to_ports'] = {}
+
 		# Process port bundles
 		for bundle in accessor['created_bundles']:
 			# Bundles are gaurenteed to have at least one port by validate.js
 			bundle_attrs = None
 			bundle_dir = None
 			bundle_type = None
+
+			accessor['bundle_to_ports'][bundle['name']] = []
 
 			for port in bundle['contains']:
 				for p in accessor['ports']:
@@ -827,6 +837,8 @@ def process_accessor(
 					break
 
 				port['in_bundle'] = bundle['name']
+				accessor['port_to_bundle'][port['name']] = bundle['name']
+				accessor['bundle_to_ports'][bundle['name']].append(port['name'])
 			else:
 				bundle_port = {
 						'name': bundle['name'],
