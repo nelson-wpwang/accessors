@@ -93,6 +93,27 @@ function getRootMemberExpression(mnode) {
   return mnode;
 }
 
+
+function checkArgCount(node, name, count) {
+  for (var i=0; i < count; i++) {
+    if (node.arguments[i] === undefined) {
+      errors.push({
+        loc: node.loc,
+        title: "Insuffient number of arguments for " + name,
+        extra: [name + " requires at least " + count + " argument" + (count == 1 ? '':'s') + ".",],
+      });
+      return -1;
+    }
+  }
+
+  if (node.arguments[count] !== undefined) {
+    warnings.push({
+      loc: node.arguments[count].loc,
+      title: name + " takes only " + count + " argument" + (count == 1 ? '':'s') + ". Extra arguments are ignored.",
+    });
+  }
+}
+
 var runtime_list = [];
 
 function checkForRuntime(node) {
@@ -657,6 +678,9 @@ function checkNewPortBundles(node) {
   if (node.callee.name === FUNC_NEW_PORT_BUNDLE) {
     var nameNode = node.arguments[0];
     var portsNode = node.arguments[1];
+    var bundleContents = [];
+
+    if (checkArgCount(node, FUNC_NEW_PORT_BUNDLE, 2)) return;
 
     if (nameNode.type !== 'Literal') {
       errors.push({
@@ -664,6 +688,7 @@ function checkNewPortBundles(node) {
         title: "First argument to '" + FUNC_NEW_PORT_BUNDLE + "'' must be a fixed string",
         extra: ["The current argument is of type "+nameNode.type],
       });
+      return;
     }
     if (!legal_port_regex.test(nameNode.value)) {
       errors.push({
@@ -671,10 +696,52 @@ function checkNewPortBundles(node) {
         title: "Bundle name " + nameNode.value + " is not a legal port name",
         extra: ["Legal names must match "+legal_port_regex],
       });
+      return;
     }
+
+    if (portsNode.type !== 'ArrayExpression') {
+      errors.push({
+        loc: portsNode.loc,
+        title: "Port bundle must be a fixed array",
+        extra: [
+          "This is an artificial restriction of the type checker and could be lifted if really necessary",
+          "Currently, the bundle is of type " + portsNode.type,
+        ],
+      });
+      return;
+    }
+
+    if (portsNode.elements.length < 1) {
+      errors.push({
+        loc: portsNode.loc,
+        title: "Port bundle cannot be empty",
+      });
+      return;
+    }
+
+    for (var i=0; i<portsNode.elements.length; i++) {
+      var port = portsNode.elements[i];
+
+      if (port.type !== 'Literal') {
+        errors.push({
+          loc: port.loc,
+          title: "Bundle contents must be an array of static literals",
+          extra: [
+            "This is an artificial restriction of the type checker and could be lifted if really necessary",
+            "Currently, the type is " + portsNode.type,
+          ],
+        });
+        return;
+      }
+
+      bundleContents.push(port.value);
+    }
+
 
     var bundle = {
       name: nameNode.value,
+      loc: node.loc,
+      contains: bundleContents,
     };
 
     created_port_bundle_list.push(bundle);
@@ -816,6 +883,7 @@ function on_read(err, data) {
     parameters: parameter_list,
     sends_to: sends_to_list,
     created_ports: created_port_list,
+    created_bundles: created_port_bundle_list,
     interface_ports: interface_port_list
   };
 

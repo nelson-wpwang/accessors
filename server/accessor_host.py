@@ -671,8 +671,8 @@ def process_accessor(
 		#
 		# This also establishes a list of aliases, that is
 		# 'FQ provided interface name' -> 'any identifier that refers to it'
-		accessor['normalized_interface_ports'] = {}
-		accessor['port_alias_map'] = {}
+		accessor['port_aliases_to_fq'] = {}
+		accessor['port_fq_to_aliases'] = {}
 
 		print(accessor['interface_ports'])
 		fixme_eventually = []
@@ -716,15 +716,15 @@ def process_accessor(
 						'title': "The port named " + port['name'] + " does not match any known interface",
 						})
 					raise NotImplementedError
-			accessor['normalized_interface_ports'][port['name']] = norm
-			if norm not in accessor['port_alias_map']:
-				accessor['port_alias_map'][norm] = set()
-			accessor['port_alias_map'][norm].add(port['name'])
+			accessor['port_aliases_to_fq'][port['name']] = norm
+			if norm not in accessor['port_fq_to_aliases']:
+				accessor['port_fq_to_aliases'][norm] = set()
+			accessor['port_fq_to_aliases'][norm].add(port['name'])
 
 		for claim in accessor['implements']:
 			iface = interface_tree[claim['interface']]
 			for req in iface:
-				if req not in accessor['port_alias_map']:
+				if req not in accessor['port_fq_to_aliases']:
 					errors.appendleft({
 						'title': 'Incomplete interface implementation -- missing port',
 						'extra': [
@@ -735,7 +735,7 @@ def process_accessor(
 							"But %s from %s only implements %s" % (
 								accessor['name'],
 								accessor['_path'],
-								accessor['normalized_interface_ports'],
+								accessor['port_aliases_to_fq'],
 								)
 							]
 						})
@@ -759,11 +759,86 @@ def process_accessor(
 				#			})
 				accessor['ports'].append(iface.get_port_detail(
 					req,
-					accessor['port_alias_map'][req]
+					accessor['port_fq_to_aliases'][req]
 					))
 
-		for norm in accessor['port_alias_map']:
-			accessor['port_alias_map'][norm] = list(accessor['port_alias_map'][norm])
+		for norm in accessor['port_fq_to_aliases']:
+			accessor['port_fq_to_aliases'][norm] = list(accessor['port_fq_to_aliases'][norm])
+
+
+		# Process port bundles
+		for bundle in accessor['created_bundles']:
+			# Bundles are gaurenteed to have at least one port by validate.js
+			bundle_attrs = None
+			bundle_dir = None
+			bundle_type = None
+
+			for port in bundle['contains']:
+				for p in accessor['ports']:
+					if port == p['name']:
+						port = p
+						break
+				else:
+					errors.appendleft({
+						'loc': bundle['loc'],
+						'title': 'Attempt to bundle a port that is not in this accessor',
+						'extra': [
+							bundle['name'] + ' includes the port "'+port+'", which is not a known port',
+							],
+						})
+					complete_interface = False
+					break
+
+				if bundle_attrs is None:
+					bundle_attrs = list(port['attributes'])
+					bundle_dir = list(port['directions'])
+					bundle_type = port['type']
+					continue
+				if bundle_attrs != port['attributes']:
+					errors.appendleft({
+						'loc': bundle['loc'],
+						'title': 'All bundled ports (currently) must have the same attributes',
+						'extra': [
+							'"'+port['name']+'" has attributes '+str(port['attributes'])+', but previous ports had attributes '+str(bundle_attrs),
+							],
+						})
+					complete_interface = False
+					break
+				if bundle_type != port['type']:
+					errors.appendleft({
+						'loc': bundle['loc'],
+						'title': 'All bundled ports (currently) must have the same type',
+						'extra': [
+							'"'+port['name']+'" has type '+str(port['type'])+', but previous ports had type '+str(bundle_type),
+							],
+						})
+					complete_interface = False
+					break
+
+				if 'in_bundle' in port:
+					errors.appendleft({
+						'loc': bundle['loc'],
+						'title': 'Attempt to bundle a port into multiple bundles',
+						'extra': [
+							'Tried to add the "'+port['name']+'" port to the bundle "'+bundle['name']+'", but it is already in the bundle "'+port['in_bundle']+'".',
+							],
+						})
+					complete_interface = False
+					break
+
+				port['in_bundle'] = bundle['name']
+			else:
+				bundle_port = {
+						'name': bundle['name'],
+						'display_name': bundle['name'],
+						'attributes': bundle_attrs,
+						'directions': bundle_dir,
+						'type': bundle_type,
+						'aliases': [],
+						'bundles_ports': bundle['contains'],
+						}
+
+				accessor['ports'].append(bundle_port)
 
 		# Run the other accessor checker concept
 		#err = validate_accessor.check(accessor)
