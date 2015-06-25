@@ -3,7 +3,7 @@
   {% set port = interface.ports[name] %}
   <div class="row">
     <div class="col-sm-8">
-      <h4>/{{ name|replace('.', '/') }}</h4>
+      <h4>{{ root + '.' + name.split('.')[-1] }}</h4>
       <p>{{ port.description }}</p>
     </div>
     <div class="col-sm-4 accessor-ports-list-config">

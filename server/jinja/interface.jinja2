@@ -71,6 +71,7 @@ The {{ interface }} Interface | Accessor Library
   <div class="col-md-7">
     <h4>Ports</h4>
     <ul class="list-group accessor-ports-list">
+      {% set root = interface.path %}
       {% set extends_list = [] %}
       {% include "interface-detail.jinja2" %}
     </ul>
