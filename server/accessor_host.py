@@ -629,6 +629,8 @@ def process_accessor(
 				port['type'] = 'string'
 			if 'display_name' not in port:
 				port['display_name'] = port['name'].split('.')[-1]
+			if 'aliases' not in port:
+				port['aliases'] = []
 
 		# For all provided interfaces, creates a map 'Beta' -> '/alpha.Beta'
 		# Ambiguous entries, that is /alpha and /gamma both have Beta port, are
