@@ -816,9 +816,10 @@ def process_accessor(
 							)
 
 		# Save a copy of the reverse mapping as well
-		for iface in accessor['implements']:
-			interface = interface_tree[iface['interface']]
-			interface.register_accessor(view_path)
+		if db == accessors_db:
+			for iface in accessor['implements']:
+				interface = interface_tree[iface['interface']]
+				interface.register_accessor(view_path)
 
 		log.debug('Adding complete accessor {}'.format(view_path))
 	except ParseError as e:
