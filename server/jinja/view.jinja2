@@ -142,8 +142,7 @@ Accessor: {{ record.name }} | Accessor Library
 <ul class="list-group">
   {% for imp in accessor.runtime_imports %}
   <li class="list-group-item">
-    <h4>{{ imp.name }}</h4>
-    {#<p>{{ dep.description }}</p>#}
+    <h4>{{ imp }}</h4>
   </li>
   {% endfor %}
 </ul>

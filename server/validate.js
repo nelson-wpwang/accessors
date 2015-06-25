@@ -26,6 +26,7 @@ try {
  *
  */
 
+var FUNC_LOAD_DEP = 'require';
 var FUNC_NEW_PORT = 'createPort';
 var FUNC_NEW_PORT_BUNDLE = 'createPortBundle';
 var FUNC_USE_INTERFACE = 'provideInterface';
@@ -95,29 +96,32 @@ function getRootMemberExpression(mnode) {
 var runtime_list = [];
 
 function checkForRuntime(node) {
-  // node is type 'CallExpression' with 'callee' and 'arguments'
-  //print_tree_from_node(node);
-
-  // Note: This function only handles static MemberExpressions, that is, it
-  //       will miss calls like `global['rt'].version();`. Then again, you
-  //       can't do that in an accessor anyway since the name of the global
-  //       object changes depending on the runtime anyway
-
-  var root;
-
-  //print_tree_from_node(node);
-
-  root = getRootMemberExpression(node.callee);
-  if (!root) {
-    return;
-  }
-
-  if (root.object.name === 'rt') {
-    if (root.property.type !== 'Identifier') {
-      throw "Root MemberExpression with non-Identifier property";
+  if (node.callee.name === FUNC_LOAD_DEP) {
+    if (node.arguments[0] === undefined) {
+      errors.push({
+        loc: node.loc,
+        title: FUNC_LOAD_DEP + " requires an argument",
+      });
+      return;
     }
-    if (!_.contains(runtime_list, root.property.name)) {
-      runtime_list.push(root.property.name);
+    if (node.arguments[1] !== undefined) {
+      errors.push({
+        loc: node.arguments[1].loc,
+        title: FUNC_LOAD_DEP + " takes only 1 argument. Extra arguments are ignored.",
+      });
+    }
+
+    if (node.arguments[0].type !== 'Literal') {
+      errors.push({
+        loc: node.arguments[0].loc,
+        title: "First argument to "+FUNC_LOAD_DEP+" must be a string literal",
+        extra: ["It is currently of type "+node.arguments[0].type],
+      });
+      return;
+    }
+
+    if (!_.contains(runtime_list, node.arguments[0].value)) {
+      runtime_list.push(node.arguments[0].value);
     }
   }
 }
