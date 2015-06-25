@@ -221,7 +221,7 @@ class ServeAccessorJSON (ServeAccessor):
 		self.set_header('Content-Type', 'application/json')
 
 	def write_accessor (self, accessor):
-		accessor_json = json.dumps(accessor, indent=4)
+		accessor_json = json.dumps(accessor, indent=4, sort_keys=True)
 		self.write(accessor_json)
 
 # Wrapper class for serving XML accessors.
@@ -1076,7 +1076,7 @@ class ServeAccessorList (tornado.web.RequestHandler):
 		print(accessor_list)
 
 		self.set_content_type()
-		self.write(json.dumps(accessor_list))
+		self.write(json.dumps(accessor_list, sort_keys=True))
 
 
 ################################################################################
@@ -1701,7 +1701,7 @@ class handler_ptolemy_index (tornado.web.RequestHandler):
 			if 'berkeleyJS' in record and record['berkeleyJS']:
 				index.append(record['accessor']['_path'])
 
-		self.write(json.dumps(index))
+		self.write(json.dumps(index, sort_keys=True))
 
 class handler_ptolemy_js (tornado.web.RequestHandler):
 	def get(self, path):
