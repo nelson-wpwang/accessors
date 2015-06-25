@@ -596,7 +596,6 @@ function checkNewPorts(node) {
 
     var port = {
       name: nameNode.value,
-      function: nameNode.value,
       directions: [],
       attributes: []
     };
