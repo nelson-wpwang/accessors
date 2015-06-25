@@ -803,27 +803,27 @@ def process_accessor(
 					bundle_attrs = list(port['attributes'])
 					bundle_dir = list(port['directions'])
 					bundle_type = port['type']
-					continue
-				if bundle_attrs != port['attributes']:
-					errors.appendleft({
-						'loc': bundle['loc'],
-						'title': 'All bundled ports (currently) must have the same attributes',
-						'extra': [
-							'"'+port['name']+'" has attributes '+str(port['attributes'])+', but previous ports had attributes '+str(bundle_attrs),
-							],
-						})
-					complete_interface = False
-					break
-				if bundle_type != port['type']:
-					errors.appendleft({
-						'loc': bundle['loc'],
-						'title': 'All bundled ports (currently) must have the same type',
-						'extra': [
-							'"'+port['name']+'" has type '+str(port['type'])+', but previous ports had type '+str(bundle_type),
-							],
-						})
-					complete_interface = False
-					break
+				else:
+					if bundle_attrs != port['attributes']:
+						errors.appendleft({
+							'loc': bundle['loc'],
+							'title': 'All bundled ports (currently) must have the same attributes',
+							'extra': [
+								'"'+port['name']+'" has attributes '+str(port['attributes'])+', but previous ports had attributes '+str(bundle_attrs),
+								],
+							})
+						complete_interface = False
+						break
+					if bundle_type != port['type']:
+						errors.appendleft({
+							'loc': bundle['loc'],
+							'title': 'All bundled ports (currently) must have the same type',
+							'extra': [
+								'"'+port['name']+'" has type '+str(port['type'])+', but previous ports had type '+str(bundle_type),
+								],
+							})
+						complete_interface = False
+						break
 
 				if 'in_bundle' in port:
 					errors.appendleft({
