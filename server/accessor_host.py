@@ -358,6 +358,16 @@ class Interface():
 			log.debug('---'*30)
 			log.debug(pprint.pformat(interface_tree))
 
+			# Check for conflicts in unqualified names from extensions
+			self.unqualified = set()
+			for port in self:
+				if port in self.unqualified:
+					log.error("Interface unqualified names conflict for port %s.", port)
+					log.error("This isn't inherently unfixable, but tools don't")
+					log.error("support it yet.")
+					raise NotImplementedError("Ambiguous names in interface")
+				self.unqualified.add(port)
+
 			# All accessors that directly implement this interface (by accessor path)
 			self.accessors = set()
 
