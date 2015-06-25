@@ -262,7 +262,7 @@ $("#device-select").change(function () {
 		if (number_to_init > 0) {
 			accessor_function_start(accessor.uuid);
 			for (var i=0; i<accessor.ports.length; i++) {
-				if (accessor.ports[i].directions.indexOf('output') > -1) {
+				if (accessor.ports[i].attributes.indexOf('read') > -1) {
 					var port = $('#port-' + accessor.ports[i].uuid);
 					rpc_get(accessor.uuid, port, accessor.ports[i].name, accessor.ports[i], after_port_init);
 				}
@@ -342,7 +342,7 @@ function format_units (val, units) {
 	return val;
 }
 
-function port_got_data (port, directions, type, units, data) {
+function port_got_data (port, attributes, type, units, data) {
 	if (type == 'object') {
 		var to_show = JSON.stringify(data, null, '\t');
 		port.val(to_show);
@@ -354,7 +354,7 @@ function port_got_data (port, directions, type, units, data) {
 		port.colpickSetColor('#'+data, true);
 	} else if (port.hasClass('slider')) {
 		port.slider('setValue', parseFloat(data));
-	} else if (directions.length == 1 && directions[0] == 'output') {
+	} else if (attributes.length == 1 && attributes[0] == 'read') {
 		port.html(format_units(data, units));
 	} else {
 		port.val(format_units(data, units));
@@ -422,7 +422,7 @@ function rpc_ws (accessor_uuid, port, port_name, port_meta, callback) {
 		if (!data.success) {
 			accessor_alert_error(accessor_uuid, 'Error setting up Observe.');
 		} else {
-			port_got_data(port, port_meta.directions, port_meta.type, port_meta.units, data.data);
+			port_got_data(port, port_meta.attributes, port_meta.type, port_meta.units, data.data);
 		}
 	}
 

@@ -21,6 +21,7 @@ try {
 	var argv = require('yargs')
 		.usage('Run an accessor with a command line interface.\nUsage: $0')
 		.alias   ('s', 'host_server')
+		.alias   ('s', 'host-server')
 		.describe('s', 'URL of the accessor host server to use.')
 		.default ('s', 'http://accessors.io')
 		.alias   ('d', 'db_location')
@@ -141,211 +142,208 @@ var db = new sqlite.Database(argv.db_location, function (err) {
 
 function activate_accessor (name, path, parameters, callback) {
 
-	accessors.create_accessor(path, parameters, function (accessor) {
-		try {
-			// Success callback
+	accessors.create_accessor(path, parameters, function (err, accessor) {
+		if (err) {
+			console.log('Create_Accessor error');
 
-			// Add UUIDs
-			for (var i=0; i<accessor._meta.ports.length; i++) {
-				var port = accessor._meta.ports[i];
-				port.uuid = uuid.v4();
+			if (typeof callback === 'function') {
+				callback({success: false, message: 'failed when creating the accessor. Are the parameters valid?'});
 			}
-			accessor._meta.uuid = uuid.v4();
-			accessor._meta.device_name = escape(name);
-			accessor._meta.html = nunjucks.render('ports.html', {
-				accessor: accessor._meta,
-				parameters: parameters
-			});
+		}
 
-			// Keep track of the accessors we are running
-			active_accessors.push({
-				name: name,
-				path: path,
-				accessor: accessor._meta
-			});
+		accessor.init(function (err) {
+			if (err) {
+				console.log('Init_Accessor error');
 
-			// Also save this in the database
-			db.get('SELECT count(id) as count FROM accessors WHERE name=?', name, function (err, row) {
-				if (err) {
-					console.log(err);
-					throw 'Could not query for accessor name';
+				if (typeof callback === 'function') {
+					callback({success: false, message: 'init() failed when loading the accessor. Are the parameters valid?'});
 				}
-				if (row.count == 0) {
-					// Have not seen this device before, add it.
-					var ins = db.prepare('INSERT INTO accessors (name, path) \
-					                      VALUES (?, ?)');
-					ins.run([name, path], function (err) {
-						if (err) {
-							console.log(err);
-							throw 'Could not add accessor to db';
-						}
-						var accessor_id = this.lastID;
+			}
 
-						var insparam = db.prepare('INSERT INTO parameters (accessor_id, name, value) \
-						                           VALUES (?, ?, ?)');
-						for (var param_name in parameters) {
-							var param_value = parameters[param_name];
-							insparam.run([accessor_id, param_name, param_value], function (err) {
-								if (err) {
-									console.log(err);
-									throw 'Failed to add accessor parameters to db';
-								}
-							});
-						}
-						insparam.finalize();
+			try {
+				// Success callback
 
-					});
-					ins.finalize();
+				// Add UUIDs
+				for (var i=0; i<accessor._meta.ports.length; i++) {
+					var port = accessor._meta.ports[i];
+					port.uuid = uuid.v4();
 				}
-			});
-
-			// Iterate through all ports so we can create routes
-			// for all ports.
-			accessor._meta.ports.forEach(function (port, port_index, port_array) {
-				console.log('Adding port ' + port.name);
-
-				var slash = '';
-				if (!s.startsWith(port.name, '/')) {
-					slash = '/';
-				}
-				var port_path = slash + port.name;
-				var device_base_path = '/active/' + escape(name);
-				var device_port_path = device_base_path + port_path;
-				console.log('path: ' + device_port_path);
-
-				// Handle GET requests for this port
-				// OUTPUT
-				w.get(device_port_path, function (req, res) {
-					console.log(" GET " + device_port_path + ": (req: " + req + ", res: " + res + ")");
-					res.header("Content-Type", "application/json");
-
-					if (port.directions.indexOf('output') == -1) {
-						res.send(JSON.stringify({
-							success: false,
-							message: 'Request for output when that is not a valid direction'
-						}));
-						return;
-					}
-
-					// This is ugly. Maybe we will fix it someday.
-					var temp = port.function.split('.');
-					var port_func = accessor[temp.shift()];
-					while (temp.length) port_func = port_func[temp.shift()];
-
-					port_func.output(function (result) {
-						console.log(" --> resp: " + result);
-						res.send(JSON.stringify({
-							success: true,
-							data: result
-						}));
-					}, function (err) {
-						console.log('GET error');
-						res.send(JSON.stringify({
-							success: false,
-							message: err.message
-						}));
-					});
+				accessor._meta.uuid = uuid.v4();
+				accessor._meta.device_name = escape(name);
+				accessor._meta.html = nunjucks.render('ports.html', {
+					accessor: accessor._meta,
+					parameters: parameters
 				});
 
-				// INPUT
-				w.post(device_port_path, function (req, res) {
-					console.log("POST " + device_port_path);
-					res.header("Content-Type", "application/json");
-
-					if (port.directions.indexOf('input') == -1) {
-						res.send(JSON.stringify({
-							success: false,
-							message: 'Request for input when that is not a valid direction'
-						}));
-						return;
-					}
-					var arg = null;
-					if (port.type == 'bool') {
-						console.log('REQ BODY: ' + req.body);
-						arg = (req.body == 'true');
-					} else {
-						arg = req.body;
-					}
-
-					// This is ugly. Maybe we will fix it someday.
-					var temp = port.function.split('.');
-					var port_func = accessor[temp.shift()];
-					while (temp.length) port_func = port_func[temp.shift()];
-
-					port_func.input(arg, function () {
-						res.send(JSON.stringify({
-							success: true
-						}));
-					}, function (err) {
-						console.log('POST ERR')
-						res.send(JSON.stringify({
-							success: false,
-							message: err.message
-						}));
-					});
+				// Keep track of the accessors we are running
+				active_accessors.push({
+					name: name,
+					path: path,
+					accessor: accessor._meta
 				});
 
-				w.ws(device_port_path, function (ws, req) {
-					console.log("WS " + device_port_path);
-					if (port.directions.indexOf('observe') == -1) {
-						ws.send(JSON.stringify({
-							success: false,
-							message: 'Request for observe when that is not a valid direction'
-						}));
-						return;
+				// Also save this in the database
+				db.get('SELECT count(id) as count FROM accessors WHERE name=?', name, function (err, row) {
+					if (err) {
+						console.log(err);
+						throw 'Could not query for accessor name';
 					}
+					if (row.count == 0) {
+						// Have not seen this device before, add it.
+						var ins = db.prepare('INSERT INTO accessors (name, path) \
+						                      VALUES (?, ?)');
+						ins.run([name, path], function (err) {
+							if (err) {
+								console.log(err);
+								throw 'Could not add accessor to db';
+							}
+							var accessor_id = this.lastID;
 
-					ws.on('close', function () {
-						console.log('CLOSEDDDDD')
-						ws.close();
-					});
+							var insparam = db.prepare('INSERT INTO parameters (accessor_id, name, value) \
+							                           VALUES (?, ?, ?)');
+							for (var param_name in parameters) {
+								var param_value = parameters[param_name];
+								insparam.run([accessor_id, param_name, param_value], function (err) {
+									if (err) {
+										console.log(err);
+										throw 'Failed to add accessor parameters to db';
+									}
+								});
+							}
+							insparam.finalize();
 
-					// This is ugly. Maybe we will fix it someday.
-					var temp = port.function.split('.');
-					var port_func = accessor[temp.shift()];
-					while (temp.length) port_func = port_func[temp.shift()];
+						});
+						ins.finalize();
+					}
+				});
 
-					port_func.observe(function (data) {
-						ws.send(JSON.stringify({
-							success: true,
-							data: data
-						}));
-					}, function () {
-						console.log('WS OBSERVE setup');
-					}, function (err) {
-						console.log('WS OBSERVE ERR');
-						try {
-							ws.send(JSON.stringify({
+				// Iterate through all ports so we can create routes
+				// for all ports.
+				accessor._meta.ports.forEach(function (port, port_index, port_array) {
+					console.log('Adding port ' + port.name);
+
+					var slash = '';
+					if (!s.startsWith(port.name, '/')) {
+						slash = '/';
+					}
+					var port_path = slash + port.name;
+					var device_base_path = '/active/' + escape(name);
+					var device_port_path = device_base_path + port_path;
+					console.log('path: ' + device_port_path);
+
+					// Handle GET requests for this port
+					// OUTPUT
+					w.get(device_port_path, function (req, res) {
+						console.log(" GET " + device_port_path + ": (req: " + req + ", res: " + res + ")");
+						res.header("Content-Type", "application/json");
+
+						if (port.attributes.indexOf('read') == -1) {
+							res.send(JSON.stringify({
 								success: false,
-								message: err.message
+								message: 'Request for output when that is not a valid direction'
 							}));
-						} catch (err) {
-							console.log('Error with ws - not connected');
+							return;
 						}
+
+						accessor.read(port.name, function (err, result) {
+							if (err) {
+								console.log('GET error');
+								res.send(JSON.stringify({
+									success: false,
+									message: err.message
+								}));
+								return;
+							}
+							console.log(" --> resp: " + result);
+							res.send(JSON.stringify({
+								success: true,
+								data: result
+							}));
+						});
 					});
 
+					// INPUT
+					w.post(device_port_path, function (req, res) {
+						console.log("POST " + device_port_path);
+						res.header("Content-Type", "application/json");
+
+						if (port.directions.indexOf('input') == -1) {
+							res.send(JSON.stringify({
+								success: false,
+								message: 'Request for input when that is not a valid direction'
+							}));
+							return;
+						}
+						var arg = null;
+						if (port.type == 'bool') {
+							console.log('REQ BODY: ' + req.body);
+							arg = (req.body == 'true');
+						} else {
+							arg = req.body;
+						}
+
+						accessor.write(port.name, arg, function (err) {
+							if (err) {
+								console.log('POST ERR')
+								res.send(JSON.stringify({
+									success: false,
+									message: err.message
+								}));
+								return;
+							}
+							res.send(JSON.stringify({
+								success: true
+							}));
+						});
+					});
+
+					w.ws(device_port_path, function (ws, req) {
+						console.log("WS " + device_port_path);
+
+						var on_observe = function (err, data) {
+							if (err) {
+								console.log('WS OBSERVE ERR');
+								try {
+									ws.send(JSON.stringify({
+										success: false,
+										message: err.message
+									}));
+								} catch (err) {
+									console.log('Error with ws - not connected');
+								}
+								return;
+							}
+							console.log('SENDING DATA TO WS');
+							ws.send(JSON.stringify({
+								success: true,
+								data: data
+							}));
+						}
+
+						ws.on('close', function () {
+							console.log('CLOSEDDDDD');
+							accessor.removeListener(port.name, on_observe);
+							ws.close();
+						});
+
+						accessor.on(port.name, on_observe);
+
+					});
 				});
-			});
 
-			if (typeof callback === 'function') {
-				callback({success: true});
+				if (typeof callback === 'function') {
+					callback({success: true});
+				}
+
+			} catch (e) {
+				console.log('outside catch')
+				console.log(e);
+				if (typeof callback === 'function') {
+					callback({success: false, message: e.message});
+				}
 			}
+		});
 
-		} catch (e) {
-			console.log('outside catch')
-			console.log(e);
-			if (typeof callback === 'function') {
-				callback({success: false, message: e.message});
-			}
-		}
-
-	}, function (e) {
-		// Error callback
-		console.log('Create_Accessor error');
-
-		if (typeof callback === 'function') {
-			callback({success: false, message: 'init() failed when creating the accessor. Are the parameters valid?'});
-		}
 	});
 
 }
