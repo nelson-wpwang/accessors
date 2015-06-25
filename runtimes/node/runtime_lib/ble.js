@@ -21,25 +21,6 @@ module.exports.Central = function* () {
 
 	var b = Object();
 
-	if (!poweredOn) {
-		info('BLE waiting for powered on');
-		var defer = Q.defer();
-		noble.on('stateChange', function (state) {
-			info('BLE state change: ' + state);
-			if (state === 'poweredOn') {
-				poweredOn = true;
-				noble.startScanning([], true);
-				info('Started BLE scan.');
-				defer.resolve(b);
-			} else if (state === 'poweredOff') {
-				error('BLE appears to be disabled.');
-				defer.resolve(null);
-			}
-		});
-	} else {
-		return b;
-	}
-
 	noble.on('discover', function (peripheral) {
 
 		// Iterate all scanners, decide what to do
@@ -130,145 +111,160 @@ module.exports.Central = function* () {
 		return scan_token;
 	}
 
+	// module.exports.Central.prototype.scan = function (uuids, callback) {
+	b.scan = function (uuids, name, mac_address, callback) {
 
+		// Add this so whenever we find a matching device things will connect
+		var scan_token = ['SCANNER_ADVERTISEMENTS', uuids, name, mac_address, callback];
+		scanners.push(scan_token);
+		return scan_token;
+	};
 
+	// module.exports.Central.prototype.scanStop = function () {
+	b.scanStop = function (scan_token) {
+		var to_remove = -1;
 
-
-// module.exports.Central.prototype.scan = function (uuids, callback) {
-b.scan = function (uuids, name, mac_address, callback) {
-
-	// Add this so whenever we find a matching device things will connect
-	var scan_token = ['SCANNER_ADVERTISEMENTS', uuids, name, mac_address, callback];
-	scanners.push(scan_token);
-	return scan_token;
-};
-
-// module.exports.Central.prototype.scanStop = function () {
-b.scanStop = function (scan_token) {
-	var to_remove = -1;
-
-	// Find the scanner to remove
-	for (var i=0; i<scanners.length; i++) {
-		var same = true;
-		for (var j=0; j<scanners[i].length; j++) {
-			if (scanners[i][j] != scan_token[j]) {
-				same = false;
+		// Find the scanner to remove
+		for (var i=0; i<scanners.length; i++) {
+			var same = true;
+			for (var j=0; j<scanners[i].length; j++) {
+				if (scanners[i][j] != scan_token[j]) {
+					same = false;
+					break;
+				}
+			}
+			if (same) {
+				to_remove = i;
 				break;
 			}
 		}
-		if (same) {
-			to_remove = i;
-			break;
-		}
+
+		// Remove it
+		scanners.splice(to_remove, 1);
 	}
 
-	// Remove it
-	scanners.splice(to_remove, 1);
-}
+	// module.exports.Central.prototype.connect = function* (peripheral, on_disconnect) {
+	b.connect = function* (peripheral, on_disconnect) {
+		var connect_defer = Q.defer();
+		peripheral.connect(function (err) {
+			// Call the disconnect callback properly if the user defined one
+			if (typeof on_disconnect === 'function') {
+				peripheral.on('disconnect', on_disconnect);
+			}
+			connect_defer.resolve(err);
+		});
+		return yield connect_defer.promise;
+	}
 
-// module.exports.Central.prototype.connect = function* (peripheral, on_disconnect) {
-b.connect = function* (peripheral, on_disconnect) {
-	var connect_defer = Q.defer();
-	peripheral.connect(function (err) {
-		// Call the disconnect callback properly if the user defined one
-		if (typeof on_disconnect === 'function') {
-			peripheral.on('disconnect', on_disconnect);
-		}
-		connect_defer.resolve(err);
-	});
-	return yield connect_defer.promise;
-}
+	// module.exports.Central.prototype.disconnect = function* (peripheral) {
+	b.disconnect = function* (peripheral) {
+		var disconnect_defer = Q.defer();
+		peripheral.disconnect(function (err) {
+			if (err) {
+				error('BLE unable to disconnect peripheral.');
+				error(err);
+				disconnect_defer.resolve(err);
+			} else {
+				disconnect_defer.resolve(null);
+			}
+		});
+		return yield disconnect_defer.promise;
+	}
 
-// module.exports.Central.prototype.disconnect = function* (peripheral) {
-b.disconnect = function* (peripheral) {
-	var disconnect_defer = Q.defer();
-	peripheral.disconnect(function (err) {
-		if (err) {
-			error('BLE unable to disconnect peripheral.');
-			error(err);
-			disconnect_defer.resolve(err);
-		} else {
-			disconnect_defer.resolve(null);
-		}
-	});
-	return yield disconnect_defer.promise;
-}
+	// module.exports.Central.prototype.discoverServices = function* (peripheral, uuids) {
+	b.discoverServices = function* (peripheral, uuids) {
+		var ds_defer = Q.defer();
+		peripheral.discoverServices(uuids, function (err, services) {
+			if (err) {
+				error('BLE unable to discover services.');
+				error(err);
+				ds_defer.resolve(null);
+			} else {
+				ds_defer.resolve(services);
+			}
+		});
+		return yield ds_defer.promise;
+	}
 
-// module.exports.Central.prototype.discoverServices = function* (peripheral, uuids) {
-b.discoverServices = function* (peripheral, uuids) {
-	var ds_defer = Q.defer();
-	peripheral.discoverServices(uuids, function (err, services) {
-		if (err) {
-			error('BLE unable to discover services.');
-			error(err);
-			ds_defer.resolve(null);
-		} else {
-			ds_defer.resolve(services);
-		}
-	});
-	return yield ds_defer.promise;
-}
+	// module.exports.Central.prototype.discoverCharacteristics = function* (service, uuids) {
+	b.discoverCharacteristics = function* (service, uuids) {
+		var dc_defer = Q.defer();
+		service.discoverCharacteristics(uuids, function (err, characteristics) {
+			if (err) {
+				error('BLE unable to discover characteristics.');
+				error(err);
+				dc_defer.resolve(null);
+			} else {
+				dc_defer.resolve(characteristics);
+			}
+		});
+		return yield dc_defer.promise;
+	}
 
-// module.exports.Central.prototype.discoverCharacteristics = function* (service, uuids) {
-b.discoverCharacteristics = function* (service, uuids) {
-	var dc_defer = Q.defer();
-	service.discoverCharacteristics(uuids, function (err, characteristics) {
-		if (err) {
-			error('BLE unable to discover characteristics.');
-			error(err);
-			dc_defer.resolve(null);
-		} else {
-			dc_defer.resolve(characteristics);
-		}
-	});
-	return yield dc_defer.promise;
-}
+	// module.exports.Central.prototype.readCharacteristic = function* (characteristic) {
+	b.readCharacteristic = function* (characteristic) {
+		var rc_defer = Q.defer();
+		characteristic.read(function (err, data) {
+			if (err) {
+				error('BLE unable to read characteristic.');
+				error(err);
+				rc_defer.resolve(null);
+			} else {
+				rc_defer.resolve(Array.prototype.slice.call(data));
+			}
+		});
+		return yield rc_defer.promise;
+	}
 
-// module.exports.Central.prototype.readCharacteristic = function* (characteristic) {
-b.readCharacteristic = function* (characteristic) {
-	var rc_defer = Q.defer();
-	characteristic.read(function (err, data) {
-		if (err) {
-			error('BLE unable to read characteristic.');
-			error(err);
-			rc_defer.resolve(null);
-		} else {
-			rc_defer.resolve(Array.prototype.slice.call(data));
-		}
-	});
-	return yield rc_defer.promise;
-}
+	// module.exports.Central.prototype.writeCharacteristic = function* (characteristic, data) {
+	b.writeCharacteristic = function* (characteristic, data) {
+		var wc_defer = Q.defer();
+		characteristic.write(new Buffer(data), false, function (err) {
+			if (err) {
+				error('BLE unable to write characteristic.');
+				error(err);
+				wc_defer.resolve(err);
+			} else {
+				wc_defer.resolve(null);
+			}
+		});
+		return yield wc_defer.promise;
+	}
 
-// module.exports.Central.prototype.writeCharacteristic = function* (characteristic, data) {
-b.writeCharacteristic = function* (characteristic, data) {
-	var wc_defer = Q.defer();
-	characteristic.write(new Buffer(data), false, function (err) {
-		if (err) {
-			error('BLE unable to write characteristic.');
-			error(err);
-			wc_defer.resolve(err);
-		} else {
-			wc_defer.resolve(null);
-		}
-	});
-	return yield wc_defer.promise;
-}
+	// module.exports.Central.prototype.notifyCharacteristic = function (characteristic, notification) {
+	b.notifyCharacteristic = function (characteristic, notification) {
+		characteristic.notify(true, function (err) {
+			if (err) {
+				error('BLE unable to setup notify for characteristic.');
+				error(err);
+				return err;
+			} else {
+				info('setup ble notification callback')
+				characteristic.on('data', function (data) {
+					lib.callFn(notification, Array.prototype.slice.call(data));
+				});
+			}
+		});
+	}
 
-// module.exports.Central.prototype.notifyCharacteristic = function (characteristic, notification) {
-b.notifyCharacteristic = function (characteristic, notification) {
-	characteristic.notify(true, function (err) {
-		if (err) {
-			error('BLE unable to setup notify for characteristic.');
-			error(err);
-			return err;
-		} else {
-			info('setup ble notification callback')
-			characteristic.on('data', function (data) {
-				lib.callFn(notification, Array.prototype.slice.call(data));
-			});
-		}
-	});
-}
+	if (!poweredOn) {
+		info('BLE waiting for powered on');
+		var defer = Q.defer();
+		noble.on('stateChange', function (state) {
+			info('BLE state change: ' + state);
+			if (state === 'poweredOn') {
+				poweredOn = true;
+				noble.startScanning([], true);
+				info('Started BLE scan.');
+				defer.resolve(b);
+			} else if (state === 'poweredOff') {
+				error('BLE appears to be disabled.');
+				defer.resolve(null);
+			}
+		});
+	} else {
+		return b;
+	}
 
 
 	return yield defer.promise;
