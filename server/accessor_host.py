@@ -908,6 +908,11 @@ def process_accessor(
 			# defer raising this so that all of the missing bits are reported
 			raise NotImplementedError
 
+		if len(accessor['ports']) == len(accessor['parameters']) == 0:
+			warnings.appendleft({
+				'title': 'Accessor has no ports and no parameters',
+				})
+
 		assert len(errors) == 0
 
 		# Only try if no warnings, make too many assumptions o/w
