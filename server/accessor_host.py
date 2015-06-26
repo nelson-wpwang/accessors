@@ -1257,6 +1257,26 @@ node_runtime_example_ports_observe = string.Template(
 
 ''')
 
+def node_runtime_example_bundle_port(instance, port):
+	if 'output' in port['directions']:
+		raise NotImplementedError("Node Code Example for Output Bundles")
+	tmpl = string.Template('''\
+        $instance.write('$port_name', {$values}, function (err) {
+            // Setting the port bundle completed successfully.
+        });
+
+''')
+	val_tmpl = string.Template('''$name: value, ''');
+	vals = ''
+	for p in port['bundles_ports']:
+		vals += val_tmpl.substitute(name=p)
+	vals = vals[:-2] # remove last ', '
+	return tmpl.substitute(
+			instance=instance,
+			port_name=port['name'],
+			values=vals,
+			)
+
 
 ###
 ### Templates for creating example Python code with an accessor
@@ -1306,6 +1326,24 @@ python_runtime_example_ports_observe = string.Template(
 \t\tprint("Observation from $instance.$port_function: {}".format(observation))
 \t\t)
 ''')
+
+def python_runtime_example_bundle_port(instance, port):
+	if 'output' in port['directions']:
+		raise NotImplementedError("Node Code Example for Output Bundles")
+	tmpl = string.Template('''\
+print("Set multiple ports at once using $instance.$port_function:")
+$instance.$port_function = {$values}
+''')
+	val_tmpl = string.Template('''"$name": value, ''');
+	vals = ''
+	for p in port['bundles_ports']:
+		vals += val_tmpl.substitute(name=p)
+	vals = vals[:-2] # remove last ', '
+	return tmpl.substitute(
+			instance=instance,
+			port_function=port['name'],
+			values=vals,
+			)
 
 # Main index
 class handler_index (JinjaBaseHandler):
@@ -1364,24 +1402,28 @@ class handler_accessor_page (JinjaBaseHandler):
 		node_ex_ports = ''
 		python_ex_ports = ''
 		for port in record['accessor']['ports']:
-			if 'input' in port['directions']:
-				node_ex_ports += node_runtime_example_ports_input.substitute(instance=record['accessor']['safe_name'],
-				                                                             port_name=port['name'])
-				python_ex_ports += python_runtime_example_ports_input.substitute(port_function=port['name'],
-				                                                                 instance=record['accessor']['safe_name'],
-				                                                                 port_name=port['name'])
-			if 'output' in port['directions']:
-				node_ex_ports += node_runtime_example_ports_output.substitute(instance=record['accessor']['safe_name'],
-				                                                              port_name=port['name'])
-				python_ex_ports += python_runtime_example_ports_output.substitute(port_function=port['name'],
-				                                                                  instance=record['accessor']['safe_name'],
-				                                                                  port_name=port['name'])
-			if 'event' in port['attributes']:
-				node_ex_ports += node_runtime_example_ports_observe.substitute(instance=record['accessor']['safe_name'],
-				                                                               port_name=port['name'])
-				python_ex_ports += python_runtime_example_ports_observe.substitute(port_function=port['name'],
-				                                                                   instance=record['accessor']['safe_name'],
-				                                                                   port_name=port['name'])
+			if 'bundles_ports' in port:
+				node_ex_ports += node_runtime_example_bundle_port(record['accessor']['safe_name'], port)
+				python_ex_ports += python_runtime_example_bundle_port(record['accessor']['safe_name'], port)
+			else:
+				if 'input' in port['directions']:
+					node_ex_ports += node_runtime_example_ports_input.substitute(instance=record['accessor']['safe_name'],
+																				 port_name=port['name'])
+					python_ex_ports += python_runtime_example_ports_input.substitute(port_function=port['name'],
+																					 instance=record['accessor']['safe_name'],
+																					 port_name=port['name'])
+				if 'output' in port['directions']:
+					node_ex_ports += node_runtime_example_ports_output.substitute(instance=record['accessor']['safe_name'],
+																				  port_name=port['name'])
+					python_ex_ports += python_runtime_example_ports_output.substitute(port_function=port['name'],
+																					  instance=record['accessor']['safe_name'],
+																					  port_name=port['name'])
+				if 'event' in port['attributes']:
+					node_ex_ports += node_runtime_example_ports_observe.substitute(instance=record['accessor']['safe_name'],
+																				   port_name=port['name'])
+					python_ex_ports += python_runtime_example_ports_observe.substitute(port_function=port['name'],
+																					   instance=record['accessor']['safe_name'],
+																					   port_name=port['name'])
 
 			python_ex_ports += '\n'
 
