@@ -1220,7 +1220,7 @@ accessors.create_accessor('$path_and_name', $parameters_arg, function (err, $ins
 
     $instance.init(function (err) {
         if (err) {
-            console.log('Erro when initing the accessor: ' + err);
+            console.log('Error when initing the accessor: ' + err);
             return;
         }
 
