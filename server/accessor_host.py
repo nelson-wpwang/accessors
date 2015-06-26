@@ -800,7 +800,6 @@ def process_accessor(
 			# Bundles are gaurenteed to have at least one port by validate.js
 			bundle_attrs = None
 			bundle_dir = None
-			bundle_type = None
 
 			accessor['bundle_to_ports'][bundle['name']] = []
 
@@ -827,7 +826,6 @@ def process_accessor(
 				if bundle_attrs is None:
 					bundle_attrs = list(port['attributes'])
 					bundle_dir = list(port['directions'])
-					bundle_type = port['type']
 				else:
 					if bundle_attrs != port['attributes']:
 						errors.appendleft({
@@ -835,16 +833,6 @@ def process_accessor(
 							'title': 'All bundled ports (currently) must have the same attributes',
 							'extra': [
 								'"'+port['name']+'" has attributes '+str(port['attributes'])+', but previous ports had attributes '+str(bundle_attrs),
-								],
-							})
-						complete_interface = False
-						break
-					if bundle_type != port['type']:
-						errors.appendleft({
-							'loc': bundle['loc'],
-							'title': 'All bundled ports (currently) must have the same type',
-							'extra': [
-								'"'+port['name']+'" has type '+str(port['type'])+', but previous ports had type '+str(bundle_type),
 								],
 							})
 						complete_interface = False
@@ -870,7 +858,7 @@ def process_accessor(
 						'display_name': bundle['name'],
 						'attributes': bundle_attrs,
 						'directions': bundle_dir,
-						'type': bundle_type,
+						'type': 'bundle',
 						'aliases': [],
 						'bundles_ports': bundle['contains'],
 						}
@@ -1261,15 +1249,7 @@ node_runtime_example_ports_observe = string.Template(
 
 ''')
 
-def node_runtime_example_bundle_port(instance, port):
-	if 'output' in port['directions']:
-		raise NotImplementedError("Node Code Example for Output Bundles")
-	tmpl = string.Template('''\
-        $instance.write('$port_name', {$values}, function (err) {
-            // Setting the port bundle completed successfully.
-        });
-
-''')
+def _node_runtime_example_bundle_port(tmpl, instance, port):
 	val_tmpl = string.Template('''$name: value, ''');
 	vals = ''
 	for p in port['bundles_ports']:
@@ -1280,6 +1260,27 @@ def node_runtime_example_bundle_port(instance, port):
 			port_name=port['name'],
 			values=vals,
 			)
+
+def node_runtime_example_bundle_port(instance, port):
+	s = ''
+	if 'input' in port['directions']:
+		tmpl = string.Template('''\
+        $instance.write('$port_name', {$values}, function (err) {
+            // Setting the port bundle completed successfully.
+        });
+
+''')
+		s += _node_runtime_example_bundle_port(tmpl, instance, port)
+	if 'output' in port['directions']:
+		tmpl = string.Template('''\
+        $instance.read('$port_name', function (err, value) {
+			console.log("Read port bundle $port_name and got: ' + value);
+			// value is an object that looks like {$values}
+        });
+
+''')
+		s += _node_runtime_example_bundle_port(tmpl, instance, port)
+	return s
 
 
 ###
@@ -1331,13 +1332,7 @@ python_runtime_example_ports_observe = string.Template(
 \t\t)
 ''')
 
-def python_runtime_example_bundle_port(instance, port):
-	if 'output' in port['directions']:
-		raise NotImplementedError("Node Code Example for Output Bundles")
-	tmpl = string.Template('''\
-print("Set multiple ports at once using $instance.$port_function:")
-$instance.$port_function = {$values}
-''')
+def _python_runtime_example_bundle_port(tmpl, instance, port):
 	val_tmpl = string.Template('''"$name": value, ''');
 	vals = ''
 	for p in port['bundles_ports']:
@@ -1348,6 +1343,23 @@ $instance.$port_function = {$values}
 			port_function=port['name'],
 			values=vals,
 			)
+
+def python_runtime_example_bundle_port(instance, port):
+	s = ''
+	if 'input' in port['directions']:
+		tmpl = string.Template('''\
+print("Set multiple ports at once using $instance.$port_function:")
+$instance.$port_function = {$values}
+''')
+		s += _python_runtime_example_bundle_port(tmpl, instance, port)
+	if 'output' in port['directions']:
+		tmpl = string.Template('''\
+print("Read multiple ports by reading $instance.$port_function:")
+values = $instance.$port_function
+# values is dictionary: {$values}
+''')
+		s += _python_runtime_example_bundle_port(tmpl, instance, port)
+	return s
 
 # Main index
 class handler_index (JinjaBaseHandler):
