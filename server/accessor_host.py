@@ -815,6 +815,7 @@ def process_accessor(
 						'title': 'Attempt to bundle a port that is not in this accessor',
 						'extra': [
 							bundle['name'] + ' includes the port "'+port+'", which is not a known port',
+							'The known ports are ' + ', '.join(map(lambda x: x['name'], accessor['ports'])),
 							],
 						})
 					complete_interface = False
