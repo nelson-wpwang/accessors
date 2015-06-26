@@ -809,6 +809,9 @@ def process_accessor(
 					if port == p['name']:
 						port = p
 						break
+					if port in p['aliases']:
+						port = p
+						break
 				else:
 					errors.appendleft({
 						'loc': bundle['loc'],
