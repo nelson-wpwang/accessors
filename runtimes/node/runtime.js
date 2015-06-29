@@ -15,9 +15,12 @@ var info  = debug_lib('accessors:info');
 var warn  = debug_lib('accessors:warn');
 var error = debug_lib('accessors:error');
 
-// We use `accessor_object` to keep track of `this` for the accessor
+// We use `_accessor_object` to keep track of `this` for the accessor
 // object so we can use the EventEmitter `emit()` function.
-var accessor_object = null;
+var _accessor_object = null;
+
+// Keep track of whether the accessor has been inited()
+var _inited = false;
 
 var _remove_from_array = function (item, arr) {
 	var to_remove = -1;
@@ -45,7 +48,39 @@ var _get_fq_port_name = function (port_name) {
 // Function that wraps calling a port. This sets up all of the promises/futures
 // code so that "await" works.
 var _do_port_call = function (port_name, direction, value, done_fn) {
+	var original_port = port_name;
 	port_name = _get_fq_port_name(port_name);
+
+	// Make sure this is a valid port
+	if (typeof port_name === 'undefined') {
+		var err = 'Port named "' + original_port + '" is invalid.';
+		error(err);
+		done_fn(err);
+		return;
+	}
+
+	// Make sure this is a valid direction
+	if (port_name !== 'init' && port_name !== 'wrapup') {
+		if (!(direction in _port_handlers[port_name])) {
+			var err = 'Port "'+port_name+'" is not an '+direction+' port.';
+			error(err);
+			done_fn(err);
+			return;
+		}
+	}
+
+	// Make sure init() has been called
+	if (_inited === false && port_name != 'init') {
+		_accessor_object.init(function (err) {
+			if (err) {
+				error('init failed.');
+				done_fn(err);
+			} else {
+				_do_port_call(port_name, direction, value, done_fn);
+			}
+		});
+		return;
+	}
 
 	// in the OUTPUT case, there is no value.
 	// in the other cases, there should be a value
@@ -72,7 +107,7 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 	// output handling functions. temporary is set to true so that this will
 	// only get called once.
 	if (direction === 'output') {
-		accessor_object.once(port_name, done_fn);
+		_accessor_object.once(port_name, done_fn);
 	}
 
 	// Determine which functions to call.
@@ -169,6 +204,9 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 
 						def().done(function () {
 							d.exit();
+							if (port_name === 'init') {
+								_inited = true;
+							}
 							// We only call the callback when this is an input.
 							// If this is an output, when the accessor calls
 							// `send()` the done callback will be called.
@@ -185,6 +223,9 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 
 					} else {
 						d.exit();
+						if (port_name === 'init') {
+							_inited = true;
+						}
 						if (direction === 'input' || direction === null) {
 							done_fn(null, r);
 						}
@@ -339,7 +380,7 @@ var get = function (port_name) {
 var send = function (port_name, val) {
 	port_name = _get_fq_port_name(port_name);
 	info("SEND: " + port_name + " <= " + val);
-	accessor_object.emit(port_name, null, val);
+	_accessor_object.emit(port_name, null, val);
 }
 
 /* `get_parameter()` allows an accessor to retrieve specific parameters

@@ -358,7 +358,7 @@ function get_exports (accessor) {
 	var export_str = `
 
 module.exports.Accessor = function () {
-	accessor_object = this;
+	_accessor_object = this;
 };
 util.inherits(module.exports.Accessor, require('events').EventEmitter);
 
