@@ -313,8 +313,7 @@ class Interface():
 			self.ports = {}
 			if 'ports' in self.json:
 				for port in self.json['ports']:
-					#self.ports.append(self.path[1:].replace('/', '.') + '.' + port)
-					self.ports[self.path[1:].replace('/', '.') + '.' + port] = self.json['ports'][port]
+					self.ports[self.path + '.' + port] = self.json['ports'][port]
 
 					if 'directions' in self.json['ports'][port]:
 						raise NotImplementedError("Interface files should not specify directions, only attributes")
@@ -398,11 +397,10 @@ class Interface():
 
 	def get_port_detail(self, port, aliases=None):
 		aliases = aliases or set()
-		name = port.split('.')[-1]
+		unqualified = port.split('.')[-1]
 		if port in self.ports:
-			detail = copy.deepcopy(self.json['ports'][name])
-			detail['name'] = '/' + '/'.join(port.split('.')[:-1])
-			detail['name'] += '.' + name
+			detail = copy.deepcopy(self.json['ports'][unqualified])
+			detail['name'] = unqualified
 			detail['aliases'] = list(aliases)
 			detail['interface_path'] = self.path
 
@@ -412,11 +410,11 @@ class Interface():
 			if 'type' not in detail:
 				detail['type'] = 'string'
 			if 'display_name' not in detail:
-				detail['display_name'] = port.split('.')[-1]
+				detail['display_name'] = unqualified
 			return detail
 		aliases.add(port)
-		iface = '/' + '/'.join(port.split('.')[:-1])
-		log.debug(iface)
+		iface = port.split('.')[0]
+		log.debug("Port detail for %s walking from %s -> %s", port, self, iface)
 		return interface_tree[iface].get_port_detail(port, aliases)
 
 	def register_accessor(self, acc_path, from_ext=False):
@@ -439,18 +437,9 @@ class Interface():
 	@staticmethod
 	def normalize(fq_port):
 		if '.' in fq_port:
-			if '/' in fq_port:
-				# /iface/path.Port
-				iface, fq_port = fq_port.split('.')
-			else:
-				# All '.'
-				iface = '/'+'/'.join(fq_port.split('.')[:-1])
-				fq_port = fq_port.split('.')[-1]
+			iface, fq_port = fq_port.split('.')
 		else:
-			# All '/'
-			if '/' not in fq_port:
-				raise NotImplementedError("Request to normalize non-interface port: " + fq_port)
-			iface, fq_port = fq_port.rsplit('/', 1)
+			raise NotImplementedError("Request to normalize non-interface port: " + fq_port)
 		iface = interface_tree[iface]
 		for port in iface:
 			if port.split('.')[-1] == fq_port:
@@ -515,7 +504,7 @@ def process_accessor(
 	# Strip .js from path
 	view_path = path[0:-3]
 
-	log.info('Adding accessor {}'.format(view_path))
+	log.info('Beginning to process new accessor {}'.format(view_path))
 
 	try:
 		name = None
