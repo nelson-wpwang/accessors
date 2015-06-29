@@ -662,7 +662,7 @@ def process_accessor(
 				port['aliases'] = []
 
 			accessor['port_aliases_to_fq'][port['name']] = port['name']
-			accessor['port_fq_to_aliases'][port['name']] = set(port['name'])
+			accessor['port_fq_to_aliases'][port['name']] = set([port['name'],])
 
 		# For all provided interfaces, creates a map 'Beta' -> '/alpha.Beta'
 		# Ambiguous entries, that is /alpha and /gamma both have Beta port, are
@@ -688,7 +688,6 @@ def process_accessor(
 		# created by createPort; that's less true actually, the sends_to hack
 		# mixes in some stuff from createPort
 
-		print(accessor['interface_ports'])
 		fixme_eventually = []
 		for s in sends_to:
 			fixme_eventually.append({
