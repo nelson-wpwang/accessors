@@ -2,7 +2,7 @@
 
 import coloredlogs, logging
 #coloredlogs.install()
-coloredlogs.install(level=logging.DEBUG)
+coloredlogs.install(level=logging.DEBUG, show_hostname=False)
 log = logging.getLogger(__name__)
 
 import argparse
