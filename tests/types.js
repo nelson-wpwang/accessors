@@ -8,10 +8,12 @@ describe('Type Tests', function () {
 	it('should get string', function (done) {
 		accessors.create_accessor('/tests/port-types', {}, function (err, acc) {
 			expect(err).to.equal(null);
-			acc.read('str', function (err, v) {
-				expect(err).to.equal(null);
-				expect(typeof v).to.equal('string');
-				done();
+			acc.init(function(err) {
+				acc.read('str', function (err, v) {
+					expect(err).to.equal(null);
+					expect(typeof v).to.equal('string');
+					done();
+				});
 			});
 		});
 	});
@@ -42,7 +44,7 @@ describe('Type Tests', function () {
 		accessors.create_accessor('/tests/port-types', {}, function (err, acc) {
 			expect(err).to.equal(null);
 			acc.read('col', function (err, v) {
-				expect(err).not.to.equal(null);
+				expect(err).not.to.be.null;
 				done();
 			});
 		});

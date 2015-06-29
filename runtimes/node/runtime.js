@@ -7,6 +7,7 @@ var lib        = require('lib');
 
 var util       = require('util');
 var domain     = require('domain');
+// var trycatch   = require('trycatch');
 var Q          = require('q');
 var debug_lib  = require('debug');
 
@@ -131,13 +132,6 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 		_port_values[port_name] = value;
 	}
 
-	// With output, we need to register the given callback before calling the
-	// output handling functions. temporary is set to true so that this will
-	// only get called once.
-	if (direction === 'output') {
-		_accessor_object.once(port_name, done_fn);
-	}
-
 	// Determine which functions to call.
 	// These are based on the port handlers that were configured.
 	var to_call = [];
@@ -214,22 +208,57 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 
 		// Iterate all functions in the port list and call them, checking
 		// if they are generators and whatnot.
+		info('runtime: to_call length: ' + to_call.length);
 		for (var i=0; i<to_call.length; i++) {
 			(function (portfn) {
 
 				var d = domain.create();
 				var r;
 
+				// This gets called on any error that happens while we are
+				// running accessor code.
 				d.on('error', function (err) {
+					// Exit the domain. We no longer want it to capture
+					// exceptions.
 					d.exit();
+
+					// This seems to make things better...
+					// I would think that d.exit() would be enough, but
+					// somehow, and I don't understand why, the .on('error')
+					// still gets called. In particular, the one for
+					// .init() gets called. By removing the handlers,
+					// exceptions seem to bubble back up to the top.
+					d.removeAllListeners('error')
+
+					error('Port err: ' + err);
 					done_fn(err);
 				});
 
 				d.run(function() {
 
+					// With output, we need to register the given callback before calling the
+					// output handling functions. temporary is set to true so that this will
+					// only get called once.
+					if (direction === 'output') {
+						_accessor_object.once(port_name, function (err, val) {
+							info('exiting from once ' + port_name)
+							d.exit();
+
+							// This seems to make things better...
+							d.removeAllListeners('error')
+
+							done_fn(err, val);
+						});
+					}
+
 					// Common function for after a sync or async function has run
-					function finished (r) {
+					function finished () {
+						info('d.exit ' + port_name)
 						d.exit();
+
+						// This seems to make things better...
+						d.removeAllListeners('error');
+
 						if (port_name === 'init') {
 							_inited = true;
 						}
@@ -252,7 +281,7 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 						});
 
 						def().done(function () {
-							finished(r);
+							finished();
 
 						}, function (err) {
 							// Throw this error so that the domain can pick it up.
@@ -261,9 +290,10 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 						info("port call running asynchronously");
 
 					} else {
-						finished(r);
+						finished();
 					}
 				});
+
 			})(to_call[i]);
 		}
 	}
