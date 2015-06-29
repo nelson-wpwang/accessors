@@ -77,20 +77,14 @@ import mich_to_berk
 
 
 
+base_path = os.path.dirname(os.path.realpath(__file__))
+parse_js = sh.Command(os.path.join(base_path, 'validate.js'))
 
 try:
-	parse_js = sh.Command(os.path.abspath('./validate.js'))
+	traceur = sh.Command(os.path.join(base_path, 'node_modules/traceur/traceur'))
 except sh.CommandNotFound:
-	parse_js = sh.Command(os.path.abspath('server/validate.js'))
-
-try:
-	traceur = sh.Command(os.path.abspath('./node_modules/traceur/traceur'))
-except sh.CommandNotFound:
-	try:
-		traceur = sh.Command(os.path.abspath('server/node_modules/traceur/traceur'))
-	except sh.CommandNotFound:
-		log.error("You must run npm install traceur")
-		sys.exit(1)
+	log.error("You must run npm install traceur")
+	sys.exit(1)
 
 # traceur = os.path.join(
 # 	os.getcwd(),
@@ -102,7 +96,6 @@ except sh.CommandNotFound:
 # 	# npm('install', 'traceur')
 # traceur = sh.Command(traceur)
 
-ACCESSOR_SERVER_PORT = 6565
 ACCESSOR_REPO_URL = 'https://github.com/lab11/accessor-files.git'
 
 accessor_db_cols = ('name',
@@ -1830,6 +1823,10 @@ parser.add_argument('-u', '--repo-url',
                     help='Git URL of the repository to get accessors and interfaces from.')
 parser.add_argument('-t', '--tests', action='store_true',
                     help='Include test accessors')
+parser.add_argument('-p', '--port',
+                    default=6565,
+                    type=int,
+                    help='Port the server should run on')
 args = parser.parse_args()
 
 # Make sure we have accessor files
@@ -1901,9 +1898,9 @@ accessor_server = tornado.web.Application(
 	template_path='jinja/',
 	debug=True
 	)
-accessor_server.listen(ACCESSOR_SERVER_PORT)
+accessor_server.listen(args.port)
 
-log.info('Starting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
+log.info('Starting accessor server on port {}'.format(args.port))
 
 # Periodically fetch new files from github
 if not args.disable_git:
