@@ -357,6 +357,7 @@ class Interface():
 			# Check for conflicts in unqualified names from extensions
 			self.unqualified = set()
 			for port in self:
+				port = port.split('.')[-1]
 				if port in self.unqualified:
 					log.error("Interface unqualified names conflict for port %s.", port)
 					log.error("This isn't inherently unfixable, but tools don't")
