@@ -4,6 +4,7 @@
   "description": "Test suite for accessors (npm accessors.io)",
   "main": "tests.js",
   "dependencies": {
+    "chai": "^3.0.0",
     "sleep": "^2.0.0"
   },
   "devDependencies": {},

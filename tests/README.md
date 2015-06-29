@@ -1,6 +1,15 @@
-tests
-=====
+Accessor Tests
+==============
 
-This folder collects accessors that can be used as standalone tests.
+Our tests use mocha and chai to verify things are working as expected.
 
-It is currently a stub towards a goal of continuous integration validating basic accessor functionality.
+To run the tests:
+
+    ./run.sh
+
+Setup
+-----
+
+    sudo npm install -g mocha
+    npm install
+    ln -s ../runtimes/node node_modules/accessors.io
