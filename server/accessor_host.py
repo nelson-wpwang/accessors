@@ -1818,6 +1818,9 @@ parser = argparse.ArgumentParser(description=DESC)
 parser.add_argument('-n', '--disable-git',
                     action='store_true',
                     help='Do not pull new accessors from git repository.')
+parser.add_argument('--disable-periodic',
+                    action='store_true',
+                    help='Do not periodically pull new files.')
 parser.add_argument('-u', '--repo-url',
                     default=ACCESSOR_REPO_URL,
                     help='Git URL of the repository to get accessors and interfaces from.')
@@ -1903,7 +1906,7 @@ accessor_server.listen(args.port)
 log.info('Starting accessor server on port {}'.format(args.port))
 
 # Periodically fetch new files from github
-if not args.disable_git:
+if (not args.disable_git) and (not args.disable_periodic):
 	def pull_git_periodic ():
 		log.info('Pulling git repo')
 		with pushd(accessor_files_path):
