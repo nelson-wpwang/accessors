@@ -45,6 +45,33 @@ var _get_fq_port_name = function (port_name) {
 	return _port_aliases_to_fq[port_name];
 }
 
+// Convert port outputs to the correct type
+var _force_type = function (val, type) {
+	if (type === null) {
+		return val;
+	} else if (type === 'button') {
+		error('Cannot send to a port with type button.');
+		return null;
+	} else if (type === 'bool') {
+		return val == true;
+	} else if (type === 'string') {
+		return ''+val;
+	} else if (type === 'numeric') {
+		return Number(val);
+	} else if (type === 'integer') {
+		return parseInt(val);
+	} else if (type === 'select') {
+		// TODO: handle this
+		return val;
+	} else if (type === 'color') {
+		// TODO: check this
+		return val;
+	} else {
+		info('Unknown type');
+		return val;
+	}
+}
+
 // Function that wraps calling a port. This sets up all of the promises/futures
 // code so that "await" works.
 var _do_port_call = function (port_name, direction, value, done_fn) {
@@ -68,6 +95,7 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 			return;
 		}
 	}
+	var port = _port_meta[port_name];
 
 	// Make sure init() has been called
 	if (_inited === false && port_name != 'init') {
@@ -183,37 +211,48 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 
 	} else {
 		// Have work to do
-		var d = domain.create();
-		var r;
 
-		d.on('error', function (err) {
-			d.exit();
-			done_fn(err);
-		});
+		// Iterate all functions in the port list and call them, checking
+		// if they are generators and whatnot.
+		for (var i=0; i<to_call.length; i++) {
+			(function (portfn) {
 
-		d.run(function() {
-			// Iterate all functions in the port list and call them, checking
-			// if they are generators and whatnot.
-			for (var i=0; i<to_call.length; i++) {
-				(function (port) {
-					r = port(value);
-					if (r && typeof r.next == 'function') {
-						var def = Q.async(function* () {
-							r = yield* port(value);
-						});
+				var d = domain.create();
+				var r;
 
-						def().done(function () {
-							d.exit();
-							if (port_name === 'init') {
-								_inited = true;
-							}
+				d.on('error', function (err) {
+					d.exit();
+					done_fn(err);
+				});
+
+				d.run(function() {
+
+					// Common function for after a sync or async function has run
+					function finished (r) {
+						d.exit();
+						if (port_name === 'init') {
+							_inited = true;
+						}
+
+						if (port_name === 'init' || port_name === 'wrapup') {
+							done_fn(null);
+
+						} else if (direction === 'input') {
 							// We only call the callback when this is an input.
 							// If this is an output, when the accessor calls
 							// `send()` the done callback will be called.
-							// We also call done for init and wrapup
-							if (direction === 'input' || direction === null) {
-								done_fn(null, r);
-							}
+							done_fn(null);
+						}
+					}
+
+					r = portfn(value);
+					if (r && typeof r.next == 'function') {
+						var def = Q.async(function* () {
+							r = yield* portfn(value);
+						});
+
+						def().done(function () {
+							finished(r);
 
 						}, function (err) {
 							// Throw this error so that the domain can pick it up.
@@ -222,17 +261,11 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 						info("port call running asynchronously");
 
 					} else {
-						d.exit();
-						if (port_name === 'init') {
-							_inited = true;
-						}
-						if (direction === 'input' || direction === null) {
-							done_fn(null, r);
-						}
+						finished(r);
 					}
-				})(to_call[i]);
-			}
-		});
+				});
+			})(to_call[i]);
+		}
 	}
 }
 
@@ -318,10 +351,6 @@ var removeInputHandler = function (handle) {
 	}
 }
 
-// var addBundleHandler = function (bundle_name, func) {
-
-// }
-
 
 var addOutputHandler = function (port_name, func) {
 	port_name = _get_fq_port_name(port_name);
@@ -379,6 +408,8 @@ var get = function (port_name) {
  */
 var send = function (port_name, val) {
 	port_name = _get_fq_port_name(port_name);
+	var port = _port_meta[port_name];
+	val = _force_type(val, port.type);
 	info("SEND: " + port_name + " <= " + val);
 	_accessor_object.emit(port_name, null, val);
 }

@@ -311,6 +311,7 @@ function requireFromString(src) {
 //   }
 // for all ports.
 function get_port_handler_arrays (accessor) {
+	var res = "var _port_meta = {init:{}, wrapup:{},";
 	var ret = "var _port_handlers = {_fire: [],";
 	var reu = "var _port_values = {";
 	var rev = "var _port_aliases_to_fq = ";
@@ -321,6 +322,7 @@ function get_port_handler_arrays (accessor) {
 	for (var i=0; i<accessor.ports.length; i++) {
 		var port = accessor.ports[i];
 
+		res += "'" + port.name + "': " + JSON.stringify(port) + ',';
 		ret += "'" + port.name + "': {";
 
 		var def = 'null';
@@ -338,6 +340,7 @@ function get_port_handler_arrays (accessor) {
 		ret += "},"
 	}
 
+	res += '};';
 	ret += '};';
 	reu += '};';
 
@@ -350,7 +353,7 @@ function get_port_handler_arrays (accessor) {
 	// Need a map of bundle names to the ports in that button
 	rey += JSON.stringify(accessor.bundle_to_ports) + ';';
 
-	return ret + reu + rev + rew + rex + rey;
+	return res + ret + reu + rev + rew + rex + rey;
 }
 
 function get_exports (accessor) {
