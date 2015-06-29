@@ -9,7 +9,7 @@ describe('Say', function () {
 		accessors.create_accessor('/ui/Say', {}, function (err, acc) {
 			expect(err).to.equal(null);
 
-			acc_tag.write('Say', 'Hello', function (err) {
+			acc.write('Say', 'Hello', function (err) {
 				expect(err).to.equal(null);
 			});
 		});
