@@ -11,6 +11,7 @@ import pprint
 import collections
 import copy
 import xml.etree.ElementTree as ET
+import hashlib
 import json
 import string
 import sys
@@ -99,6 +100,7 @@ except sh.CommandNotFound:
 ACCESSOR_REPO_URL = 'https://github.com/lab11/accessor-files.git'
 
 accessor_db_cols = ('name',
+                    'hash',
                     'compilation_timestamp',
                     'group',
                     'path',
@@ -108,14 +110,21 @@ accessor_db_cols = ('name',
                     'warnings',
                     'errors')
 
+# Primary database of current accessors
 accessors_db = pydblite.Base('accessors', save_to_file=False)
 accessors_db.create(*accessor_db_cols)
 
-accessors_dev_db = pydblite.Base('accessors-dev', save_to_file=False)
-accessors_dev_db.create(*accessor_db_cols)
-
+# Database of current accessors in the /tests folder
 accessors_test_db = pydblite.Base('accessors-test', save_to_file=False)
 accessors_test_db.create(*accessor_db_cols)
+
+# Historical versions of accessors from older commits
+accessors_git_db = pydblite.Base('accessors-git', save_to_file=False)
+accessors_git_db.create(*accessor_db_cols)
+
+# Transient database of user-uploaded accessors
+accessors_dev_db = pydblite.Base('accessors-dev', save_to_file=False)
+accessors_dev_db.create(*accessor_db_cols)
 
 
 
@@ -484,6 +493,7 @@ def process_accessor(
 		root,         # Just the bas '/webquery'
 		filename,     # Just the name 'Bitcoin'
 		path,         # The full path '/webquery/Bitcoin.js'
+		obj_hash,     # A unique hash for this accessor (git commit or contents)
 		contents,     # The file contents
 		on_disk_path, # This really needs more refacotoring; wow
 		):
@@ -910,6 +920,7 @@ def process_accessor(
 
 		# Save accessor in in-memory DB
 		db.insert(name=meta['name'],
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -936,6 +947,7 @@ def process_accessor(
 		# meta object doesn't exist if this exception thrown
 		# accessor object doesn't exist if this exception thrown
 		db.insert(name=name if name else filename,
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -951,6 +963,7 @@ def process_accessor(
 			})
 		# accessor object doesn't exist if this exception thrown
 		db.insert(name=meta['name'],
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -965,6 +978,7 @@ def process_accessor(
 		# meta object doesn't exist if this exception thrown
 		# accessor object doesn't exist if this exception thrown
 		db.insert(name=name if name else filename,
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -977,6 +991,7 @@ def process_accessor(
 		# accessor object exists in incomplete state if this
 		# exception is thrown
 		db.insert(name=meta['name'],
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -991,6 +1006,7 @@ def process_accessor(
 			})
 		# accessor object doesn't exist if this exception thrown
 		db.insert(name=meta['name'],
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -1034,29 +1050,32 @@ def find_accessors (accessor_path):
 				view_path = path[0:-3]
 
 				# Check to see if we have already parsed this accessor
+				commit_hash = git('log', '-n1', '--pretty="format:%H"', '.'+path)
+				existing_accessor = first(db('path') == view_path)
+				if existing_accessor:
+					if existing_accessor['hash'] == commit_hash:
+						log.info('Already parsed {}, skipping'.format(path))
+						continue
+					else:
+						log.info('Got new version of {}'.format(path))
+						for iface in existing_accessor['accessor']['implements']:
+							interface = interface_tree[iface['implements']]
+							interface.unregister_accessor(existing_accessor['path'])
+						db.delete(existing_accessor)
+
 				contents = ''
 				with open("." + path) as f:
 					contents = f.read()
 
-					existing_accessor = first((db('path') == view_path) &
-											  (db('jscontents') == contents))
-					if existing_accessor:
-						log.info('Already parsed {}, skipping'.format(path))
-						continue
-
-					old_accessor = first(db('path') == view_path)
-					if old_accessor:
-						log.info('Got new version of {}'.format(path))
-						for iface in old_accessor['accessor']['implements']:
-							interface = interface_tree[iface['implements']]
-							interface.unregister_accessor(old_accessor['path'])
-						db.delete(old_accessor)
-					else:
-						log.debug("NEW ACCESSOR: %s", path)
-
-
-
-				process_accessor(db, root, filename, path, contents, '.'+path)
+				process_accessor(
+						db,
+						root,
+						filename,
+						path,
+						commit_hash,
+						contents,
+						'.'+path
+						)
 
 
 
@@ -1695,6 +1714,7 @@ class handler_dev (tornado.web.RequestHandler):
 			'/'+name,
 			name,
 			'/'+name+'.js',
+			hashlib.md5(contents.encode('utf-8')).hexdigest(),
 			contents,
 			path,
 			)
