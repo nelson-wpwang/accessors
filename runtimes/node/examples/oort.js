@@ -2,23 +2,32 @@
 
 var accessors = require('../accessors');
 
-accessors.create_accessor('/sensor/power/oortSmartSocket', {}, function (oort) {
-	function query () {
-		oort.Power.input(true, function () {
-			oort.Watts.observe(function (data) {
-				console.log('Load is drawing: ' + data + ' W');
-			}, function () {}, function () {});
-		}, function (err) {
-			console.log('Waiting for the device to be connected');
-			setTimeout(query, 1000);
-		});
-
-		
+accessors.create_accessor('/sensor/power/oortSmartSocket', {}, function (err, oort) {
+	if (err) {
+		console.log('Error loading accessor.');
+		console.log(err);
+		return;
 	}
 
-	query();
-},
-function (err) {
-	console.log('Error loading accessor.');
-	console.log(err);
+	oort.init(function (err) {
+
+		oort.on('/sensor/power.Power', function (err, data) {
+			if (err) {
+				console.log(err);
+			}
+			console.log('Load is drawing: ' + data + ' W');
+		});
+
+		function wait () {
+			oort.write('/onoff.Power', true, function (err) {
+				if (err) {
+					console.log(err);
+					console.log('Waiting for the device to be connected');
+					setTimeout(wait, 1000);
+				}
+			});
+		}
+
+		wait();
+	});
 });

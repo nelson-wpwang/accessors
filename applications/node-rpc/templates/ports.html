@@ -29,7 +29,7 @@
 
           <label for="{{ port.name }}" class="col-sm-2 control-label">{{ port.display_name }}</label>
 
-          {% if port.directions|length == 1 and port.directions[0] == "output" %}
+          {% if port.attributes|length == 1 and port.attributes[0] == "read" %}
           {# OUTPUT #}
           {# Only an output, just display the data #}
           <div class="col-sm-6">
@@ -105,14 +105,14 @@
 
           {# Button for re-requesting the value of the port from the server #}
           <div class="col-sm-2">
-            {% if 'output' in port.directions %}
+            {% if 'read' in port.attributes %}
             <button type="button" class="form-control accessor-refresh" title="Reload">&#8635;</button>
             {% endif %}
           </div>
 
           {# Button for observe #}
           <div class="col-sm-2">
-            {% if 'observe' in port.directions %}
+            {% if 'event' in port.attributes %}
             <button type="button" class="form-control accessor-observe" title="Observe">&#187;</button>
             {% endif %}
           </div>

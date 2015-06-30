@@ -20,20 +20,12 @@ To add a new accessor or modify an existing accessor, commit a change to the
 <table class="table">
   <thead>
     <tr>
-      {#
-      <th data-toggle="tooltip" data-placement="bottom" title="Human-Friendly Name">Name</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="Logical group to help find accessors. Based on directory heirarchy in accessor-files repository. Usually corrolates to provided interfaces, but it is not required to.">Group</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="Interfaces that this accessor implements. Interfaces are standardized and shared among many devices. Click on an interface for more detail.">Provides</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="Custom ports that this accessor creates. Usually for device-specific features or other capabilities that do not exist in a standard interface.">Creates</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="A list of parameters needed to instantiate this accessor. These convert a generic accessor into an object that can control a specific device.">Requires</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="The accessor repository is scanned approximately once a minute for updates.">Last Updated</th>
-      #}
-      <th>Name</th>
-      <th>Group</th>
-      <th>Provides</th>
-      <th>Creates</th>
-      <th>Requires</th>
-      <th>Last Updated</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="Human-Friendly Name">Name</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="Logical group to help find accessors. Based on directory heirarchy in accessor-files repository. Usually corrolates to provided interfaces, but it is not required to.">Group</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="Interfaces that this accessor implements. Interfaces are standardized and shared among many devices. Click on an interface for more detail.">Provides</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="Custom ports that this accessor creates. Usually for device-specific features or other capabilities that do not exist in a standard interface.">Creates</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="A list of parameters needed to instantiate this accessor. These convert a generic accessor into an object that can control a specific device.">Requires</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="The accessor repository is scanned approximately once a minute for updates.">Last Updated</th>
     </tr>
   </thead>
 
@@ -91,20 +83,12 @@ To add a new accessor or modify an existing accessor, commit a change to the
 <table class="table">
   <thead>
     <tr>
-      {#
-      <th data-toggle="tooltip" data-placement="bottom" title="Human-Friendly Name">Name</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="Logical group to help find accessors. Based on directory heirarchy in accessor-files repository. Usually corrolates to provided interfaces, but it is not required to.">Group</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="Interfaces that this accessor implements. Interfaces are standardized and shared among many devices. Click on an interface for more detail.">Provides</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="Custom ports that this accessor creates. Usually for device-specific features or other capabilities that do not exist in a standard interface.">Creates</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="A list of parameters needed to instantiate this accessor. These convert a generic accessor into an object that can control a specific device.">Requires</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="The accessor repository is scanned approximately once a minute for updates.">Last Updated</th>
-      #}
-      <th>Name</th>
-      <th>Group</th>
-      <th>Provides</th>
-      <th>Creates</th>
-      <th>Requires</th>
-      <th>Last Updated</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="Human-Friendly Name">Name</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="Logical group to help find accessors. Based on directory heirarchy in accessor-files repository. Usually corrolates to provided interfaces, but it is not required to.">Group</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="Interfaces that this accessor implements. Interfaces are standardized and shared among many devices. Click on an interface for more detail.">Provides</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="Custom ports that this accessor creates. Usually for device-specific features or other capabilities that do not exist in a standard interface.">Creates</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="A list of parameters needed to instantiate this accessor. These convert a generic accessor into an object that can control a specific device.">Requires</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="The accessor repository is scanned approximately once a minute for updates.">Last Updated</th>
     </tr>
   </thead>
 
@@ -185,20 +169,12 @@ To add a new interface or modify an existing interface, commit a change to the
 <table class="table">
   <thead>
     <tr>
-      {#
-      <th data-toggle="tooltip" data-placement="bottom" title="An interface specifies a set of well-known ports and their expected behavior.">Interface</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="Interfaces can inherit from other interfaces by extending them. An extension copies the port definitions, but renames them to something semantically meaningful for the new interface.">Extends</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="Ports that are defined by interfaces that this interface extends (or by interfaces they extend).">Inherits</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="The ports defined by this interface.">Creates</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="These accessors provide this exact interface">Implemented Directly By</th>
-      <th data-toggle="tooltip" data-placement="bottom" title="These accessors provide interfaces that extend this interface.">Implemented Indirectly By</th>
-      #}
-      <th>Interface</th>
-      <th>Extends</th>
-      <th>Inherits</th>
-      <th>Creates</th>
-      <th>Implemented Directly By</th>
-      <th>Implemented Indirectly By</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="An interface specifies a set of well-known ports and their expected behavior.">Interface</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="Interfaces can inherit from other interfaces by extending them. An extension copies the port definitions, but renames them to something semantically meaningful for the new interface.">Extends</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="Ports that are defined by interfaces that this interface extends (or by interfaces they extend).">Inherits</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="The ports defined by this interface.">Creates</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="These accessors provide this exact interface">Implemented Directly By</th>
+      <th data-toggle="tooltip" data-placement="bottom" data-container="body" title="These accessors provide interfaces that extend this interface.">Implemented Indirectly By</th>
     </tr>
   </thead>
 
@@ -212,20 +188,22 @@ To add a new interface or modify an existing interface, commit a change to the
     </td>
     <td>
       {% for ext in iface.extends %}
-      {% for name in ext %}
-      {% set port = ext.ports[name] %}
-      {% if 'observe' in port.directions %}
-      <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
-      {% endif %}
-      {% if 'input' in port.directions %}
-      <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
-      {% endif %}
-      {{ name.split('.')[-1] }}
-      {% if 'output' in port.directions %}
-      <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
-      {% endif %}
-      <br />
-      {% endfor %}
+        {% for name in ext %}
+          {% set port = ext.ports[name] %}
+          {% if port %}
+            {% if 'observe' in port.directions %}
+              <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+            {% endif %}
+            {% if 'input' in port.directions %}
+              <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+            {% endif %}
+            {{ name.split('.')[-1] }}
+            {% if 'output' in port.directions %}
+              <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+            {% endif %}
+            <br />
+          {% endif %} {# if port #}
+        {% endfor %}
       {% endfor %}
     </td>
     <td>

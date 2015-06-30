@@ -2,14 +2,16 @@
 
 import coloredlogs, logging
 #coloredlogs.install()
-coloredlogs.install(level=logging.DEBUG)
+coloredlogs.install(level=logging.DEBUG, show_hostname=False)
 log = logging.getLogger(__name__)
 
 import argparse
+import bidict
 import pprint
 import collections
 import copy
 import xml.etree.ElementTree as ET
+import hashlib
 import json
 import string
 import sys
@@ -28,6 +30,7 @@ import markdown
 import pydblite
 import arrow
 import semantic_version as semver
+import pyjsdoc
 
 import tornado
 import tornado.ioloop
@@ -75,20 +78,14 @@ import mich_to_berk
 
 
 
+base_path = os.path.dirname(os.path.realpath(__file__))
+parse_js = sh.Command(os.path.join(base_path, 'validate.js'))
 
 try:
-	parse_js = sh.Command(os.path.abspath('./validate.js'))
+	traceur = sh.Command(os.path.join(base_path, 'node_modules/traceur/traceur'))
 except sh.CommandNotFound:
-	parse_js = sh.Command(os.path.abspath('server/validate.js'))
-
-try:
-	traceur = sh.Command(os.path.abspath('./node_modules/traceur/traceur'))
-except sh.CommandNotFound:
-	try:
-		traceur = sh.Command(os.path.abspath('server/node_modules/traceur/traceur'))
-	except sh.CommandNotFound:
-		log.error("You must run npm install traceur")
-		sys.exit(1)
+	log.error("You must run npm install traceur")
+	sys.exit(1)
 
 # traceur = os.path.join(
 # 	os.getcwd(),
@@ -100,10 +97,10 @@ except sh.CommandNotFound:
 # 	# npm('install', 'traceur')
 # traceur = sh.Command(traceur)
 
-ACCESSOR_SERVER_PORT = 6565
 ACCESSOR_REPO_URL = 'https://github.com/lab11/accessor-files.git'
 
 accessor_db_cols = ('name',
+                    'hash',
                     'compilation_timestamp',
                     'group',
                     'path',
@@ -113,14 +110,21 @@ accessor_db_cols = ('name',
                     'warnings',
                     'errors')
 
+# Primary database of current accessors
 accessors_db = pydblite.Base('accessors', save_to_file=False)
 accessors_db.create(*accessor_db_cols)
 
-accessors_dev_db = pydblite.Base('accessors-dev', save_to_file=False)
-accessors_dev_db.create(*accessor_db_cols)
-
+# Database of current accessors in the /tests folder
 accessors_test_db = pydblite.Base('accessors-test', save_to_file=False)
 accessors_test_db.create(*accessor_db_cols)
+
+# Historical versions of accessors from older commits
+accessors_git_db = pydblite.Base('accessors-git', save_to_file=False)
+accessors_git_db.create(*accessor_db_cols)
+
+# Transient database of user-uploaded accessors
+accessors_dev_db = pydblite.Base('accessors-dev', save_to_file=False)
+accessors_dev_db.create(*accessor_db_cols)
 
 
 
@@ -219,7 +223,10 @@ class ServeAccessorJSON (ServeAccessor):
 		self.set_header('Content-Type', 'application/json')
 
 	def write_accessor (self, accessor):
-		accessor_json = json.dumps(accessor, indent=4)
+		try:
+			accessor_json = json.dumps(accessor, indent=4, sort_keys=True)
+		except TypeError:
+			accessor_json = json.dumps(accessor, indent=4)
 		self.write(accessor_json)
 
 # Wrapper class for serving XML accessors.
@@ -315,8 +322,26 @@ class Interface():
 			self.ports = {}
 			if 'ports' in self.json:
 				for port in self.json['ports']:
-					#self.ports.append(self.path[1:].replace('/', '.') + '.' + port)
-					self.ports[self.path[1:].replace('/', '.') + '.' + port] = self.json['ports'][port]
+					self.ports[self.path + '.' + port] = self.json['ports'][port]
+
+					if 'directions' in self.json['ports'][port]:
+						raise NotImplementedError("Interface files should not specify directions, only attributes")
+
+					if 'attributes' not in self.json['ports'][port]:
+						log.warn("No attributes on interface %s ?", file_path)
+						self.json['ports'][port]['attributes'] = ''
+
+					directions = []
+					if 'read' in self.json['ports'][port]['attributes']:
+						directions.append('output');
+					if 'write' in self.json['ports'][port]['attributes']:
+						directions.append('input');
+					if 'event'         in self.json['ports'][port]['attributes'] or \
+					   'eventPeriodic' in self.json['ports'][port]['attributes'] or \
+					   'eventChange'   in self.json['ports'][port]['attributes']:
+						if 'output' not in directions:
+							directions.append('output');
+					self.json['ports'][port]['directions'] = directions
 
 			self.extends = []
 			if 'extends' in self.json:
@@ -336,6 +361,17 @@ class Interface():
 			interface_tree[self.path] = self
 			log.debug('---'*30)
 			log.debug(pprint.pformat(interface_tree))
+
+			# Check for conflicts in unqualified names from extensions
+			self.unqualified = set()
+			for port in self:
+				port = port.split('.')[-1]
+				if port in self.unqualified:
+					log.error("Interface unqualified names conflict for port %s.", port)
+					log.error("This isn't inherently unfixable, but tools don't")
+					log.error("support it yet.")
+					raise NotImplementedError("Ambiguous names in interface")
+				self.unqualified.add(port)
 
 			# All accessors that directly implement this interface (by accessor path)
 			self.accessors = set()
@@ -368,24 +404,27 @@ class Interface():
 				continue
 		raise KeyError
 
-	def get_port_detail(self, port, function_name):
-		name = port.split('.')[-1]
+	def get_port_detail(self, port, aliases=None):
+		aliases = aliases or set()
+		unqualified = port.split('.')[-1]
 		if port in self.ports:
-			detail = copy.deepcopy(self.json['ports'][name])
-			detail['name'] = '/' + '/'.join(port.split('.'))
-			detail['function'] = function_name
+			detail = copy.deepcopy(self.json['ports'][unqualified])
+			detail['name'] = port
+			detail['aliases'] = list(aliases)
 			detail['interface_path'] = self.path
+
 			# We add some (currently) optional keys to make downstream stuff
 			# easier, TODO: re-think about what should be required in the
 			# definition of a complete accessor
 			if 'type' not in detail:
 				detail['type'] = 'string'
 			if 'display_name' not in detail:
-				detail['display_name'] = port.split('.')[-1]
+				detail['display_name'] = unqualified
 			return detail
-		iface = '/' + '/'.join(port.split('.')[:-1])
-		log.debug(iface)
-		return interface_tree[iface].get_port_detail(port, function_name)
+		aliases.add(port)
+		iface = port.split('.')[0]
+		log.debug("Port detail for %s walking from %s -> %s", port, self, iface)
+		return interface_tree[iface].get_port_detail(port, aliases)
 
 	def register_accessor(self, acc_path, from_ext=False):
 		'''Record accessors that implement this interface and recurse into extends'''
@@ -406,23 +445,14 @@ class Interface():
 
 	@staticmethod
 	def normalize(fq_port):
-		log.debug("normalize: %s", fq_port)
 		if '.' in fq_port:
-			if '/' in fq_port:
-				# /iface/path.Port
-				iface, fq_port = fq_port.split('.')
-			else:
-				# All '.'
-				iface = '/'+'/'.join(fq_port.split('.')[:-1])
-				fq_port = fq_port.split('.')[-1]
+			iface, fq_port = fq_port.split('.')
 		else:
-			# All '/'
-			if '/' not in fq_port:
-				raise NotImplementedError("Request to normalize non-interface port: " + fq_port)
-			iface, fq_port = fq_port.rsplit('/', 1)
+			raise NotImplementedError("Request to normalize non-interface port: " + fq_port)
 		iface = interface_tree[iface]
 		for port in iface:
 			if port.split('.')[-1] == fq_port:
+				log.debug("normalize: %s -> %s", fq_port, port)
 				return port
 		log.error("Unknown port: %s", fq_port)
 		log.error("Interface expects ports: %s", list(iface))
@@ -463,6 +493,7 @@ def process_accessor(
 		root,         # Just the bas '/webquery'
 		filename,     # Just the name 'Bitcoin'
 		path,         # The full path '/webquery/Bitcoin.js'
+		obj_hash,     # A unique hash for this accessor (git commit or contents)
 		contents,     # The file contents
 		on_disk_path, # This really needs more refacotoring; wow
 		):
@@ -483,80 +514,42 @@ def process_accessor(
 	# Strip .js from path
 	view_path = path[0:-3]
 
-	log.info('Adding accessor {}'.format(view_path))
+	log.info('Beginning to process new accessor {}'.format(view_path))
 
 	try:
 		name = None
 		author = None
 		email = None
-		website = None
 		description = None
 
 		warnings = collections.deque()
 		errors = collections.deque()
 
-		# Parse the accessor source to pull out information in the
-		# comments (name, author, email, website, description)
-		line_no = 0
-		in_comment = False
-		for line in contents.split('\n'):
-			line = line.strip()
-			line_no += 1
-			if len(line) is 0:
-				continue
+		try:
+			jsdoc = pyjsdoc.FileDoc(path, contents).to_dict()[0]
+		except IndexError:
+			parse_error("No valid jsdoc markup found", path)
+		if 'author' in jsdoc:
+			try:
+				m = re.search('(?P<author>.+) (?P<email>\<.+@.+\>)', jsdoc['author']).groupdict()
+				author = m['author']
+				email = m['email'][1:-1]
+			except (AttributeError, KeyError):
+				parse_error("@author must include email", path)
+		else:
+			parse_error("Missing required jsdoc key @author", path)
 
-			if not in_comment:
-				if line == '//':
-					if description is not None:
-						description += '\n'
-					continue
-				elif line[0:3] == '// ':
-					line = line[3:]
-				elif line[0:3] == '/* ':
-					line = '* ' + line[3:]
-					in_comment = True
-				else:
-					# log.debug("non-comment line: >>%s<<", line)
-					break
-			else:
-				if line == '*':
-					if description is not None:
-						description += '\n'
-					continue
-			if '*/' in line:
-				if line[-2:] != '*/':
-					parse_error("Comment terminator `*/` must end line",
-							path, line_no, line)
-				in_comment = False
-				continue
-			if in_comment:
-				if line[0:2] != '* ':
-					parse_error("Comment block lines must begin ' * '",
-							path, line_no, line)
-				line = line[2:]
+		if 'display-name' in jsdoc:
+			name = jsdoc['display-name']
 
-			if line.strip()[:8] == 'author: ':
-				author = line.strip()[8:].strip()
-			elif line.strip()[:7] == 'email: ':
-				email = line.strip()[7:].strip()
-			elif line.strip()[:9] == 'website: ':
-				website = line.strip()[9:].strip()
-			elif line.strip()[:6] == 'name: ':
-				name = line.strip()[6:].strip()
-			elif author and email and description is None:
-				if len(line.strip()) is 0:
-					continue
-				description = line + '\n'
-			elif description is not None:
-				description += line + '\n'
-			else:
-				# Comments above our stuff in the file
-				pass
+		if 'module' not in jsdoc:
+			parse_error("Must include @module in top jsdoc block", path)
 
-		if not author:
-			parse_error("Missing required key: author", path)
-		if not email:
-			parse_error("Missing required key: email", path)
+		description = jsdoc['doc']
+		# FIXME / HACK: pyjsdoc doesn't have native support for markdown. This
+		# isn't a big deal, but it will prepend an extra space to each line
+		# of the description blob, which causes problems down the line
+		description = description.replace('\n ', '\n')
 
 		meta = {
 				'name': name if name else filename,
@@ -570,8 +563,6 @@ def process_accessor(
 				}
 		# http://stackoverflow.com/q/3303312
 		meta['safe_name'] = re.sub('\W|^(?=\d)', '_', meta['name'])
-		if website:
-			meta['author']['website'] = website
 		if description:
 			meta['description'] = description
 
@@ -586,6 +577,7 @@ def process_accessor(
 			raise
 		raw_analyzed = analyzed.stdout.decode('utf-8')
 		analyzed = json.loads(raw_analyzed)
+		pprint.pprint(analyzed)
 
 		if 'parse_error' in analyzed:
 			errors.appendleft({
@@ -637,44 +629,78 @@ def process_accessor(
 		# maximize the number of errors we report per compilation
 		complete_interface = True
 
+
+		# Ports have a few different names, consider an accessor that implements
+		# the `/lighting/light` interface, which includes a `Power` port that
+		# the interface inherited from the `/onoff` interface:
+		#
+		#  * Canonical name:            /onoff.Power
+		#  * Fully-qualified name (fq): /lighting/light.Power
+		#  * Unqualified name:          Power
+		#
+		# For created ports, these three names will all be the same, but are
+		# included in mappings as a convenience. The FQ name is determined by
+		# the accessor's provideInterface call. The term "alias" refers to any
+		# of the names for the same port
+		#
+		# port_aliases_to_fq: {'any alias' -> 'FQ name'}
+		# port_fq_to_aliases: {'FQ name' -> ['canonical', 'FQ', 'unqualified']}
+		accessor['port_aliases_to_fq'] = {}
+		accessor['port_fq_to_aliases'] = {}
+
 		accessor['ports'] = copy.deepcopy(accessor['created_ports'])
 		for port in accessor['ports']:
+			# This should have been covered by validate.js
+			assert '.' not in port['name']
+			assert '/' not in port['name']
+
 			if 'type' not in port:
 				port['type'] = 'string'
 			if 'display_name' not in port:
-				port['display_name'] = port['name'].split('.')[-1]
-			if len(port['directions']) == 0:
-				errors.appendleft({
-					'title': "Created port {} implements no directions".format(port['name']),
-					'extra': [
-						"All ports must define at least one of [input, output, observe]",
-						"e.g., {}.output = function() {{ return 'current_value'; }}".format(port['name']),
-					]})
-				complete_interface = False
+				port['display_name'] = port['name']
+			if 'aliases' not in port:
+				port['aliases'] = []
 
-		inferred_iface_ports = {}
-		inferred_iface_ports_to_delete = []
+			accessor['port_aliases_to_fq'][port['name']] = port['name']
+			accessor['port_fq_to_aliases'][port['name']] = set([port['name'],])
+
+		# For all provided interfaces, creates a map 'Beta' -> '/alpha.Beta'
+		# Ambiguous entries, that is /alpha and /gamma both have Beta port, are
+		# removed from the unqualified list and added to the conflicts list
+		#
+		# This uses only information gleaned from provideInterface calls
+		unqualified_iface_ports = bidict.bidict()
+		unqualified_iface_port_conflicts = []
 		for claim in accessor['implements']:
 			iface = interface_tree[claim['interface']]
 			for port in iface:
-				name = port.split('.')[-1]
-				if name in inferred_iface_ports:
-					inferred_iface_ports_to_delete.append(name)
+				unqualified = port.split('.')[-1]
+				if unqualified in unqualified_iface_ports:
+					unqualified_iface_port_conflicts.append(unqualified)
 				else:
-					inferred_iface_ports[name] = port
-		for name in inferred_iface_ports_to_delete:
-			# Delete ambiguous entries
-			del inferred_iface_ports[name]
+					unqualified_iface_ports[unqualified] = port
+		for unqualified in unqualified_iface_port_conflicts:
+			del unqualified_iface_ports[unqualified]
 
-		accessor['normalized_interface_ports'] = []
-		name_map = {}
-		for port in accessor['interface_ports']:
+
+		# Process the interface ports to validate their usage. These are ports
+		# that used in port constructs (addInputHandler et al) that were not
+		# created by createPort; that's less true actually, the sends_to hack
+		# mixes in some stuff from createPort
+
+		fixme_eventually = []
+		for s in sends_to:
+			fixme_eventually.append({
+				'directions': ['output'],
+				'name': s,
+				})
+		for port in accessor['interface_ports'] + fixme_eventually:
 			if '.' not in port['name']:
 				# Port is an unqualified name
-				if port['name'] in inferred_iface_ports:
-					norm = inferred_iface_ports[port['name']]
+				if port['name'] in unqualified_iface_ports:
+					norm = unqualified_iface_ports[port['name']]
 				else:
-					if port['name'] in inferred_iface_ports_to_delete:
+					if port['name'] in unqualified_iface_port_conflicts:
 						errors.appendleft({
 							'title': "Unqualified ambiguous port",
 							'extra': [
@@ -683,13 +709,17 @@ def process_accessor(
 							]})
 						raise NotImplementedError
 					else:
-						warnings.appendleft({
-							'title': 'Undeclared port implementation',
-							'extra': [
-								"The port named " + port['name'] + " does not belong to any implemented interface or created port.",
-								"It is ignored."]
-							})
-						norm = ''
+						for c in accessor['created_ports']:
+							if c['name'] == port['name']:
+								break
+						else:
+							warnings.appendleft({
+								'title': 'Undeclared port implementation',
+								'extra': [
+									"The port named " + port['name'] + " does not belong to any implemented interface or created port.",
+									"It is ignored."]
+								})
+						norm = port['name']
 			else:
 				# Port is a fully qualified name
 				try:
@@ -699,22 +729,15 @@ def process_accessor(
 						'title': "The port named " + port['name'] + " does not match any known interface",
 						})
 					raise NotImplementedError
-
-			if norm in accessor['normalized_interface_ports']:
-				errors.appendleft({
-					'title': 'Duplicate port conflict',
-					'extra': [
-						'Found trying to insert ' + port['name'],
-						'But had previously inserted ' + norm
-					]})
-				raise NotImplementedError
-			accessor['normalized_interface_ports'].append(norm)
-			name_map[norm] = port
+			accessor['port_aliases_to_fq'][port['name']] = norm
+			if norm not in accessor['port_fq_to_aliases']:
+				accessor['port_fq_to_aliases'][norm] = set()
+			accessor['port_fq_to_aliases'][norm].add(port['name'])
 
 		for claim in accessor['implements']:
 			iface = interface_tree[claim['interface']]
 			for req in iface:
-				if req not in accessor['normalized_interface_ports']:
+				if req not in accessor['port_fq_to_aliases']:
 					errors.appendleft({
 						'title': 'Incomplete interface implementation -- missing port',
 						'extra': [
@@ -725,30 +748,119 @@ def process_accessor(
 							"But %s from %s only implements %s" % (
 								accessor['name'],
 								accessor['_path'],
-								accessor['normalized_interface_ports'],
+								accessor['port_aliases_to_fq'],
 								)
 							]
 						})
 					complete_interface = False
-				for direction in iface[req]['directions']:
-					if direction not in name_map[req]['directions']:
+				#for direction in iface[req]['directions']:
+				#	if direction not in name_map[req]['directions']:
+				#		warnings.appendleft({
+				#			'title': 'Incomplete interface implementation -- missing port direction',
+				#			'extra': [
+				#				"Interface %s port %s requires %s" % (
+				#					iface,
+				#					req,
+				#					iface[req]['directions'],
+				#					),
+				#				"But %s from %s only implements %s" % (
+				#					accessor['name'],
+				#					accessor['_path'],
+				#					name_map[req]['directions'],
+				#					)
+				#				]
+				#			})
+				accessor['ports'].append(iface.get_port_detail(
+					req,
+					accessor['port_fq_to_aliases'][req]
+					))
+
+		for norm in accessor['port_fq_to_aliases']:
+			accessor['port_fq_to_aliases'][norm] = list(accessor['port_fq_to_aliases'][norm])
+
+
+		# Generate some convenience mappings for downstream as well:
+		#
+		# 'port_to_bundle' {port_str -> bundle_str}
+		# 'bundle_to_ports' {bundle_str -> [port_str, port_str, ...] }
+
+		accessor['port_to_bundle'] = {}
+		accessor['bundle_to_ports'] = {}
+
+		# Process port bundles
+		for bundle in accessor['created_bundles']:
+			# Bundles are gaurenteed to have at least one port by validate.js
+			bundle_attrs = None
+			bundle_dir = None
+
+			accessor['bundle_to_ports'][bundle['name']] = []
+
+			for port in bundle['contains']:
+				for p in accessor['ports']:
+					if port == p['name']:
+						port = p
+						break
+					if port in p['aliases']:
+						port = p
+						break
+				else:
+					errors.appendleft({
+						'loc': bundle['loc'],
+						'title': 'Attempt to bundle a port that is not in this accessor',
+						'extra': [
+							bundle['name'] + ' includes the port "'+port+'", which is not a known port',
+							'The known ports are ' + ', '.join(map(lambda x: x['name'], accessor['ports'])),
+							],
+						})
+					complete_interface = False
+					break
+
+				if bundle_attrs is None:
+					bundle_attrs = list(port['attributes'])
+					bundle_dir = list(port['directions'])
+				else:
+					if bundle_attrs != port['attributes']:
 						errors.appendleft({
-							'title': 'Incomplete interface implemetnation -- missing port direction',
+							'loc': bundle['loc'],
+							'title': 'All bundled ports (currently) must have the same attributes',
 							'extra': [
-								"Interface %s port %s requires %s" % (
-									iface,
-									req,
-									iface[req]['directions'],
-									),
-								"But %s from %s only implements %s" % (
-									accessor['name'],
-									accessor['_path'],
-									name_map[req]['directions'],
-									)
-								]
+								'"'+port['name']+'" has attributes '+str(port['attributes'])+', but previous ports had attributes '+str(bundle_attrs),
+								],
 							})
 						complete_interface = False
-				accessor['ports'].append(iface.get_port_detail(req, name_map[req]['name']))
+						break
+
+				if 'in_bundle' in port:
+					errors.appendleft({
+						'loc': bundle['loc'],
+						'title': 'Attempt to bundle a port into multiple bundles',
+						'extra': [
+							'Tried to add the "'+port['name']+'" port to the bundle "'+bundle['name']+'", but it is already in the bundle "'+port['in_bundle']+'".',
+							],
+						})
+					complete_interface = False
+					break
+
+				port['in_bundle'] = bundle['name']
+				accessor['port_to_bundle'][port['name']] = bundle['name']
+				accessor['bundle_to_ports'][bundle['name']].append(port['name'])
+			else:
+				bundle_port = {
+						'name': bundle['name'],
+						'display_name': bundle['name'],
+						'attributes': bundle_attrs,
+						'directions': bundle_dir,
+						'type': 'bundle',
+						'aliases': [],
+						'bundles_ports': bundle['contains'],
+						}
+
+				accessor['ports'].append(bundle_port)
+				accessor['port_aliases_to_fq'][bundle_port['name']] = bundle_port['name']
+				if bundle_port['name'] not in accessor['port_fq_to_aliases']:
+					accessor['port_fq_to_aliases'][bundle_port['name']] = []
+				if bundle_port['name'] not in accessor['port_fq_to_aliases'][bundle_port['name']]:
+					accessor['port_fq_to_aliases'][bundle_port['name']].append(bundle_port['name'])
 
 		# Run the other accessor checker concept
 		#err = validate_accessor.check(accessor)
@@ -769,26 +881,6 @@ def process_accessor(
 		if 'dependencies' not in accessor:
 			accessor['dependencies'] = []
 
-		# Validate that things that are sent to with `send` are observe ports
-		for port in sends_to:
-			impl = None
-			for p in accessor['ports']:
-				if p['name'] == port:
-					impl = p
-					break
-			else:
-				errors.appendleft({
-					'title': "Attempt to send to '{}', but that is not a created port or a port in a provided interface".format(port),
-					})
-				complete_interface = False
-				continue
-			if 'observe' not in p['directions']:
-				# Perhaps this should instead implicitly make this an observable
-				# port, perhaps that's too much magic.
-				warnings.appendleft({
-					'title': "Send to '{}' sends to a port that is not declared as an observable port".format(port)
-					})
-
 		if 'code' in accessor:
 			accessor['code_alternates'] = {}
 			for language,v in accessor['code'].items():
@@ -808,21 +900,27 @@ def process_accessor(
 			# defer raising this so that all of the missing bits are reported
 			raise NotImplementedError
 
+		if len(accessor['ports']) == len(accessor['parameters']) == 0:
+			warnings.appendleft({
+				'title': 'Accessor has no ports and no parameters',
+				})
+
 		assert len(errors) == 0
 
 		# Only try if no warnings, make too many assumptions o/w
 		berkeley = None
-		if len(warnings) == 0:
-			try:
-				berkeley = mich_to_berk.convert(accessor)
-			except NotImplementedError:
-				pass
-			except Exception:
-				log.error("Uncaught exception from mich_to_berk")
-				raise Exception
+		# if len(warnings) == 0:
+		# 	try:
+		# 		berkeley = mich_to_berk.convert(accessor)
+		# 	except NotImplementedError:
+		# 		pass
+		# 	except Exception:
+		# 		log.error("Uncaught exception from mich_to_berk")
+		# 		raise Exception
 
 		# Save accessor in in-memory DB
 		db.insert(name=meta['name'],
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -833,9 +931,10 @@ def process_accessor(
 							)
 
 		# Save a copy of the reverse mapping as well
-		for iface in accessor['implements']:
-			interface = interface_tree[iface['interface']]
-			interface.register_accessor(view_path)
+		if db == accessors_db:
+			for iface in accessor['implements']:
+				interface = interface_tree[iface['interface']]
+				interface.register_accessor(view_path)
 
 		log.debug('Adding complete accessor {}'.format(view_path))
 	except ParseError as e:
@@ -848,6 +947,7 @@ def process_accessor(
 		# meta object doesn't exist if this exception thrown
 		# accessor object doesn't exist if this exception thrown
 		db.insert(name=name if name else filename,
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -863,6 +963,7 @@ def process_accessor(
 			})
 		# accessor object doesn't exist if this exception thrown
 		db.insert(name=meta['name'],
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -877,6 +978,7 @@ def process_accessor(
 		# meta object doesn't exist if this exception thrown
 		# accessor object doesn't exist if this exception thrown
 		db.insert(name=name if name else filename,
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -889,6 +991,7 @@ def process_accessor(
 		# accessor object exists in incomplete state if this
 		# exception is thrown
 		db.insert(name=meta['name'],
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -903,6 +1006,7 @@ def process_accessor(
 			})
 		# accessor object doesn't exist if this exception thrown
 		db.insert(name=meta['name'],
+							hash=obj_hash,
 							compilation_timestamp=arrow.utcnow(),
 							group=root,
 							path=view_path,
@@ -946,29 +1050,32 @@ def find_accessors (accessor_path):
 				view_path = path[0:-3]
 
 				# Check to see if we have already parsed this accessor
+				commit_hash = git('log', '-n1', '--pretty="format:%H"', '.'+path)
+				existing_accessor = first(db('path') == view_path)
+				if existing_accessor:
+					if existing_accessor['hash'] == commit_hash:
+						log.info('Already parsed {}, skipping'.format(path))
+						continue
+					else:
+						log.info('Got new version of {}'.format(path))
+						for iface in existing_accessor['accessor']['implements']:
+							interface = interface_tree[iface['implements']]
+							interface.unregister_accessor(existing_accessor['path'])
+						db.delete(existing_accessor)
+
 				contents = ''
 				with open("." + path) as f:
 					contents = f.read()
 
-					existing_accessor = first((db('path') == view_path) &
-											  (db('jscontents') == contents))
-					if existing_accessor:
-						log.info('Already parsed {}, skipping'.format(path))
-						continue
-
-					old_accessor = first(db('path') == view_path)
-					if old_accessor:
-						log.info('Got new version of {}'.format(path))
-						for iface in old_accessor['accessor']['implements']:
-							interface = interface_tree[iface['implements']]
-							interface.unregister_accessor(old_accessor['path'])
-						db.delete(old_accessor)
-					else:
-						log.debug("NEW ACCESSOR: %s", path)
-
-
-
-				process_accessor(db, root, filename, path, contents, '.'+path)
+				process_accessor(
+						db,
+						root,
+						filename,
+						path,
+						commit_hash,
+						contents,
+						'.'+path
+						)
 
 
 
@@ -993,7 +1100,10 @@ class ServeAccessorList (tornado.web.RequestHandler):
 		print(accessor_list)
 
 		self.set_content_type()
-		self.write(json.dumps(accessor_list))
+		try:
+			self.write(json.dumps(accessor_list, sort_keys=True))
+		except TypeError:
+			self.write(json.dumps(accessor_list))
 
 
 ################################################################################
@@ -1099,11 +1209,20 @@ node_runtime_example = string.Template(
 
 var accessors = require('accessors.io');
 $parameters
-accessors.create_accessor('$path_and_name', $parameters_arg, function ($instance) {
+accessors.create_accessor('$path_and_name', $parameters_arg, function (err, $instance) {
+    if (err) {
+        console.log('Error when creating $path_and_name accessor.');
+        console.log(err);
+        return;
+    }
 
-$ports}, function (err) {
-    console.log('Error when creating $path_and_name accessor.');
-    console.log(err);
+    $instance.init(function (err) {
+        if (err) {
+            console.log('Error when initing the accessor: ' + err);
+            return;
+        }
+
+$ports    });
 });''')
 
 node_runtime_example_parameters = string.Template(
@@ -1116,33 +1235,58 @@ node_runtime_example_parameters_entries = string.Template('''    $name: '',
 ''')
 
 node_runtime_example_ports_input = string.Template(
-'''    $instance.$port_function.input(value, function () {
-        // Setting the port completed successfully.
-    }, function (err) {
-        console.log('Setting port $port_name failed.');
-    });
+'''        $instance.write('$port_name', value, function (err) {
+            // Setting the port completed successfully.
+        });
 
 ''')
 
 node_runtime_example_ports_output = string.Template(
-'''    $instance.$port_function.output(function (value) {
-        console.log('Read $port_name and got: ' + value);
-    }, function (err) {
-        console.log('Reading port $port_name failed.');
-    });
+'''        $instance.read('$port_name', function (err, value) {
+            console.log('Read $port_name and got: ' + value);
+        });
 
 ''')
 
 node_runtime_example_ports_observe = string.Template(
-'''    $instance.$port_function.observe(function (data) {
-        console.log('Callback with ' + data);
-    }, function () {
-        console.log('Observe port "$port_name" setup successfully');
-    }, function (err) {
-        console.log('Reading port $port_name failed.');
-    });
+'''        $instance.on('$port_name', function (data) {
+            console.log('Callback with ' + data);
+        };
 
 ''')
+
+def _node_runtime_example_bundle_port(tmpl, instance, port):
+	val_tmpl = string.Template('''$name: value, ''');
+	vals = ''
+	for p in port['bundles_ports']:
+		vals += val_tmpl.substitute(name=p)
+	vals = vals[:-2] # remove last ', '
+	return tmpl.substitute(
+			instance=instance,
+			port_name=port['name'],
+			values=vals,
+			)
+
+def node_runtime_example_bundle_port(instance, port):
+	s = ''
+	if 'input' in port['directions']:
+		tmpl = string.Template('''\
+        $instance.write('$port_name', {$values}, function (err) {
+            // Setting the port bundle completed successfully.
+        });
+
+''')
+		s += _node_runtime_example_bundle_port(tmpl, instance, port)
+	if 'output' in port['directions']:
+		tmpl = string.Template('''\
+        $instance.read('$port_name', function (err, value) {
+			console.log("Read port bundle $port_name and got: ' + value);
+			// value is an object that looks like {$values}
+        });
+
+''')
+		s += _node_runtime_example_bundle_port(tmpl, instance, port)
+	return s
 
 
 ###
@@ -1193,6 +1337,35 @@ python_runtime_example_ports_observe = string.Template(
 \t\tprint("Observation from $instance.$port_function: {}".format(observation))
 \t\t)
 ''')
+
+def _python_runtime_example_bundle_port(tmpl, instance, port):
+	val_tmpl = string.Template('''"$name": value, ''');
+	vals = ''
+	for p in port['bundles_ports']:
+		vals += val_tmpl.substitute(name=p)
+	vals = vals[:-2] # remove last ', '
+	return tmpl.substitute(
+			instance=instance,
+			port_function=port['name'],
+			values=vals,
+			)
+
+def python_runtime_example_bundle_port(instance, port):
+	s = ''
+	if 'input' in port['directions']:
+		tmpl = string.Template('''\
+print("Set multiple ports at once using $instance.$port_function:")
+$instance.$port_function = {$values}
+''')
+		s += _python_runtime_example_bundle_port(tmpl, instance, port)
+	if 'output' in port['directions']:
+		tmpl = string.Template('''\
+print("Read multiple ports by reading $instance.$port_function:")
+values = $instance.$port_function
+# values is dictionary: {$values}
+''')
+		s += _python_runtime_example_bundle_port(tmpl, instance, port)
+	return s
 
 # Main index
 class handler_index (JinjaBaseHandler):
@@ -1251,27 +1424,28 @@ class handler_accessor_page (JinjaBaseHandler):
 		node_ex_ports = ''
 		python_ex_ports = ''
 		for port in record['accessor']['ports']:
-			if 'input' in port['directions']:
-				node_ex_ports += node_runtime_example_ports_input.substitute(port_function=port['function'],
-		                                                                     instance=record['accessor']['safe_name'],
-				                                                             port_name=port['name'])
-				python_ex_ports += python_runtime_example_ports_input.substitute(port_function=port['function'],
-				                                                                 instance=record['accessor']['safe_name'],
-				                                                                 port_name=port['name'])
-			if 'output' in port['directions']:
-				node_ex_ports += node_runtime_example_ports_output.substitute(port_function=port['function'],
-		                                                                      instance=record['accessor']['safe_name'],
-				                                                              port_name=port['name'])
-				python_ex_ports += python_runtime_example_ports_output.substitute(port_function=port['function'],
-				                                                                  instance=record['accessor']['safe_name'],
-				                                                                  port_name=port['name'])
-			if 'observe' in port['directions']:
-				node_ex_ports += node_runtime_example_ports_observe.substitute(port_function=port['function'],
-		                                                                      instance=record['accessor']['safe_name'],
-				                                                              port_name=port['name'])
-				python_ex_ports += python_runtime_example_ports_observe.substitute(port_function=port['function'],
-				                                                                   instance=record['accessor']['safe_name'],
-				                                                                   port_name=port['name'])
+			if 'bundles_ports' in port:
+				node_ex_ports += node_runtime_example_bundle_port(record['accessor']['safe_name'], port)
+				python_ex_ports += python_runtime_example_bundle_port(record['accessor']['safe_name'], port)
+			else:
+				if 'input' in port['directions']:
+					node_ex_ports += node_runtime_example_ports_input.substitute(instance=record['accessor']['safe_name'],
+																				 port_name=port['name'])
+					python_ex_ports += python_runtime_example_ports_input.substitute(port_function=port['name'],
+																					 instance=record['accessor']['safe_name'],
+																					 port_name=port['name'])
+				if 'output' in port['directions']:
+					node_ex_ports += node_runtime_example_ports_output.substitute(instance=record['accessor']['safe_name'],
+																				  port_name=port['name'])
+					python_ex_ports += python_runtime_example_ports_output.substitute(port_function=port['name'],
+																					  instance=record['accessor']['safe_name'],
+																					  port_name=port['name'])
+				if 'event' in port['attributes']:
+					node_ex_ports += node_runtime_example_ports_observe.substitute(instance=record['accessor']['safe_name'],
+																				   port_name=port['name'])
+					python_ex_ports += python_runtime_example_ports_observe.substitute(port_function=port['name'],
+																					   instance=record['accessor']['safe_name'],
+																					   port_name=port['name'])
 
 			python_ex_ports += '\n'
 
@@ -1375,26 +1549,32 @@ class handler_accessor_example (handler_accessor_page):
 
 ### Templates for example code for implementing a given interface
 tmpl_accessor_interface = string.Template(
-'''// name: 
-// author: 
-// email: 
-//
-// <accessor title>
-// ================
-//
-// <accessor description>
-//
+'''/**
+ * <accessor title>
+ * ================
+ *
+ * <accessor description>
+ *
+ * @module
+ * @author name <email>
+ */
 
-function* init () {
-    provide_interface('$interface_name');
+function setup () {
+    provideInterface('$interface_name');
+}
+
+function* init() {$port_inits
+    // Use the fully qualified interface port if disambiguation is necessary.
+    // '$port_disambig_short' is an alias to '$port_disambig'
 }
 $port_functions''')
 
-tmpl_accessor_interface_port = string.Template(
-'''
-$port_name.$port_direction = function* ($port_argument) {
-    $return_stmt
-}
+tmpl_accessor_interface_port_init = string.Template('''
+    add${direction}Handler('$port', ${port}$direction);''')
+tmpl_accessor_interface_port_impl = string.Template('''
+var ${port}${direction} = function* ($argument) {
+    // $help
+$return_stmt}
 ''')
 
 # Page that describes an interface
@@ -1403,36 +1583,58 @@ class handler_interface_page (JinjaBaseHandler):
 		path = '/'+path
 		interface = interface_tree[path]
 
+		port_init = ''
+		port_impl = ''
+		last_name = None
+
 		def example_port (name, props):
-			out = ''
-			for direction,arg,ret in [('input','val',''),
-			                          ('output','','return val;'),
-			                          ('observe','','send(\'/$port_name_sl\', val)')]:
-				if direction in props['directions']:
-					template_str = tmpl_accessor_interface_port
-					for i in range(0,2):
-						template_str = string.Template(template_str.substitute(
-							port_name=name,
-							port_direction=direction,
-							port_argument=arg,
-							return_stmt=ret,
-							port_name_sl=name.split('.')[1]))
-					out += template_str.substitute()
-			return out
+			nonlocal port_init
+			nonlocal port_impl
+			nonlocal last_name
+			last_name = name
+			name = name.split('.')[-1]
+			if 'read' in props['attributes']:
+				port_init += tmpl_accessor_interface_port_init.substitute(
+						direction='Read',
+						port=name,
+						)
+				port_impl += tmpl_accessor_interface_port_impl.substitute(
+						direction='Read',
+						port=name,
+						argument='',
+						help='Implement here what happens when the ' + name + ' port is read.',
+						return_stmt="""    send('"""+name+"""', val);
+""",
+						)
+			if 'write' in props['attributes']:
+				port_init += tmpl_accessor_interface_port_init.substitute(
+						direction='Write',
+						port=name,
+						return_stmt=''
+						)
+				port_impl += tmpl_accessor_interface_port_impl.substitute(
+						direction='Write',
+						port=name,
+						argument='val',
+						help='Implement the logic for handing incoming data to the ' + name + ' port.',
+						return_stmt='',
+						)
 
 		def recurse_interfaces (interface):
-			out = ''
 			for port_name,port_props in interface.ports.items():
-				out += example_port(port_name, port_props)
+				example_port(port_name, port_props)
 			for extent in interface.extends:
-				out += recurse_interfaces(extent)
-			return out
+				recurse_interfaces(extent)
 
-		port_strings = recurse_interfaces(interface)
+		recurse_interfaces(interface)
 
 		stub_code = tmpl_accessor_interface.substitute(
 			interface_name=interface.path,
-			port_functions=port_strings)
+			port_inits=port_init,
+			port_disambig_short=last_name.split('.')[-1],
+			port_disambig=last_name,
+			port_functions=port_impl,
+			)
 
 		data = {
 				'interface': interface,
@@ -1512,6 +1714,7 @@ class handler_dev (tornado.web.RequestHandler):
 			'/'+name,
 			name,
 			'/'+name+'.js',
+			hashlib.md5(contents.encode('utf-8')).hexdigest(),
 			contents,
 			path,
 			)
@@ -1592,7 +1795,10 @@ class handler_ptolemy_index (tornado.web.RequestHandler):
 			if 'berkeleyJS' in record and record['berkeleyJS']:
 				index.append(record['accessor']['_path'])
 
-		self.write(json.dumps(index))
+		try:
+			self.write(json.dumps(index, sort_keys=True))
+		except TypeError:
+			self.write(json.dumps(index))
 
 class handler_ptolemy_js (tornado.web.RequestHandler):
 	def get(self, path):
@@ -1621,11 +1827,18 @@ parser = argparse.ArgumentParser(description=DESC)
 parser.add_argument('-n', '--disable-git',
                     action='store_true',
                     help='Do not pull new accessors from git repository.')
+parser.add_argument('--disable-periodic',
+                    action='store_true',
+                    help='Do not periodically pull new files.')
 parser.add_argument('-u', '--repo-url',
                     default=ACCESSOR_REPO_URL,
                     help='Git URL of the repository to get accessors and interfaces from.')
 parser.add_argument('-t', '--tests', action='store_true',
                     help='Include test accessors')
+parser.add_argument('-p', '--port',
+                    default=6565,
+                    type=int,
+                    help='Port the server should run on')
 args = parser.parse_args()
 
 # Make sure we have accessor files
@@ -1697,12 +1910,12 @@ accessor_server = tornado.web.Application(
 	template_path='jinja/',
 	debug=True
 	)
-accessor_server.listen(ACCESSOR_SERVER_PORT)
+accessor_server.listen(args.port)
 
-log.info('Starting accessor server on port {}'.format(ACCESSOR_SERVER_PORT))
+log.info('Starting accessor server on port {}'.format(args.port))
 
 # Periodically fetch new files from github
-if not args.disable_git:
+if (not args.disable_git) and (not args.disable_periodic):
 	def pull_git_periodic ():
 		log.info('Pulling git repo')
 		with pushd(accessor_files_path):

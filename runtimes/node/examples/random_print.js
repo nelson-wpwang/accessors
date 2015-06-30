@@ -4,27 +4,24 @@ var accessors = require('../accessors');
 
 console.log('Getting random numbers and printing them in color.');
 
-function accessor_create_error (err) {
-	console.log('Error loading accessor.');
-	console.log(error);
-}
 
-accessors.create_accessor('/webquery/Random', {}, function (acc_rand) {
-	accessors.create_accessor('/ui/PrintColor', {}, function (acc_pcolor) {
+accessors.create_accessor('/webquery/Random', {}, function (err, acc_rand) {
+	accessors.create_accessor('/ui/PrintColor', {}, function (err, acc_pcolor) {
 
-		function next () {
-			acc_rand.RandomInteger.output(function (random_val) {
-				var hex_string = random_val.toString(16).substring(0, 6);
-				acc_pcolor.Color.input(hex_string, function () {
-					acc_pcolor.Text.input(random_val);
-				});
+		acc_rand.init(function (err) {
+			acc_pcolor.init(function (err) {
+				function next () {
+					acc_rand.read('RandomInteger', function (err, random_val) {
+						var hex_string = random_val.toString(16).substring(0, 6);
+						acc_pcolor.write('Color', hex_string, function (err) {
+							acc_pcolor.write('Text', random_val);
+						});
+					});
+				}
+
+				setInterval(next, 1000);
+				next();
 			});
-
-			setTimeout(next, 1000);
-		}
-
-		next();
-
-	}, accessor_create_error);
-
-}, accessor_create_error);
+		});
+	});
+});

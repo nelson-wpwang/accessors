@@ -2,11 +2,30 @@
 
 var accessors = require('../accessors');
 
-accessors.create_accessor('/webquery/Bitcoin', {}, function (accessor) {
-	accessor.Price.output(function (price) {
-		console.log('Current Bitcoin Price: $' + price);
+accessors.create_accessor('/webquery/Bitcoin', {}, function (err, accessor) {
+	if (err) {
+		console.log('Error loading accessor.');
+		console.log(err);
+		return;
+	}
 
-		accessor.Transactions.observe(function (transaction) {
+	accessor.init(function(err) {
+		if (err) {
+			console.log('Could not init accessor.');
+			console.log(err);
+			return;
+		}
+
+		accessor.read('Price', function (err, price) {
+			if (err) {
+				console.log('Some issue contacting the BTC server.');
+				return;
+			}
+
+			console.log('Current Bitcoin Price: $' + price);
+		});
+
+		accessor.on('Transactions', function (err, transaction) {
 			console.log('=== Bitcoin Transaction ===');
 			for (var i=0; i<transaction.x.inputs.length; i++) {
 				var input = transaction.x.inputs[i];
@@ -23,13 +42,7 @@ accessors.create_accessor('/webquery/Bitcoin', {}, function (accessor) {
 			}
 
 			console.log('');
-		}, function () {}, function (err) {
-			console.log(err);
 		});
+
 	});
-},
-// Handle any errors that may occur when creating the accessor.
-function (error) {
-	console.log('Error loading accessor.');
-	console.log(error);
 });

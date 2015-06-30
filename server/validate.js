@@ -19,6 +19,37 @@ try {
   process.exit(1);
 }
 
+/******************************************************************************/
+/*
+ * Extract out some definition so if they change they can be more easily
+ * updated.
+ *
+ */
+
+var FUNC_LOAD_DEP = 'require';
+var FUNC_NEW_PORT = 'createPort';
+var FUNC_NEW_PORT_BUNDLE = 'createPortBundle';
+var FUNC_USE_INTERFACE = 'provideInterface';
+var FUNC_GET_PARAMETER = 'getParameter';
+var FUNC_MAP_READ_FUNC = 'addInputHandler';
+var FUNC_MAP_WRITE_FUNC = 'addOutputHandler';
+
+var LEGACY_FUNCTIONS = ['create_port', 'provide_interface', 'get_parameter'];
+
+var PORT_ATTR_WRITE = 'write';
+var PORT_ATTR_READ = 'read';
+var PORT_ATTR_EVENT = 'event';
+var PORT_ATTR_EVENT_PERIODIC = 'eventPeriodic';
+var PORT_ATTR_EVENT_CHANGE = 'eventChange';
+
+var legal_port_regex = /^[A-Za-z]\w*$/;
+
+ /*****************************************************************************/
+
+
+
+
+
 // http://stackoverflow.com/q/3885817
 function isFloat(n) {
   return n === +n && n !== (n|0);
@@ -62,32 +93,56 @@ function getRootMemberExpression(mnode) {
   return mnode;
 }
 
+
+function checkArgCount(node, name, count) {
+  for (var i=0; i < count; i++) {
+    if (node.arguments[i] === undefined) {
+      errors.push({
+        loc: node.loc,
+        title: "Insuffient number of arguments for " + name,
+        extra: [name + " requires at least " + count + " argument" + (count == 1 ? '':'s') + ".",],
+      });
+      return -1;
+    }
+  }
+
+  if (node.arguments[count] !== undefined) {
+    warnings.push({
+      loc: node.arguments[count].loc,
+      title: name + " takes only " + count + " argument" + (count == 1 ? '':'s') + ". Extra arguments are ignored.",
+    });
+  }
+}
+
 var runtime_list = [];
 
 function checkForRuntime(node) {
-  // node is type 'CallExpression' with 'callee' and 'arguments'
-  //print_tree_from_node(node);
-
-  // Note: This function only handles static MemberExpressions, that is, it
-  //       will miss calls like `global['rt'].version();`. Then again, you
-  //       can't do that in an accessor anyway since the name of the global
-  //       object changes depending on the runtime anyway
-
-  var root;
-
-  //print_tree_from_node(node);
-
-  root = getRootMemberExpression(node.callee);
-  if (!root) {
-    return;
-  }
-
-  if (root.object.name === 'rt') {
-    if (root.property.type !== 'Identifier') {
-      throw "Root MemberExpression with non-Identifier property";
+  if (node.callee.name === FUNC_LOAD_DEP) {
+    if (node.arguments[0] === undefined) {
+      errors.push({
+        loc: node.loc,
+        title: FUNC_LOAD_DEP + " requires an argument",
+      });
+      return;
     }
-    if (!_.contains(runtime_list, root.property.name)) {
-      runtime_list.push(root.property.name);
+    if (node.arguments[1] !== undefined) {
+      errors.push({
+        loc: node.arguments[1].loc,
+        title: FUNC_LOAD_DEP + " takes only 1 argument. Extra arguments are ignored.",
+      });
+    }
+
+    if (node.arguments[0].type !== 'Literal') {
+      errors.push({
+        loc: node.arguments[0].loc,
+        title: "First argument to "+FUNC_LOAD_DEP+" must be a string literal",
+        extra: ["It is currently of type "+node.arguments[0].type],
+      });
+      return;
+    }
+
+    if (!_.contains(runtime_list, node.arguments[0].value)) {
+      runtime_list.push(node.arguments[0].value);
     }
   }
 }
@@ -125,11 +180,11 @@ var interface_list = [];
 function checkProvideInterface(node) {
   var iface = null;
 
-  if (node.callee.name === 'provide_interface') {
+  if (node.callee.name === FUNC_USE_INTERFACE) {
     if (node.arguments[0].type !== 'Literal') {
       errors.push({
         loc: node.loc,
-        title: "provide_interface() first argument must be a string literal",
+        title: FUNC_USE_INTERFACE + "() first argument must be a string literal",
       });
       return;
     }
@@ -147,13 +202,12 @@ function checkProvideInterface(node) {
 
     iface = {
       interface: node.arguments[0].value,
-      provides: []
     };
 
     if (node.arguments[1] !== undefined) {
       warnings.push({
         loc: node.loc,
-        title: "The provide_interface function takes only 1 argument, the rest are ignored",
+        title: "The " + FUNC_USE_INTERFACE + " function takes only 1 argument, the rest are ignored",
       });
     }
 
@@ -166,11 +220,11 @@ var parameter_list = [];
 function checkGetParameter(node) {
   var parameter = null;
 
-  if (node.callee.name === 'get_parameter') {
+  if (node.callee.name === FUNC_GET_PARAMETER) {
     if (node.arguments[0] === undefined) {
       errors.push({
         loc: node.loc,
-        title: "get_parameter requires at least 1 argument",
+        title: FUNC_GET_PARAMETER + " requires at least 1 argument",
       });
       return;
     }
@@ -213,7 +267,7 @@ function checkGetParameter(node) {
     if (node.arguments[2] !== undefined) {
       warnings.push({
         loc: node.loc,
-        title: "The get_parameter function takes up to 2 arguments, the rest are ignored",
+        title: "The "+ FUNC_GET_PARAMETER +" function takes up to 2 arguments, the rest are ignored",
       });
     }
   }
@@ -226,22 +280,25 @@ function checkSend(node) {
     if ((node.arguments[0] === undefined) || (node.arguments[1] === undefined)) {
       errors.push({
         loc: node.loc,
-        title: "get_parameter requires 2 arguments",
+        title: FUNC_GET_PARAMETER + " requires 2 arguments",
       });
       return;
     }
 
+    // TODO: Consider putting this back, but forcing it to be a string is
+    //       cramping my style
     if (node.arguments[0].type != 'Literal') {
-      errors.push({
-        loc: node.arguments[0].loc,
-        title: "First argument to send must be a string literal",
-        extra: ["It is currently of type "+node.arguments[0].type],
-      });
-      return;
-    }
+      // errors.push({
+      //   loc: node.arguments[0].loc,
+      //   title: "First argument to send must be a string literal",
+      //   extra: ["It is currently of type "+node.arguments[0].type],
+      // });
+      // return;
 
-    if (sends_to_list.indexOf(node.arguments[0].value) == -1) {
-      sends_to_list.push(node.arguments[0].value);
+    } else {
+      if (sends_to_list.indexOf(node.arguments[0].value) == -1) {
+        sends_to_list.push(node.arguments[0].value);
+      }
     }
 
     // TODO: Would be nice to validate the type of arguments[1], but it will
@@ -270,7 +327,7 @@ function checkNewPortParameters(port, pnode) {
       if (prop.type !== 'Property') {
         errors.push({
           loc: pnode.loc,
-          title: "Unxpected non-property in port parameters: " + prop,
+          title: "Unexpected non-property in port parameters: " + prop,
         });
         continue;
       }
@@ -363,6 +420,23 @@ function checkNewPortParameters(port, pnode) {
           });
           continue;
         }
+      } else if (prop.key.name === 'value') {
+        if (prop.value.type !== 'Literal') {
+          errors.push({
+            loc: prop.loc,
+            title: port.name + " value must be a static string",
+          });
+          continue;
+        }
+        if (port.value !== undefined) {
+          errors.push({
+            loc: prop.loc,
+            title: port.name + ": duplicate key value. This is the second definiton.",
+          });
+          continue;
+        }
+        port.value = prop.value.value;
+
       } else if (prop.key.name === 'units') {
         if (prop.value.type !== 'Literal') {
           errors.push({
@@ -517,18 +591,19 @@ function checkNewPortParameters(port, pnode) {
 }
 
 var created_port_list = [];
+var created_port_bundle_list = [];
 var interface_port_list = [];
 
 function checkNewPorts(node) {
-  if (node.callee.name === 'create_port') {
+  if (node.callee.name === FUNC_NEW_PORT) {
     var nameNode = node.arguments[0];
-    var parametersNode = node.arguments[1];
+    var attrNode = node.arguments[1];
+    var parametersNode = node.arguments[2];
 
-    var legal_port_regex = /^[A-Za-z]\w*$/;
     if (nameNode.type !== 'Literal') {
       errors.push({
         loc: node.loc,
-        title: "First argument to 'create_port' must be a fixed string",
+        title: "First argument to '" + FUNC_NEW_PORT + "'' must be a fixed string",
         extra: ["The current argument is of type "+nameNode.type],
       });
     }
@@ -542,15 +617,42 @@ function checkNewPorts(node) {
 
     var port = {
       name: nameNode.value,
-      function: nameNode.value,
-      directions: []
+      directions: [],
+      attributes: []
     };
+
+    // Set the directions based on the port attributes
+    for (var i=0; i<attrNode.elements.length; i++) {
+      var attr = attrNode.elements[i].value;
+      if (port.directions.indexOf('input') == -1) {
+        if (attr == PORT_ATTR_WRITE) {
+          port.directions.push('input');
+        }
+      }
+      if (port.directions.indexOf('output') == -1) {
+        if (attr == PORT_ATTR_READ ||
+            attr == PORT_ATTR_EVENT ||
+            attr == PORT_ATTR_EVENT_PERIODIC ||
+            attr == PORT_ATTR_EVENT_CHANGE) {
+          port.directions.push('output');
+        }
+      }
+      port.attributes.push(attr);
+    }
+
+    // Make sure that if this port creates any events, it also
+    // has the PORT_ATTR_EVENT attribute.
+    if (port.attributes.indexOf(PORT_ATTR_EVENT) == -1 &&
+        (port.attributes.indexOf(PORT_ATTR_EVENT_PERIODIC) > -1 ||
+         port.attributes.indexOf(PORT_ATTR_EVENT_CHANGE) > -1)) {
+      port.attributes.push(PORT_ATTR_EVENT);
+    }
 
     if (parametersNode !== undefined) {
       if (parametersNode.type !== 'ObjectExpression') {
         errors.push({
           loc: parametersNode.loc,
-          title: "Second argument to 'create_port' must be a dictionary of named parameters",
+          title: "Second argument to '" + FUNC_NEW_PORT + "' must be a dictionary of named parameters",
           extra: ["The current argument is of type "+parametersNode.type],
         });
       }
@@ -560,86 +662,169 @@ function checkNewPorts(node) {
       port.type = 'string';
     }
 
-    if (node.arguments[2] !== undefined) {
-      var warning = {
-        title: "The create_port function takes only 2 arguments, the rest are ignored",
-        loc: node.loc,
-      };
-      warnings.push(warning);
-    }
+    // if (node.arguments[2] !== undefined) {
+    //   var warning = {
+    //     title: "The '" + FUNC_NEW_PORT + "' function takes only 2 arguments, the rest are ignored",
+    //     loc: node.loc,
+    //   };
+    //   warnings.push(warning);
+    // }
 
     created_port_list.push(port);
   }
 }
 
-// Looking for <PortName>.<direction> = function* () {
+function checkNewPortBundles(node) {
+  if (node.callee.name === FUNC_NEW_PORT_BUNDLE) {
+    var nameNode = node.arguments[0];
+    var portsNode = node.arguments[1];
+    var bundleContents = [];
+
+    if (checkArgCount(node, FUNC_NEW_PORT_BUNDLE, 2)) return;
+
+    if (nameNode.type !== 'Literal') {
+      errors.push({
+        loc: node.loc,
+        title: "First argument to '" + FUNC_NEW_PORT_BUNDLE + "'' must be a fixed string",
+        extra: ["The current argument is of type "+nameNode.type],
+      });
+      return;
+    }
+    if (!legal_port_regex.test(nameNode.value)) {
+      errors.push({
+        loc: nameNode.loc,
+        title: "Bundle name " + nameNode.value + " is not a legal port name",
+        extra: ["Legal names must match "+legal_port_regex],
+      });
+      return;
+    }
+
+    if (portsNode.type !== 'ArrayExpression') {
+      errors.push({
+        loc: portsNode.loc,
+        title: "Port bundle must be a fixed array",
+        extra: [
+          "This is an artificial restriction of the type checker and could be lifted if really necessary",
+          "Currently, the bundle is of type " + portsNode.type,
+        ],
+      });
+      return;
+    }
+
+    if (portsNode.elements.length < 1) {
+      errors.push({
+        loc: portsNode.loc,
+        title: "Port bundle cannot be empty",
+      });
+      return;
+    }
+
+    for (var i=0; i<portsNode.elements.length; i++) {
+      var port = portsNode.elements[i];
+
+      if (port.type !== 'Literal') {
+        errors.push({
+          loc: port.loc,
+          title: "Bundle contents must be an array of static literals",
+          extra: [
+            "This is an artificial restriction of the type checker and could be lifted if really necessary",
+            "Currently, the type is " + portsNode.type,
+          ],
+        });
+        return;
+      }
+
+      bundleContents.push(port.value);
+    }
+
+
+    var bundle = {
+      name: nameNode.value,
+      loc: node.loc,
+      contains: bundleContents,
+    };
+
+    created_port_bundle_list.push(bundle);
+  }
+}
+
+// // Looking for <PortName>.<direction> = function* () {
+// function checkPortFunction(node) {
+//   if (node.operator == '=') {
+//     if (node.left.type == 'MemberExpression' && node.right.type == 'FunctionExpression') {
+
 function checkPortFunction(node) {
-  if (node.operator == '=') {
-    if (node.left.type == 'MemberExpression' && node.right.type == 'FunctionExpression') {
-      var direction = node.left.property.name;
-      var name_obj = node.left.object;
-      var portName = ''
-      while (name_obj.type == 'MemberExpression') {
-        if (portName.length) {
-          portName = name_obj.property.name + '.' + portName;
-        } else {
-          portName = name_obj.property.name;
+  var direction = null;
+  if (node.callee.name === FUNC_MAP_READ_FUNC) {
+    direction = 'input';
+  } else if (node.callee.name === FUNC_MAP_WRITE_FUNC) {
+    direction = 'output';
+  }
+  if (direction != null) {
+    if (node.arguments[0].type !== 'Literal') {
+      errors.push({
+        loc: node.loc,
+        title: "First argument to addXXXHandler must be a string literal",
+      });
+      return;
+    }
+    var portName = node.arguments[0].value;
+    var created = false;
+
+    // Check if this is a port we know about
+    for (var i=0; i<created_port_list.length; i++) {
+      if (created_port_list[i].name == portName) {
+
+        // Check that the direction is valid
+        if (created_port_list[i].directions.indexOf(direction) == -1) {
+          warnings.push({
+            loc: node.loc,
+            title: '"' + direction + '" is an invalid direction for port "' + portName + '"',
+            extra: ['Port attributes: ' + created_port_list[i].attributes],
+          })
+          continue;
         }
-        name_obj = name_obj.object;
+        created = true;
       }
-      if (portName.length) {
-        portName = name_obj.name + '.' + portName;
-      } else {
-        portName = name_obj.name;
+    };
+
+    // Ignore port bundles for now
+    for (var i=0; i<created_port_bundle_list.length; i++) {
+      if (created_port_bundle_list[i].name == portName) {
+        created = true;
       }
+    }
 
-
-      var created = false;
-
-      // Check if this is a port we know about
-      for (var i=0; i<created_port_list.length; i++) {
-        if (created_port_list[i].name == portName) {
-
-          // Check that the direction is valid
-          if (['input', 'output', 'observe'].indexOf(direction) == -1) {
-            warnings.push({
-              loc: node.loc,
-              title: '"' + direction + '" is an invalid direction for port "' + portName + '"',
-            })
-            continue;
-          }
-
-          created_port_list[i].directions.push(direction);
-          created = true;
+    if (!created) {
+      // Don't have a list a priori of interfaces, so learn as we go
+      var known_iface = false;
+      for (var i=0; i<interface_port_list.length; i++) {
+        if (interface_port_list[i].name == portName) {
+          interface_port_list[i].directions.push(direction);
+          known_iface = true;
         }
       };
 
-      if (!created) {
-        // Only interested in things that match <string>.<direction>
-        if (['input', 'output', 'observe'].indexOf(direction) == -1) {
-          return;
-        }
-
-        // Don't have a list a priori of interfaces, so learn as we go
-        var known_iface = false;
-        for (var i=0; i<interface_port_list.length; i++) {
-          if (interface_port_list[i].name == portName) {
-            interface_port_list[i].directions.push(direction);
-            known_iface = true;
-          }
+      if (!known_iface) {
+        var port = {
+          name: portName,
+          directions: []
         };
+        port.directions.push(direction);
 
-        if (!known_iface) {
-          var port = {
-            name: portName,
-            directions: []
-          };
-          port.directions.push(direction);
-
-          interface_port_list.push(port);
-        }
+        interface_port_list.push(port);
       }
     }
+  }
+}
+
+
+function checkLegacyCode(node) {
+  if (LEGACY_FUNCTIONS.indexOf(node.callee.name) != -1) {
+    warnings.push({
+      loc: node.loc,
+      title: "The '" + node.callee.name + "' function is deprecated. It is ignored.",
+    });
   }
 }
 
@@ -669,10 +854,12 @@ function on_read(err, data) {
       checkGetParameter(node);
       checkSend(node);
       checkNewPorts(node);
-
+      checkNewPortBundles(node);
+      checkLegacyCode(node);
+      checkPortFunction(node);
     } else if (node.type == 'AssignmentExpression') {
       // Looking for <PortName>.<direction> = function* ()
-      checkPortFunction(node);
+      // checkPortFunction(node);
     }
   });
 
@@ -696,6 +883,7 @@ function on_read(err, data) {
     parameters: parameter_list,
     sends_to: sends_to_list,
     created_ports: created_port_list,
+    created_bundles: created_port_bundle_list,
     interface_ports: interface_port_list
   };
 

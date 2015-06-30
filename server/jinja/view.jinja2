@@ -85,6 +85,16 @@ Accessor: {{ record.name }} | Accessor Library
               {% endif %}
             </h4>
             <p>{{ port.description }}</p>
+            {% if port.in_bundle %}
+            <p data-toggle="tooltip" data-placement="bottom" title="Bundles are groups of ports that are considered a logical group by the accessor. If you need to write multiple values in a bundle, use the bundle port as it will be more efficient.">
+            Bundled in {{ port.in_bundle }}.
+            </p>
+            {% endif %}
+            {% if port.bundles_ports %}
+            <p data-toggle="tooltip" data-placement="bottom" title="Bundles are groups of ports that are considered a logical group by the accessor. Use this bundle port to set multiple values at once. You do not need to set all values">
+            Bundles the {{ port.bundles_ports }} ports.
+            </p>
+            {% endif %}
           </div>
           <div class="col-sm-4 accessor-ports-list-config">
             <b>Directions</b>: &nbsp;{{ port.directions|join(', ') }}<br />
@@ -134,6 +144,20 @@ Accessor: {{ record.name }} | Accessor Library
 </ul>
 {% else %}
 <em>This accessor does not have any dependencies</em>
+{% endif %}
+
+
+<h2>Required Libraries</h2>
+{% if accessor.runtime_imports %}
+<ul class="list-group">
+  {% for imp in accessor.runtime_imports %}
+  <li class="list-group-item">
+    <h4>{{ imp }}</h4>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<em>This accessor does not need any libraries</em>
 {% endif %}
 
 

@@ -6,7 +6,7 @@ run in. The runtime is responsible for calling accessor methods, providing
 access to accessor parameters, and providing access to host resources (e.g. a
 reasonable `print` mechanism).
 
-**This document describes accessor runtime version 0.1, which is subject to
+**This document describes accessor runtime version 0.2, which is subject to
 change until its formal release.**
 
 __Table of Contents__
@@ -33,10 +33,11 @@ __Table of Contents__
 Accessor Lifecycle
 ------------------
 
-When an accessor is first loaded, its `init` method is called. No other
+In order to start an accessor, its `init` method must be called. No other
 accessor functions may be called until `init` has returned. If `init` fails
 for some reason, and the accessor will not be able to function, the function
-MUST `return false;`. Upon failure, the accessor is unloaded. The `wrapup`
+MUST `throw` an exception to signal the error.
+Upon failure, the accessor is unloaded. The `wrapup`
 function is *not* called if `init` fails.
 
 During runtime, any accessor function may be called at any time. Multiple
@@ -57,13 +58,22 @@ To simplify development, the accessor runtime provides some support for
 masking the highly asychronous nature of javascript. In particular, blocking
 operations such as network requests that normally require a callback are
 tranformed into non-blocking synchronous calls. The allows accessors to write
-much simpler code, such as:
+much simpler code, so instead of:
 
 ```javascript
-var s = yield* socket.socket('AF_INET6', 'SOCK_STREAM');
-yield* s.connect(('::1', 12345));
-s.send('Hello');
-var resp = yield* s.recv();
+http.get('url.com', function (response) {
+  http.post('url.com', response.body + 1, function (response2) {
+    ...other nested calls
+  });
+});
+```
+
+accessors can do:
+
+```javascript
+var response = yield* http.get('url.com');
+var response2 = yield* http.post('url.com', response.body + 1);
+...other calls...
 ```
 
 In practice, the only impact on the accessor writer is that the accessor must
@@ -128,20 +138,39 @@ The accessor runtime provides a library of functions for accessors.
 There are primarily I/O functions and serve to abstract the runtime
 environment from the accessor.
 
-All accessor functions are namespaced in the `rt` namespace. This should make
-accessors easier to read by clearly identifying which functions are provided
-by the accessor runtime and not native javascript or defined in the accessor
-itself.
+All accessor libraries must be included with the `require()` function.
 
 
-### Accessor Framework Functions
+### Accessor Setup Functions
 
-These functions allow the accessor to describe its features and dependencies.
-Because these are not actually library functions they are not namespaced
-under the `rt` namespace.
+To configure the input and outputs of an accessor, the following
+functions can be called in the `setup()` function. They allow the accessor
+to express its features and dependencies.
 
-- `<void> create_port(<string> name, <object> options)`:
-Create a one-off port for this accessor. Valid options:
+
+- `<void> createPort(<string> name, <array> attributes, <object> options)`:
+Create a one-off port for this accessor. Valid attributes:
+
+        'read': The port can be read from. This means that it is capable of
+                generating a single output on demand.
+        'write': The port can be written to. This makes the port an input
+                 that can accept incoming data.
+        'event': The port is an output and will generate output data in
+                 response to an event. The event is likely not under control
+                 of the accessor and will be hard to predict when data will
+                 be output.
+        'eventperiodic': The port will output data periodically. This is a
+                         subtype of 'event'.
+        'eventchange': The port will output data when the underlying
+                       value the port represents changes. This is a
+                       subtype of 'event'.
+
+    Ports may have multiple attributes. For example, a light bulb power port
+    may have the `read`, `write`, and `eventperiodic` attributes to signify
+    that the light can be controlled, the current state can be queried, and
+    the current state will be periodically output.
+
+    Valid options:
 
         options: {
             display_name: <string> // Nicely formatted name for displays.
@@ -156,12 +185,19 @@ Create a one-off port for this accessor. Valid options:
     Options are optional, and the `options` argument can be omitted entirely
     if not used.
 
-- `<void> provide_interface(<string> path)`: Specify that this
+- `<void> createPortBundle(<string> name, <array> port_names)`: Group two or more
+ports together into a conceptual group. This is useful for ports where setting
+only one (or reading only one) doesn't make much sense, that is, they only have
+meaning in a group. Creating a port bundle allows the accessor to define
+handler functions that will only execute when there is data ready for all
+of the ports in the bundle.
+
+- `<void> provideInterface(<string> path)`: Specify that this
 accessor implements a particular interface.
 
-- `<accessor> load_dependency(<string> path, <object> parameters)`: Loads a
-  new accessor as a dependency. Dependencies are guaranteed to exist at
-  runtime.
+- `<accessor> loadDependency(<string> path, <object> parameters)`: Loads a
+new accessor as a dependency. Dependencies are guaranteed to exist at
+runtime.
    - Dependencies are lazily init-ed, meaning that the dependency's `init`
      method is not called until the first time the dependency is accessed.
    - You may call a dependency's `init` method directly to force immediate
@@ -169,46 +205,57 @@ accessor implements a particular interface.
    - Attempts to call a dependency's `init` method after it has already been
      initialized are (**TODO:** ignored / throw an exception).
 
-- `<string> get_parameter(<string> parameter_name)`: Get the value of a
+### Accessor Core Functions
+
+These can be used inside of an accessor for getting data and for outputing
+data.
+
+- `<void> addInputHandler(<string> port_name, <function> handler)`: Define
+a function that will be called when the given port receives and new input
+data. This is typically called in `init()`.
+
+- `<void> addOuputHandler(<string> port_name, <function> handler)`: Specify
+a function to be called when the given port is _read_ from.
+
+- `<string> getParameter(<string> parameter_name)`: Get the value of a
 configured parameter that was passed to accessor when it was created. Parameters
-allow for configuring generic accessors to specific instances of devices.
+are guaranteed to not change during the lifetime of the accessor. Use parameters
+for any properties that the accessor needs to assume are constant.
 
 - `<T> get(<string> port_name)`: Get the cached value of an input to a given
 port. This is not supported in all runtimes.
 
-- `<void> send(<string> port_name, <T> val)`: Send a value to an ouptut
-observe port. This is used for "observe" ports to push new data when it is
-available.
+- `<void> send(<string> port_name, <T> val)`: Send a value to an ouptut port.
+This can be called anytime data is ready for that port.
 
 
 
 
-### General Utility
+### Logging
 
-- `<string> rt.version(<string> set_to=null)`: The version function returns the
+Logging is done by using the common
+[console](https://nodejs.org/api/console.html) library.
+
+<!-- - `<string> rt.version(<string> set_to=null)`: The version function returns the
 version of the accessor runtime environment running when the call to version
 returns.  The optional argument `set_to` will request a change to the accessor
 version environment. The version request may include range specifiers (e.g.
 `>=2.0.0`). If the requested version change cannot be satisfied, the version
 is unchanged and the original version is returned.  The accesor runtime is
-versioned using [semantic versioning](http://semver.org/).
+versioned using [semantic versioning](http://semver.org/). -->
 
-- `<void> rt.log.[debug,info,warn,error](<string> line)`: The log family
-of functions provides a means for logging messages. These messages are
-generally intended for developers and should not be used to convey runtime
-information.
 
-- `<void> rt.log.critical(<string> line)`: A critical error will throw a runtime
-exception, terminating the current execution. Do not use critical for transient
-errors (e.g. a 503).
+### Helper
 
-- `<void> rt.helper.forEach(<array> arr, <function> callback)`: Typical array
+    var helper = require('helper');
+
+- `<void> helper.forEach(<array> arr, <function> callback)`: Typical array
 for each function, but it supports both regular functions and generators.
 
         callback (array_item) { }
 
 
-### Time
+<!-- ### Time
 
 - `<float> rt.time.time()`: Returns current time as a unix timestamp.
 
@@ -216,7 +263,7 @@ for each function, but it supports both regular functions and generators.
 least the amount of time requested.
 
 - `<null> rt.time.run_later(<float> delay_in_ms, <fn> fn_to_run, <T> args)`:
-Schedules `fn_to_run` for execution in the future.
+Schedules `fn_to_run` for execution in the future. -->
 
 
 ### Sockets
@@ -228,7 +275,9 @@ that __all__ socket operations are blocking.  This is due to the fact that some
 runtimes (e.g. a web browser) do not have native socket support and may need to
 perform complex operations (e.g. tunnel to a support server).
 
-- _Blocking_ `<socket> rt.socket.socket(<string> family, <string> sock_type)`:
+    var socket = require('socket');
+
+- _Blocking_ `<socket> socket.socket(<string> family, <string> sock_type)`:
 This function creates a new socket object. The `family` must be one of the
 standard family names (e.g. `AF_INET` or `AF_INET6`) and the `sock_type` must
 be a standard socket name (e.g. `SOCK_DGRAM` or `SOCK_STREAM`).
@@ -260,66 +309,62 @@ calling `connect`.
 
 ### HTTP Requests
 
-All HTTP related functions are scoped under the `http` object.
+Make HTTP requests as a client
 
-- _Blocking_ `<string> rt.http.request(<string> url, <string> method, <string>
-properties=null, <string> body=null, <int> timeout=null)`: Currently mimics the
-(very old) XMLHTTPRequest API, needs to be revisited.
+    var http = require('httpClient');
 
-- _Blocking_ `<string> rt.http.get(<string> url)`: A convenience function for
-`GET`-ing a URL that wraps `http.request`.
+- _Blocking_ `<IncomingMessage> http.get(<string> url)`: GET a URL.
+The response object has these attributes: `statusCode`, `statusMessage`,
+and `body`.
 
-- _Blocking_ `<void> rt.http.post(<string> url, <string> body)`: HTTP POST.
+- _Blocking_ `<IncomingMessage> http.post(<string> url, <string> body)`: HTTP POST.
 
-- _Blocking_ `<void> rt.http.put(<string> url, <string> body)`: HTTP PUT.
+- _Blocking_ `<IncomingMessage> http.put(<string> url, <string> body)`: HTTP PUT.
 
+- _Blocking_ `<string> http.request(<object> options)`: See the
+[request](https://github.com/request/request#requestoptions-callback)
+module for details.
 
 ### CoAP Requests
 
-- _Blocking_ `<string> rt.coap.get(<string> url)`: Create a CoAP get request
+    var coap = require('coapClient');
+
+- _Blocking_ `<IncomingMessage> coap.get(<string> url)`: Create a CoAP get request
 to the specified URL.
 
-- _Blocking_ `<string> rt.coap.post(<string> url, <string> body)`: POST via
+- _Blocking_ `<IncomingMessage> coap.post(<string> url, <string> body)`: POST via
 CoAP to a specified resource.
 
-- `<void> rt.coap.observe(<string> url, <function> callback)`: Connect to an
+- `<void> coap.observe(<string> url, <function> callback)`: Connect to an
 observe port and call `callback` every time new data is available.
 
 
 ### WebSockets
 
-- _Blocking_ `<websocket> rt.websocket.connect(<string> url)`: Create a
-WebSocket connection to the given URL. URL should look like `ws://host.com/path`.
+    var ws = require('webSocket');
 
-- `<void> [websocket].subscribe(<function> data_callback, <function> error_callback, <function> close_callback)`:
-Register callbacks for the WebSocket connection.
+See [node ws module](https://github.com/websockets/ws) for documentation.
 
-        // Called with the data returned from the socket.
-        function data_callback (<string> data) {}
-        // Called if an error arises from the socket.
-        function error_callback (error) {}
-        // Called if the connection is closed.
-        function close_callback () {}
-
-- `<void> [websocket].send(<string> data)`: Sends `data` in the WebSocket
-connection to the other host.
 
 
 ### RabbitMQ / AMQP
 
-- _Blocking_ `<amqp_connection> rt.amqp.connect(<string> url)`: Connect
+- _Blocking_ `<amqp_connection> amqp.connect(<string> url)`: Connect
 to an AMQP server will a fully defined AMQP URL.
 
 - `<void> [amqp_connection].subscribe(<string> exchange, <string> routing_key, <function> callback)`:
 Create a queue from a RabbitMQ exchange with the given routing key call `callback`
 with all incoming data packets.
 
+- _Blocking_ `<void> [amqp_connection].publish(<string> exchange, <string> routing_key, <string> pkt)`:
+Publish data to a RabbitMQ exchange.
+
 
 ### GATD v0.1
 
 For older versions of GATD that support older socket.io.
 
-- _Blocking_ `<socketio_connection> rt.gatd_old.connect(<string> url)`: Connect
+- _Blocking_ `<socketio_connection> gatd_old.connect(<string> url)`: Connect
 to a socket.io server (0.9).
 
 - `<void> [socketio_connection].query(<object> query, <function> callback)`:
@@ -329,18 +374,28 @@ returned data packets.
 
 ### Text to Speech
 
-- _Blocking_ `<void> rt.text_to_speech.say(<string> text)`: Will read the given text aloud
+    var tts = require('textToSpeech');
+
+- _Blocking_ `<void> tts.say(<string> text)`: Will read the given text aloud
 
 
 ### BLE
 
 Bluetooth Low Energy support.
 
-- _Blocking_ `<ble> rt.ble.Client()`: Create a new device that can be a BLE
+    var ble = require('ble');
+
+- _Blocking_ `<ble> ble.Client()`: Create a new device that can be a BLE
 master.
 
-- `<void> [ble].scan(<array> uuids, <function> callback)`: Start a BLE scan for the listed
-UUIDs. An empty UUID array will look for all devices. UUIDs should be specified
+- `<void> [ble].stayConnected(<string> uuid, <string> name, <string> mac_address, <function> on_connect(<peripheral>), <function> on_disconnect, <function> on_error)`: Find
+and stay connected to a device. Each time the device connects, `on_connect`
+will be called. Similarly, `on_disconnect` will be called anytime the device
+disconnects.
+
+- `<void> [ble].scan(<array> uuids, <string> name, <string> mac_address, <function> callback(<peripheral>))`: Start a BLE scan for the listed
+UUIDs, name, or MAC address. An empty UUID array will look for all devices.
+UUIDs should be specified
 as lowercase hex without dashes. When a matching device is found,
 `callback(peripheral)` will be called.
 
@@ -376,9 +431,9 @@ data value will sent to `callback (<bytearray> data)`.
 Various devices may need data in a variety of encodings. These functions help
 convert between them.
 
-- `<string> rt.encode.atob(<base64> str)`: Decode a base64 encoded string.
+- `<string> encode.atob(<base64> str)`: Decode a base64 encoded string.
 
-- `<base64> rt.encode.btoa(<string> str)`: Encode a string in the base64 format.
+- `<base64> encode.btoa(<string> str)`: Encode a string in the base64 format.
 
 
 ### Color Functions
@@ -387,10 +442,10 @@ When writing accessors that use colors (such as lighting) it may be useful
 to change colors between various color representations. The `color` object
 makes this easier.
 
-- `<hsv object> rt.color.hex_to_hsv(<string> hex_color)`: Convert a hex color
+- `<hsv object> color.hex_to_hsv(<string> hex_color)`: Convert a hex color
 string (like "0000FF") to an HSV object (like
 `{h: [hue (0-360)], s: [saturation (0-1)], v: [value (0-1)]}`).
 
-- `<string> rt.color.hsv_to_hex(<hsv object> hsv_color)`: Convert an HSV object
+- `<string> color.hsv_to_hex(<hsv object> hsv_color)`: Convert an HSV object
 to an RGB hex string.
 

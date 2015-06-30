@@ -1,45 +1,33 @@
-{% if interface.ports %}
-<div class="row">
-
-  <div class="col-md-7">
-    {% if extends_depth == 1 %}
-    <h4>Ports</h4>
-    {% endif %}
-    <ul class="list-group accessor-ports-list">
-      {% for name in interface.ports %}
-      <li class="list-group-item">
-        {% set port = interface.ports[name] %}
-        <div class="row">
-          <div class="col-sm-8">
-            <h4>/{{ name|replace('.', '/') }}</h4>
-            <p>{{ port.description }}</p>
-          </div>
-          <div class="col-sm-4 accessor-ports-list-config">
-            <b>Directions</b>: &nbsp;{{ port.directions|join(', ') }}<br />
-            <b>Type</b>: &nbsp;{{ port.type }}<br />
-            {% if 'units' in port %}<b>Units</b>: &nbsp;{{ port.units }}<br />{% endif %}
-            {% if 'options' in port %}<b>Options</b>: &nbsp;{{ port.options }}<br />{% endif %}
-            {% if 'min' in port %}<b>Min</b>: &nbsp;{{ port.min }}<br />{% endif %}
-            {% if 'max' in port %}<b>Max</b>: &nbsp;{{ port.max }}<br />{% endif %}
-          </div>
-        </div>
-      </li>
+{% for name in interface.ports %}
+<li class="list-group-item">
+  {% set port = interface.ports[name] %}
+  <div class="row">
+    <div class="col-sm-8">
+      <h4>{{ root + '.' + name.split('.')[-1] }}</h4>
+      <p>{{ port.description }}</p>
+    </div>
+    <div class="col-sm-4 accessor-ports-list-config">
+      <b>Directions</b>: &nbsp;{{ port.directions|join(', ') }}<br />
+      <b>Type</b>: &nbsp;{{ port.type }}<br />
+      {% if 'units' in port %}<b>Units</b>: &nbsp;{{ port.units }}<br />{% endif %}
+      {% if 'options' in port %}<b>Options</b>: &nbsp;{{ port.options }}<br />{% endif %}
+      {% if 'min' in port %}<b>Min</b>: &nbsp;{{ port.min }}<br />{% endif %}
+      {% if 'max' in port %}<b>Max</b>: &nbsp;{{ port.max }}<br />{% endif %}
+      {% if extends_list %}<hr class="tight" />{% endif %}
+      {% for ext in extends_list %}
+      <b>From extending</b>: &nbsp;<a class="interface" href="/view/interface{{ ext }}">{{ ext }}</a><br />
       {% endfor %}
-    </ul>
+    </div>
   </div>
-
-</div>
-{% endif %}
+</li>
+{% endfor %}
 
 {% if interface.extends %}
-<h3>Interfaces {{ interface }} extends:</h3>
-<div style="padding-left: 50px;">
   {% set e_list = interface.extends %}
   {% for interface in e_list %}
-  <h4><a href="/view/interface{{ interface }}">{{ interface }}</a></h4>
-  {% set extends_depth = extends_depth + 1 %}
+  {% set extends_list = extends_list + [interface,] %}
   {% include "interface-detail.jinja2" %}
+  {% set extends_list = extends_list[:-1] %}
   {% endfor %}
-</div>
 {% endif %}
 
