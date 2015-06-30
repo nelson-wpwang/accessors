@@ -19,22 +19,23 @@ var accessors = require('accessors.io');
 
 // First step is to create a live "StockTick" accessor. This will execute
 // the accessor so we can interact with it.
-accessors.create_accessor('/webquery/StockTick', {}, function (accessor) {
+accessors.create_accessor('/webquery/StockTick', {}, function (err, accessor) {
+    if (err) {
+        // Handle any errors that may occur when creating the accessor.
+	    console.log('Error loading accessor.');
+	    console.log(error);
+    }
+
 	// The StockTick accessor, has two ports: "StockSymbol" and "Price".
 	// To get a quote, we first set the StockSymbol port by calling the
 	// "input" function on the port.
-	accessor.StockSymbol.input('MSFT', function () {
+	accessor.write('StockSymbol', 'MSFT', function (err) {
 		// After that has been set, we call the "output" function on the
 		// Price port to get the current price.
-		accessor.Price.output(function (price) {
+		accessor.read('Price', function (err, price) {
 			console.log('MSFT stock price: $' + price);
 		});
 	});
-},
-// Handle any errors that may occur when creating the accessor.
-function (error) {
-	console.log('Error loading accessor.');
-	console.log(error);
 });
 ```
 
@@ -99,6 +100,12 @@ from the accessor will be handled as callbacks.
 The basic format looks like this:
 
 - `accessor`:
+
+  - `.init(<function> done)`: Initialize the accessor. This has to be run
+  before the accessor can do anything, but it will be called automatically
+  on the first `write` or `read`. `init` is not called automatically
+  because `.on()` can be called to register listeners before
+  the accessor runs.
 
   - `.write(<string> port_name, <port-type> value, <function> done)`:
   Send a value to a given input port. The `done` function will be called
