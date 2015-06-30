@@ -2,7 +2,7 @@ var chai = require('chai');
 var expect = chai.expect;
 
 var accessors = require('accessors.io');
-accessors.set_host_server('http://localhost:6565');
+accessors.set_host_server('http://localhost:35123');
 
 describe('Type Tests', function () {
 	it('should get string', function (done) {
