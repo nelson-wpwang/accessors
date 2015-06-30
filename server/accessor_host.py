@@ -400,7 +400,7 @@ class Interface():
 		unqualified = port.split('.')[-1]
 		if port in self.ports:
 			detail = copy.deepcopy(self.json['ports'][unqualified])
-			detail['name'] = unqualified
+			detail['name'] = port
 			detail['aliases'] = list(aliases)
 			detail['interface_path'] = self.path
 
