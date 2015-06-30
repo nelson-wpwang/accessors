@@ -44,18 +44,47 @@ API
 - `<void> set_host_server (<string> host_server)`: Update the accessor host server to use
 when retrieving new accessors. Defaults to `http://accessors.io`.
 
-- `<array> get_accessor_list (<function> success, <function> failure)`: Retrieve
+- `<string> get_host_server ()`: Get the current server used to retrieve
+accessors.
+
+- `<void> set_output_functions (<object> functions)`: Configure the functions
+used for console output. Valid keys are:
+
+        {
+          log: Replace console.log
+          info: Replace console.info
+          error: Replace console.error
+          debug: Replace debug output
+        }
+
+- `<array> get_accessor_list (<function> cb)`: Retrieve
 a list of all accessors from the host server.
+
+- `<void> compile_dev_accessor (<string> path, <function> cb)`:
+Load an accessor from a path, send it to the host to be parsed, and call
+`cb` with an identifier to get the compiled accessor.
+
+- `<object> get_test_accessor_ir (<string> path, <function> cb)`:
+Get the IR for an accessor designed to test some aspect of the system.
+Likely not used in production code.
+
+- `<object> get_dev_accessor_ir (<string> path, <function> cb)`:
+Get the IR for a local accessor that was compiled.
 
 - `<object> get_accessor_ir (<string> accessor_path, <function> success, <function> failure)`:
 Retrieve just the accessor intermediate representation from the host server
 for a given accessor. This does not create an accessor, but is useful for things
 like determining the required parameters for a given accessor.
 
-- `<accessor> create_accessor (<string> accessor_path, <object> parameters, <function> success, <function> failure)`: Generate an accessor object for an accessor with the given
+- `<object> get_accessor_ir_from_url (<string> url, <function> cb)`:
+Retrieve the accessor IR from a fully specified URL.
+
+- `<accessor> create_accessor (<string> accessor_path, <object> parameters, <function> cb)`:
+Generate an accessor object for an accessor with the given
 path and initialize it with the parameters.
 
-- `<accessor> load_accessor (<object> accessor_ir, <object> parameters, <function> success, <function> failure)`: Generate an accessor from an intermediate representation. This can
+- `<accessor> load_accessor (<object> accessor_ir, <object> parameters, <function> cb)`:
+Generate an accessor from an intermediate representation. This can
 be used after `get_accessor_ir()` to create an accessor.
 
 
@@ -69,16 +98,20 @@ from the accessor will be handled as callbacks.
 
 The basic format looks like this:
 
-```javascript
-// To control the device:
-accessor.<port function>.input(<value to set port to>, finished_callback, error_callback);
+- `accessor`:
 
-// To read from the device:
-accessor.<port function>.output(callback_with_value, error_callback);
+  - `.write(<string> port_name, <port-type> value, <function> done)`:
+  Send a value to a given input port. The `done` function will be called
+  with an error if one occurred.
 
-// To wait for data from the device:
-accessor.<port function>.observe(callback_data_ready, finished_callback, error_callback);
-```
+  - `.read(<string> port_name, <function> cb)`:
+  Read from an output port. When a value is ready, `cb` will be called
+  with an error argument and the value.
+
+  - `.on(<string> port_name, <function> cb)`:
+  Listen to all values output from a port. This follows the Event Emitter
+  pattern, and the `cb` is called with `error, value`.
+
 
 As a more concrete example, consider a lightbulb that has a port named `Power`
 that can be turned on and off.
@@ -87,11 +120,11 @@ Input example:
 
 ```javascript
 // Turn the light off
-accessor.Power.input(false, function () {
+accessor.write('Power', false, function (err) {
+    if (err) {
+        // An error occured while controlling the light.
+    }
 	// Light was turned off successfully.
-},
-function (err) {
-	// An error occured while controlling the light.
 });
 ```
 
@@ -99,37 +132,22 @@ Output example:
 
 ```javascript
 // Check the current light state
-accessor.power.output(function (state) {
+accessor.read('Power', function (err, state) {
+    if (err) {
+        // Error occurred reading the light.
+    }
 	// variable `state` contains true if the light is on, false otherwise
-},
-function (err) {
-	// Error occurred reading the light.
 });
 ```
 
-Observe example:
+Listen example:
 
 ```javascript
 // Get all events when the light bulb changes state
-accessor.Power.observe(function (new_state) {
+accessor.on('Power', function (err, new_state) {
+    if (err) {
+        // Error occurred reading the light.
+    }
 	// This callback will get called with the new light state.
-},
-function () {
-	// Could get an error while setting this up.
 });
 ```
-
-
-
-Description
------------
-
-When a new accessor is loaded, a node module is dynamically created. It is
-literally the string concatonation of the accessor javascript and the runtime
-in which the accessor will run. The accessor is init'd and then returned to
-the caller.
-
-* `runtime.js` contains the core implementation of the accessor runtime. It
-  loads the `runtime_lib.js` as a module to export.
-* `runtime_lib.js` contains the implementations for the accessor `rt` library
-  functions.
