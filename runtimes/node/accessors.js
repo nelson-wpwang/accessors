@@ -321,15 +321,16 @@ function get_port_handler_arrays (accessor) {
 
 	for (var i=0; i<accessor.ports.length; i++) {
 		var port = accessor.ports[i];
+		var namefq = port.name;
 
-		res += "'" + port.name + "': " + JSON.stringify(port) + ',';
-		ret += "'" + port.name + "': {";
+		res += "'" + namefq + "': " + JSON.stringify(port) + ',';
+		ret += "'" + namefq + "': {";
 
 		var def = 'null';
 		if ('value' in port) {
 			def = "'" + port.value + "'";
 		}
-		reu += "'" + port.name + "': " + def + ",";
+		reu += "'" + namefq + "': " + def + ",";
 
 		if (port.directions.indexOf('input') > -1) {
 			ret += "input: [],"
