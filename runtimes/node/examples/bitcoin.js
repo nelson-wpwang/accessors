@@ -5,7 +5,7 @@ var accessors = require('../accessors');
 accessors.create_accessor('/webquery/Bitcoin', {}, function (err, accessor) {
 	if (err) {
 		console.log('Error loading accessor.');
-		console.log(error);
+		console.log(err);
 		return;
 	}
 

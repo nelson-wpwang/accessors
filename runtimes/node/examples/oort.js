@@ -11,13 +11,17 @@ accessors.create_accessor('/sensor/power/oortSmartSocket', {}, function (err, oo
 
 	oort.init(function (err) {
 
-		oort.on('Watts', function (err, data) {
+		oort.on('/sensor/power.Power', function (err, data) {
+			if (err) {
+				console.log(err);
+			}
 			console.log('Load is drawing: ' + data + ' W');
 		});
 
 		function wait () {
-			oort.write('Power', true, function (err) {
+			oort.write('/onoff.Power', true, function (err) {
 				if (err) {
+					console.log(err);
 					console.log('Waiting for the device to be connected');
 					setTimeout(wait, 1000);
 				}
