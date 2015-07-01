@@ -778,6 +778,9 @@ def process_accessor(
 		for norm in accessor['port_fq_to_aliases']:
 			accessor['port_fq_to_aliases'][norm] = list(accessor['port_fq_to_aliases'][norm])
 
+		for port in accessor['ports']:
+			for alias in port['aliases']:
+				accessor['port_aliases_to_fq'][alias] = port['name']
 
 		# Generate some convenience mappings for downstream as well:
 		#
