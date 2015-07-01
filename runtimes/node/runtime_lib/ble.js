@@ -260,6 +260,9 @@ module.exports.Central = function* () {
 			} else if (state === 'poweredOff') {
 				error('BLE appears to be disabled.');
 				defer.resolve(null);
+			} else {
+				error('Unable to use BLE.');
+				defer.resolve(null);
 			}
 		});
 	} else {
