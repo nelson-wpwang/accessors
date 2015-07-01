@@ -60,10 +60,8 @@ function ws_url (s) {
 function accessor_function_start (accessor_uuid) {
 	accessor_alert_clear(accessor_uuid);
 	$('#accessor-'+accessor_uuid+' .spinner').show();
-	console.log('show')
 }
 
 function accessor_function_stop (accessor_uuid) {
 	$('#accessor-'+accessor_uuid+' .spinner').hide();
-	console.log('hide')
 }
