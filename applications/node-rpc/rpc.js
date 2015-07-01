@@ -7,6 +7,7 @@ try {
 	var os         = require('os');
 	var accessors  = require('accessors.io');
 	var request    = require('request');
+	var dbg        = require('debug');
 	var express    = require('express');
 	var w          = express();
 	var express_ws = require('express-ws')(w);
@@ -30,6 +31,12 @@ try {
 		.alias   ('p', 'port')
 		.describe('p', 'Port to run server on.')
 		.default ('p', 5000)
+		.options({
+			'debug': {
+				describe: 'Turn on debug output.',
+				type: 'boolean'
+			}
+		})
 		.help('help')
 		.argv;
 } catch (e) {
@@ -38,13 +45,20 @@ try {
 	throw e;
 }
 
+if (argv.debug) {
+	dbg.enable('accessors-rpc.*');
+}
+var info = dbg('accessors-rcp:info');
+var error = dbg('accessors-rcp:error');
+var debug = dbg('accessors-rcp:debug');
+
 
 if (argv.host_server.slice(0, 7) != 'http://') {
 	argv.host_server = 'http://' + argv.host_server;
 }
-console.log('Using Accessor Host Server: ' + argv.host_server);
-console.log('Using port ' + argv.port + ' for RPC commands');
-console.log('Using ' + argv.db_location + ' to store devices.');
+info('Using Accessor Host Server: ' + argv.host_server);
+info('Using port ' + argv.port + ' for RPC commands');
+info('Using ' + argv.db_location + ' to store devices.');
 
 // Configure the library
 accessors.set_host_server(argv.host_server);
@@ -84,7 +98,7 @@ n.addFilter('json', function (s, n) {
 // Get a database to store created accessors
 var db = new sqlite.Database(argv.db_location, function (err) {
 	if (err) {
-		console.log('Issue creating accessors.db');
+		error('Issue creating accessors.db');
 		return;
 	}
 
@@ -108,7 +122,7 @@ var db = new sqlite.Database(argv.db_location, function (err) {
 		db.each('SELECT * FROM accessors ORDER BY name ASC',
 			function (err, row) {
 				if (err) {
-					console.log(err);
+					error(err);
 					throw 'Could not retrieve accessors from DB';
 				}
 				// Now get the parameters
@@ -116,7 +130,7 @@ var db = new sqlite.Database(argv.db_location, function (err) {
 				db.all('SELECT * FROM parameters WHERE accessor_id=?', row.id,
 					function (err, rows) {
 						if (err) {
-							console.log(err);
+							error(err);
 							throw 'Could not retrieve parameters from DB';
 						}
 						for (var i=0; i<rows.length; i++) {
@@ -131,7 +145,7 @@ var db = new sqlite.Database(argv.db_location, function (err) {
 
 	});
 
-	console.log('Created or opened sqlite db successfully.');
+	info('Created or opened sqlite db successfully.');
 });
 
 
@@ -144,7 +158,7 @@ function activate_accessor (name, path, parameters, callback) {
 
 	accessors.create_accessor(path, parameters, function (err, accessor) {
 		if (err) {
-			console.log('Create_Accessor error');
+			error('Create_Accessor error');
 
 			if (typeof callback === 'function') {
 				callback({success: false, message: 'failed when creating the accessor. Are the parameters valid?'});
@@ -153,7 +167,7 @@ function activate_accessor (name, path, parameters, callback) {
 
 		accessor.init(function (err) {
 			if (err) {
-				console.log('Init_Accessor error');
+				error('Init_Accessor error');
 
 				if (typeof callback === 'function') {
 					callback({success: false, message: 'init() failed when loading the accessor. Are the parameters valid?'});
@@ -185,7 +199,7 @@ function activate_accessor (name, path, parameters, callback) {
 				// Also save this in the database
 				db.get('SELECT count(id) as count FROM accessors WHERE name=?', name, function (err, row) {
 					if (err) {
-						console.log(err);
+						error(err);
 						throw 'Could not query for accessor name';
 					}
 					if (row.count == 0) {
@@ -194,7 +208,7 @@ function activate_accessor (name, path, parameters, callback) {
 						                      VALUES (?, ?)');
 						ins.run([name, path], function (err) {
 							if (err) {
-								console.log(err);
+								error(err);
 								throw 'Could not add accessor to db';
 							}
 							var accessor_id = this.lastID;
@@ -205,7 +219,7 @@ function activate_accessor (name, path, parameters, callback) {
 								var param_value = parameters[param_name];
 								insparam.run([accessor_id, param_name, param_value], function (err) {
 									if (err) {
-										console.log(err);
+										error(err);
 										throw 'Failed to add accessor parameters to db';
 									}
 								});
@@ -220,7 +234,7 @@ function activate_accessor (name, path, parameters, callback) {
 				// Iterate through all ports so we can create routes
 				// for all ports.
 				accessor._meta.ports.forEach(function (port, port_index, port_array) {
-					console.log('Adding port ' + port.name);
+					info('Adding port ' + port.name);
 
 					var slash = '';
 					if (!s.startsWith(port.name, '/')) {
@@ -229,12 +243,12 @@ function activate_accessor (name, path, parameters, callback) {
 					var port_path = slash + port.name;
 					var device_base_path = '/active/' + escape(name);
 					var device_port_path = device_base_path + port_path;
-					console.log('path: ' + device_port_path);
+					info('path: ' + device_port_path);
 
 					// Handle GET requests for this port
 					// OUTPUT
 					w.get(device_port_path, function (req, res) {
-						console.log(" GET " + device_port_path + ": (req: " + req + ", res: " + res + ")");
+						info(" GET " + device_port_path + ": (req: " + req + ", res: " + res + ")");
 						res.header("Content-Type", "application/json");
 
 						if (port.attributes.indexOf('read') == -1) {
@@ -245,26 +259,37 @@ function activate_accessor (name, path, parameters, callback) {
 							return;
 						}
 
-						accessor.read(port.name, function (err, result) {
-							if (err) {
-								console.log('GET error');
+						try {
+							function send_error (err) {
+								var err_str = err;
+								if (err && typeof err === 'object' && 'message' in err) {
+									err_str = err.message;
+								}
 								res.send(JSON.stringify({
 									success: false,
-									message: err.message
+									message: err_str
 								}));
-								return;
 							}
-							console.log(" --> resp: " + result);
-							res.send(JSON.stringify({
-								success: true,
-								data: result
-							}));
-						});
+							accessor.read(port.name, function (err, result) {
+								if (err) {
+									send_error(err);
+									return;
+								}
+								info(" --> resp: " + result);
+								res.send(JSON.stringify({
+									success: true,
+									data: result
+								}));
+							});
+						} catch (err) {
+							error('GET Exception');
+							send_error(err);
+						}
 					});
 
 					// INPUT
 					w.post(device_port_path, function (req, res) {
-						console.log("POST " + device_port_path);
+						info("POST " + device_port_path);
 						res.header("Content-Type", "application/json");
 
 						if (port.directions.indexOf('input') == -1) {
@@ -276,7 +301,7 @@ function activate_accessor (name, path, parameters, callback) {
 						}
 						var arg = null;
 						if (port.type == 'bool') {
-							console.log('REQ BODY: ' + req.body);
+							info('REQ BODY: ' + req.body);
 							arg = (req.body == 'true');
 						} else {
 							arg = req.body;
@@ -284,7 +309,7 @@ function activate_accessor (name, path, parameters, callback) {
 
 						accessor.write(port.name, arg, function (err) {
 							if (err) {
-								console.log('POST ERR')
+								error('POST err: ' + err);
 								res.send(JSON.stringify({
 									success: false,
 									message: err.message
@@ -298,22 +323,22 @@ function activate_accessor (name, path, parameters, callback) {
 					});
 
 					w.ws(device_port_path, function (ws, req) {
-						console.log("WS " + device_port_path);
+						info("WS " + device_port_path);
 
 						var on_observe = function (err, data) {
 							if (err) {
-								console.log('WS OBSERVE ERR');
+								error('WS OBSERVE err: ' + err);
 								try {
 									ws.send(JSON.stringify({
 										success: false,
 										message: err.message
 									}));
 								} catch (err) {
-									console.log('Error with ws - not connected');
+									error('Error with ws - not connected');
 								}
 								return;
 							}
-							console.log('SENDING DATA TO WS');
+							info('SENDING DATA TO WS');
 							ws.send(JSON.stringify({
 								success: true,
 								data: data
@@ -321,7 +346,7 @@ function activate_accessor (name, path, parameters, callback) {
 						}
 
 						ws.on('close', function () {
-							console.log('CLOSEDDDDD');
+							info('Closed WS');
 							accessor.removeListener(port.name, on_observe);
 							ws.close();
 						});
@@ -336,8 +361,8 @@ function activate_accessor (name, path, parameters, callback) {
 				}
 
 			} catch (e) {
-				console.log('outside catch')
-				console.log(e);
+				error('outside catch')
+				error(e);
 				if (typeof callback === 'function') {
 					callback({success: false, message: e.message});
 				}
