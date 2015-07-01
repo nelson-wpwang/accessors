@@ -47,7 +47,7 @@
           </div>
 
 
-          {% elif port.type in ["numeric", "integer"] and port.min != 'undefined' and port.max != 'undefined' %}
+          {% elif port.type in ["numeric", "integer"] and (port.min or port.max) %}
           {# SLIDER #}
           <div class="col-sm-6">
             <input type="text" id="port-{{ port.uuid }}" class="slider" data-slider-id='{{ fieldname }}-slider' data-slider-min="{{ port.min }}" data-slider-max="{{ port.max }}" data-slider-step="1" data-slider-value="{{ port.min }}" data-port="{{ port.name }}"/>
@@ -56,7 +56,7 @@
           {% elif port.type in ["numeric", "integer", "string"] and "input" in port.directions %}
           {# TEXT BOX #}
           <div class="col-sm-4">
-            <input type="text" id="port-{{ port.uuid }}" class="form-control port" {% if port.default != 'undefined' %} value="{{ port.default }}"{% endif %}></input>
+            <input type="text" id="port-{{ port.uuid }}" class="form-control port" {% if port.value != 'undefined' %} value="{{ port.value }}"{% endif %}></input>
           </div>
           <div class="col-sm-2">
             <button type="button" class="form-control accessor-input">&#9654;</button>
@@ -65,7 +65,7 @@
           {% elif port.type in ["numeric", "integer", "string"] %}
           {# TEXT BOX NO BUTTON #}
           <div class="col-sm-6">
-            <input type="text" id="port-{{ port.uuid }}" class="form-control port" {% if port.default != 'undefined' %} value="{{ port.default }}"{% endif %}></input>
+            <input type="text" id="port-{{ port.uuid }}" class="form-control port" {% if port.value != 'undefined' %} value="{{ port.value }}"{% endif %}></input>
           </div>
 
           {% elif port.type == "select" %}
@@ -73,7 +73,7 @@
           <div class="col-sm-8">
             <select id="port-{{ port.uuid }}" class="form-control port-select">
               {% for opt in port.options %}
-              <option value="{{ loop.index }}"{% if port.default == 'opt' %} selected="selected"{% endif %}>{{ opt }}</option>
+              <option value="{{ loop.index }}"{% if port.value == 'opt' %} selected="selected"{% endif %}>{{ opt }}</option>
               {% endfor %}
             </select>
           </div>

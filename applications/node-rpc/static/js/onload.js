@@ -381,7 +381,7 @@ function rpc_get (accessor_uuid, port, port_name, port_meta, callback) {
 			if (!data.success) {
 				accessor_alert_error(accessor_uuid, data.message);
 			} else {
-				port_got_data(port, port_meta.directions, port_meta.type, port_meta.units, data.data);
+				port_got_data(port, port_meta.attributes, port_meta.type, port_meta.units, data.data);
 			}
 
 			if (typeof callback === 'function') {
