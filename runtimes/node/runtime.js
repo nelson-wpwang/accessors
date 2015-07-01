@@ -218,6 +218,8 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 				// This gets called on any error that happens while we are
 				// running accessor code.
 				d.on('error', function (err) {
+					info('Got error in accessor - caught by domain.');
+
 					// Exit the domain. We no longer want it to capture
 					// exceptions.
 					d.exit();
@@ -284,6 +286,7 @@ var _do_port_call = function (port_name, direction, value, done_fn) {
 							finished();
 
 						}, function (err) {
+							error('Exception from async accessor');
 							// Throw this error so that the domain can pick it up.
 							throw err;
 						});
@@ -456,12 +459,4 @@ var load_dependency = function (path, parameters) {
 	error('Do not support load_dependency yet.');
 
 	throw new AccessorRuntimeException("That was optimistic");
-}
-
-/******************************************************************************/
-/* Part of accessor standard library.
- */
-
-var print = function (val) {
-	console.log(val);
 }
