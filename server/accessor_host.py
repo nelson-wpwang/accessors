@@ -1053,7 +1053,7 @@ def find_accessors (accessor_path):
 				view_path = path[0:-3]
 
 				# Check to see if we have already parsed this accessor
-				commit_hash = git('log', '-n1', '--pretty="format:%H"', '.'+path)
+				commit_hash = git('log', '-n1', '--pretty=format:%H', '.'+path, _tty_out=False).strip()
 				existing_accessor = first(db('path') == view_path)
 				if existing_accessor:
 					if existing_accessor['hash'] == commit_hash:
@@ -1478,12 +1478,47 @@ class handler_accessor_page (JinjaBaseHandler):
 	def get_accessors_db (self):
 		return accessors_db
 
+
 	def get (self, path, **kwargs):
 		path = '/'+path
 
-		db = self.get_accessors_db()
-		records = db('path') == path
-		record = first(records)
+		version = self.get_argument('version', None)
+
+		if version:
+			for db in (accessors_db, accessors_test_db):
+				record = first(db(hash=version, path=path))
+				if record:
+					break
+			else:
+				record = first(accessors_git_db(hash=version, path=path))
+				if not record:
+					with pushd(accessor_files_path):
+						contents = git(
+								'cat-file',
+								'-p',
+								version+':accessors'+path+'.js'
+								).strip()
+					git_dir = tempfile.TemporaryDirectory()
+					try:
+						filepath = os.path.join(git_dir.name, version) + '.js'
+						open(filepath, 'w').write(contents)
+
+						process_accessor(
+							accessors_git_db,
+							'/'+'/'.join(path.split('/')[:-1]),
+							path.split('/')[-1],
+							path + '.js',
+							version,
+							contents,
+							filepath,
+							)
+					finally:
+						rm('-rf', git_dir)
+					record = first(accessors_git_db(hash=version, path=path))
+		else:
+			db = self.get_accessors_db()
+			records = db('path') == path
+			record = first(records)
 
 		# !! Must be checked first
 		if not record:

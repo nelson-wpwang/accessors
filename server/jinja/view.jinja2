@@ -20,7 +20,7 @@ Accessor: {{ record.name }} | Accessor Library
 {% if flags.is_test %}
 <span class="label label-info">Test</span>
 {% endif %}
-<em>Last Updated: {{ record.compilation_timestamp.humanize() }}</em>
+<em data-toggle="tooltip" data-placement="bottom" title="Most recent commit: {{ record.hash[:8] }}">Last Updated: {{ record.compilation_timestamp.humanize() }}</em>
 
 {% if record.warnings %}
 <hr />
