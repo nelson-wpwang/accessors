@@ -15,7 +15,11 @@ Accessor: {{ record.name }} | Accessor Library
 {% endif %}
 
 <h1>Accessor: {{ record.name }}</h1>
-<em>Last Updated: {{ record.compilation_timestamp.humanize() }}</em>
+{% if flags.is_old_version %}
+<em>This page is for an old version of this accessor. <a href="{{ prefix }}/view/accessor{{ record.path }}">Click here for the current version.</a></em>
+{% else %}
+<em data-toggle="tooltip" data-placement="bottom" title="Most recent commit: {{ record.hash[:8] }}">Last Updated: {{ record.compilation_timestamp.humanize() }}</em>
+{% endif %}
 
 <div class="alert alert-danger" role="alert">
   This accessor cannot be used until the follow errors are fixed.

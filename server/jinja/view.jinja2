@@ -20,7 +20,11 @@ Accessor: {{ record.name }} | Accessor Library
 {% if flags.is_test %}
 <span class="label label-info">Test</span>
 {% endif %}
+{% if flags.is_old_version %}
+<em>This page is for an old version of this accessor. <a href="{{ prefix }}/view/accessor{{ record.path }}">Click here for the current version.</a></em>
+{% else %}
 <em data-toggle="tooltip" data-placement="bottom" title="Most recent commit: {{ record.hash[:8] }}">Last Updated: {{ record.compilation_timestamp.humanize() }}</em>
+{% endif %}
 
 {% if record.warnings %}
 <hr />

@@ -1480,6 +1480,7 @@ class handler_accessor_page (JinjaBaseHandler):
 
 
 	def get (self, path, **kwargs):
+		flags = copy.deepcopy(self.flags)
 		path = '/'+path
 
 		version = self.get_argument('version', None)
@@ -1514,6 +1515,7 @@ class handler_accessor_page (JinjaBaseHandler):
 							)
 					finally:
 						rm('-rf', git_dir)
+					flags['is_old_version'] = True
 					record = first(accessors_git_db(hash=version, path=path))
 		else:
 			db = self.get_accessors_db()
@@ -1527,7 +1529,7 @@ class handler_accessor_page (JinjaBaseHandler):
 		elif not record['accessor']:
 			data = {
 				'record': record,
-				'flags': self.flags,
+				'flags': flags,
 				'prefix': self.PREFIX,
 			}
 			# Basic parsing didn't even work, show a dedicated error page
@@ -1539,7 +1541,7 @@ class handler_accessor_page (JinjaBaseHandler):
 		data = {
 			'record': record,
 			'usage_examples': examples,
-			'flags': self.flags,
+			'flags': flags,
 			'prefix': self.PREFIX,
 		}
 
