@@ -1062,7 +1062,7 @@ def find_accessors (accessor_path):
 					else:
 						log.info('Got new version of {}'.format(path))
 						for iface in existing_accessor['accessor']['implements']:
-							interface = interface_tree[iface['implements']]
+							interface = interface_tree[iface['interface']]
 							interface.unregister_accessor(existing_accessor['path'])
 						db.delete(existing_accessor)
 
