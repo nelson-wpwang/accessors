@@ -20,7 +20,7 @@ module.exports.callFn = function (fn) {
 
 	var error_fn = function (err) {
 		d.exit();
-		rt.log.warn("Uncaught exception from a call");
+		warn("Uncaught exception from a call");
 		console.log(err);
 	}
 	d.on('error', error_fn);
