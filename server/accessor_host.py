@@ -778,6 +778,9 @@ def process_accessor(
 		for norm in accessor['port_fq_to_aliases']:
 			accessor['port_fq_to_aliases'][norm] = list(accessor['port_fq_to_aliases'][norm])
 
+		for port in unqualified_iface_ports:
+			accessor['port_aliases_to_fq'][port] = unqualified_iface_ports[port]
+			accessor['port_aliases_to_fq'][unqualified_iface_ports[port]] = unqualified_iface_ports[port]
 		for port in accessor['ports']:
 			for alias in port['aliases']:
 				accessor['port_aliases_to_fq'][alias] = port['name']
