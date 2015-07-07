@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/lab11/accessors",
   "dependencies": {
-    "accessors.io": "^1.0.0",
+    "accessors.io": "^2.0.0",
     "async": "^0.9.2",
     "blessed": "^0.1.60",
     "colors": "^1.1.0",
