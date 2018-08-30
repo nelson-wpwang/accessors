@@ -304,7 +304,7 @@ function requireFromString(src) {
 	var Module = module.constructor;
 	var m = new Module();
 	m.paths = module.paths;
-	m._compile(src);
+	m._compile(src, '/tmp/accessorstmpfile');
 	return m.exports;
 }
 
