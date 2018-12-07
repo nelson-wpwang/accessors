@@ -97,7 +97,7 @@ except sh.CommandNotFound:
 # 	# npm('install', 'traceur')
 # traceur = sh.Command(traceur)
 
-ACCESSOR_REPO_URL = 'https://github.com/lab11/accessor-files.git'
+ACCESSOR_REPO_URL = 'https://github.com/nelson-wpwang/accessor-files.git'
 
 accessor_db_cols = ('name',
                     'hash',
